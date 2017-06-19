@@ -113,14 +113,18 @@ Logical Switch Context
 1. L2 Unicast Handling for Hnm (Output to Learned Port or Flood)
 2. L2 Broadcast Handling
 3. ARP Learning for Hnm MAC and IP Learning
-4. Handle ARP Request/Response for LSn's IP as Hnm's Subnet Gateway; consider Proxy ARP/NDP App
+   --> Host Location Provider registeres Hosts Info from ARP, NDP or DHCP
+4. Handle ARP Request/Response for LSn's IP as Hnm's Subnet Gateway
+   --> consider Proxy ARP/NDP App
 5. on dst_mac=LSn, L3 Route to Hnm, (src_mac<-LSn, dst_mac<=Hnm)
 6. on dst_mac=LSn, L3 Route to SSm for non-Subnet IPs (src_mac<-LSn, dst_mac=SSm)
    with Load Balancing on SS's
 
 ### Spine Switch [SSn]
 1. Do ARP Request on EH1 IP and Learn EH1 Mac and IP from ARP response
+   --> SEE: Host Location Provider's private sendProve()
 2. Handle ARP Request/Response for SSn's IP for EH1's Request
+   --> consider Proxy ARP/NDP App
 3. on dst_mac=SSn, L3 Route to LSm for each subnets (src_mac<-SSn,dst_mac<-LSm)
 4. on dst_mac=SSn, L3 Route to EH1 as defaut route (src_mac<-SSn,dst_mac<-EHn)
 
