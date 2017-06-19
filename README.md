@@ -7,10 +7,7 @@ Info from SKT
 
 - - 10G Server x 9
 - 40G Storage x 4
-- Leaf Switch: 10Gs + 40G x 6 (2 for Spine and 4 for Storage)
-  ( may be Cisco Nexus 3172PQ
-  
- http://www.cisco.com/c/en/us/td/docs/switches/datacenter/nexus/openflow/b_openflow_agent_nxos_1_3/Cisco_Plug_in_for_OpenFlow.html )
+- Leaf Switch: 10Gs + 40G x 6 (2 for Spine and 4 for Storage): [may be Cisco Nexus 3172PQ](http://www.cisco.com/c/en/us/td/docs/switches/datacenter/nexus/openflow/b_openflow_agent_nxos_1_3/Cisco_Plug_in_for_OpenFlow.html)
 - Spine Switch: Maybe 40G
 - Do ECMP and Link Failover
 
@@ -49,8 +46,7 @@ Features (OBSOLETE BY Simplified Features)
 1. L2 Unicast Handling for Hnm (Output to Learned Port or Flood)
 2. L2 Broadcast Handling
 3. ARP Learning for Hnm MAC and IP Learning
-4. Handle ARP Request/Response for LSn's IP as Hnm's Subnet Gateway
-   - consider Proxy ARP/NDP App
+4. Handle ARP Request/Response for LSn's IP as Hnm's Subnet Gateway; consider Proxy ARP/NDP App
 5. on dst_mac=LSn, L3 Route to Hnm, (src_mac<-LSn, dst_mac<=Hnm)
 6. on dst_mac=LSn, L3 Route to SSm for non-Subnet IPs (src_mac<-LSn, dst_mac=SSm)
    with Load Balancing on SS's
@@ -160,17 +156,16 @@ Critical Applications
 - OpenFlow Provider (for OpenFlow Switch Connect)
 - Optical information model (for OpenFlow privider)
 
+May be Reference for SLSNET Developement
 - Path Visualization App (might be omitted)
 - FIB installler App
 - Fault Managemnet App
 - Proxy ARP/NDP App
 - Reactive Forwarding App
 - Virtual Router App
-
 - Link Dicovery Provider
 - Host Location Provider
 - Network Config Host Provider
 - LLDB Link Provider
 - Network Config Host Provider
 - OpenFlow Provider
-
