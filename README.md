@@ -1,18 +1,18 @@
-### Simple Leaf-Spine Network Application
+# Simple Leaf-Spine Network Application
 Lee Yongjae, 2017-06-15.
 
 
-Info from SKT
---------
+## Info from SKT
 
-- - 10G Server x 9
+- 10G Server x 9
 - 40G Storage x 4
 - Leaf Switch: 10Gs + 40G x 6 (2 for Spine and 4 for Storage): [may be Cisco Nexus 3172PQ](http://www.cisco.com/c/en/us/td/docs/switches/datacenter/nexus/openflow/b_openflow_agent_nxos_1_3/Cisco_Plug_in_for_OpenFlow.html)
 - Spine Switch: Maybe 40G
 - Do ECMP and Link Failover
 
-Topology
---------
+
+
+## Topology
 
 ```
        EH1
@@ -28,9 +28,7 @@ Topology
    +- H14  +- H24
    +- D11  +- D21
    +- D12  +- D22
-
 ```
-
 
 1. LSn and HnN are in same subnet Nn
 2. LSn acts as L2 switch for Nn and L3 Subnet Router for Hn*  
@@ -39,8 +37,7 @@ Topology
   - consider Network Config Link Provider
 
 
-Features
---------
+## Features
 
 ### Leaf Switch [LSn]
 1. L2 Unicast Handling for Hnm (Output to Learned Port or Flood)
@@ -64,8 +61,8 @@ Features
 4. on SSn-EH1 link failed, LSx forward to other SS EH1 link available
 
 
-OpenFlow Flow Entries and Controller Actions 
---------
+
+## OpenFlow Flow Entries and Controller Actions 
 for `Cisco Nexus 3172PQ` as Leaf Switch for ECMP and HA
 
 ### Leaf Switch [LSn]
@@ -123,8 +120,7 @@ default
   or use Device Info's port MACs for each link
 
 
-Configuration
---------
+## Configuration
 
 - per LS Device ID
   { vIP, vMAC, {ports for SSn}, ports for Hm }
@@ -140,11 +136,9 @@ Configuration
    - Packet In/Out are available
 
 
+## Reference ONOS App
 
-Reference ONOS App
---------
-
-Critical Applications
+### Critical Applications
 - Default device drivers
 - Flow Space Analysis App
 - Flow specification Device Drivers
@@ -156,7 +150,7 @@ Critical Applications
 - OpenFlow Provider (for OpenFlow Switch Connect)
 - Optical information model (for OpenFlow privider)
 
-May be Reference for SLSNET Developement
+### Reference for SLSNET Developement
 - Path Visualization App (might be omitted)
 - FIB installler App
 - Fault Managemnet App
