@@ -218,17 +218,17 @@ default
 - Flow specification Device Drivers
 - Flowspec API
 - Intent Synchronizer
-- Host Location Provider (for auto Regi/Deregi Host may be from ARP)
+- **Host Location Provider** (for auto Regi/Deregi Host from ARP/NDP/DHCP)
 - Network Config Link Provider (for auto Regi/Deregi Links)
-- OpenFlow Agent App 
-- OpenFlow Provider (for OpenFlow Switch Connect)
+- OpenFlow Agent App
+- **OpenFlow Provider** (for OpenFlow Switch Connect)
 - Optical information model (for OpenFlow privider)
 
 ### Reference for SLSNET Developement
 - Path Visualization App (might be omitted)
 - FIB installler App
 - Fault Managemnet App
-- Proxy ARP/NDP App
+- **Proxy ARP/NDP App** (registers InternlEdgeListener...)
 - Reactive Forwarding App
 - Virtual Router App
 - Link Dicovery Provider
