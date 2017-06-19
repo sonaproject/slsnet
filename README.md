@@ -2,6 +2,76 @@
 Lee Yongjae, 2017-06-15.
 
 
+
+## SONA Fabric 설계
+from: 정종식
+
+### 최종 목표
+- Leaf-Spine Network을 자동으로 설정한다.
+- East-West Traffic 상태에 따라 효율적인 경로 설정을 제공한다. (ECMP인 경우에도 해당?)
+- Leaf-Spine Network의 상태를 쉽게 파악할 수 있다.
+- 스위치 또는 포트 장애에 끊김없이 대처할 수 있다.
+
+### 필요한 기능
+- L2 Unicast: intra-rack (intra-subnet) untagged communication when the destination is known.
+- L2 Broadcast: intra-rack (intra-subnet) untagged communication when the destination host is unknown.
+- ARP: ARP packets will be sent to the controller and App will do proxy ARP on L3 Router IP’s
+- L3 Unicast: inter-rack (inter-subnet) untagged communication when the destination is known.
+- VLAN Cross Connect: ?? 
+
+### 예상동작
+- Leaf Switch:
+  - L2 Unicast: destMac이 leaf switch와 일치하지 않으면, 학습한 MAC 주소를 찾아 적절한 포트로 보낸다.
+  - L2 Broadcast: destMAC이 (학습하지 않아) 없으면, 패킷을 모든 포트로 보낸다.
+  - ARP: 라우터 IP응 요청하면 router MAC을 보내고, 알고 있는 호스트를 요청하면 그 호스트를 대산하여 proxy ARP를 보내며, 모르는 호스트를 요청하는 경우 같은 서브넷의 모든 포트로 패킷을 보낸다.
+  - L3 Unicast: destMAC이 leaf switch와 일치하고 IPv4 패킷이므로 
+- Spine Switch
+  - L3 Unicast
+
+### 가정
+- 시스코 스위치가 OpenFlow 1.3을 지원하지만 multi-table은 지원하지 않고 single table만 지원할 가능성이 높음
+- 이 경우 ECMP 지원은 불가능함
+ 
+```
+Device# show openflow switch 1
+
+Logical Switch Context
+  Id: 1
+  Switch type: Forwarding
+  Pipeline id: 201
+  Signal version: Openflow 1.0
+  Data plane: secure
+  Table-Miss default: NONE
+  Config state: no-shutdown
+  Working state: enabled
+  Rate limit (packet per second): 0
+  Burst limit: 0
+  Max backoff (sec): 8
+  Probe interval (sec): 5
+  TLS local trustpoint name: not configured
+  TLS remote trustpoint name: not configured
+  Stats coll. period (sec): 5
+  Logging flow changes: Disabled
+  OFA Description:
+    Manufacturer: Cisco Systems, Inc.
+    Hardware: N3K-C3064PQ V01
+    Software: 6.0(2)U2(1) of_agent 1.1.0_fc1
+    Serial Num: SSI15200QD8
+    DP Description: n3k-200-141-3:sw1
+ FLOW_ OF Features:
+    DPID:0001547fee00c2a0
+    Number of tables:1
+    Number of buffers:256
+    Capabilities: STATS TABLE_STATS PORT_STATS
+    Actions: OUTPUT SET_VLAN_VID STRIP_VLAN SET_DL_SRC SET_DL_DST
+  Controllers:
+    1.1.1.1:6653, Protocol: TLS, VRF: s
+  Interfaces:
+    Ethernet1/1
+    Ethernet1/7
+```
+
+
 ## Info from SKT
 
 - 10G Server x 9
@@ -31,7 +101,7 @@ Lee Yongjae, 2017-06-15.
 ```
 
 1. LSn and HnN are in same subnet Nn
-2. LSn acts as L2 switch for Nn and L3 Subnet Router for Hn*  
+2. LSn acts as L2 switch for Hnm and L3 Subnet Router for Hnm  
 3. SSn acts as inter-Subnet L3 Router for LSns and Use EH1 as Default Router
   - consider Network Config Host Provider
   - consider Network Config Link Provider
