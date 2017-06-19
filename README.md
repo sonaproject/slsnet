@@ -137,12 +137,12 @@ for `Cisco Nexus 3172PQ` as Leaf Switch for ECMP and HA
 
 ### Leaf Switch [LSn]
 
-for ARP handling and Learning
+- for ARP handling and Learning
 1. on ethertype=arp copy to Controller, go ahead
    (Controller learns Hnm's mac or do arp response for request on LSn)
 
-for L3 Routing to Hnm
-3. 2. on dst_mac=LSn, dst_ip=LSn, output to Controler, end
+- for L3 Routing to Hnm
+2. on dst_mac=LSn, dst_ip=LSn, output to Controler, end
    (for LSn router action like icmp echo)
 3. on dst_mac=LSn, dst_ip=Hnm, output to Hnm port, dst_mac<-Hnm, src_mac<-LSn, end
 3b. on dst_mac=LSn, dst_ip=Hn/net, output to Controller, end
@@ -150,15 +150,15 @@ for L3 Routing to Hnm
 4. !!! on dst_mac=LSn, dst_ip=unknown, output to SSm (NEED TO SELECT SS) !!!,
    with dst_mac<-SSm, src_mac<-LSn update, end
 
-for L2 Switching
-7. 5. on dst_mac=Hnm, output to Hnm.port, end 
+- for L2 Switching
+5. on dst_mac=Hnm, output to Hnm.port, end 
 6. on dst_mac=broadcast and port=SSm, drop, end
    to ignore possible flooding from LS-SS port
 7. on dst_mac=broadcast, flooding (maybe Hnm.ports only), end
 
-default
-- drop by default
-- on link up/down event noti to Controller
+- default
+8. drop by default
+9. on link up/down event noti to Controller
    if LSn-SSm link down, change LSn rule 4, not to use SSm
 
 
