@@ -228,7 +228,7 @@ default
 - Path Visualization App (might be omitted)
 - FIB installler App
 - Fault Managemnet App
-- **Proxy ARP/NDP App** (registers InternlEdgeListener...)
+- **Proxy ARP/NDP App** (registers DefaultNeighbourMessageHandler() on Edge ports)
 - Reactive Forwarding App
 - Virtual Router App
 - Link Dicovery Provider
