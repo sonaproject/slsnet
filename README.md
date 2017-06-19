@@ -39,7 +39,7 @@ Topology
   - consider Network Config Link Provider
 
 
-Features (OBSOLETE BY Simplified Features)
+Features
 --------
 
 ### Leaf Switch [LSn]
@@ -64,7 +64,7 @@ Features (OBSOLETE BY Simplified Features)
 4. on SSn-EH1 link failed, LSx forward to other SS EH1 link available
 
 
-Simplified Features 
+OpenFlow Flow Entries and Controller Actions 
 --------
 for `Cisco Nexus 3172PQ` as Leaf Switch for ECMP and HA
 
