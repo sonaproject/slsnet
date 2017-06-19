@@ -135,7 +135,7 @@ Logical Switch Context
 ## OpenFlow Flow Entries and Controller Actions 
 for `Cisco Nexus 3172PQ` as Leaf Switch for ECMP and HA
 
-### Leaf Switch [LSn]
+### Leaf Switch LSn
 
 for ARP handling and Learning
 - LF1. on ethertype=arp copy to Controller, go ahead
@@ -162,7 +162,7 @@ default
      if LSn-SSm link down, change LSn rule 4, not to use SSm
 
 
-### Spine Switch [SSn] (no self subnet and host)
+### Spine Switch SSn (no self subnet and host)
 
 for ARP handling and Learning
 - SF1. on ethertype=arp copy to Controller, go ahead
