@@ -12,3 +12,9 @@
   - annotate-device of:0000000000000001 name SS1
   - annotate-port of:0000000000000001/1 portName toLS1
   - ? annotate-link of:0000000000000001/1 of:000000000000000a/7 name SS1-LS1
+
+- onos:routes
+  - route-add
+  - route-remove
+
+
