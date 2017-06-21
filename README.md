@@ -217,6 +217,9 @@ default
 - OpenFlow Provider (for OpenFlow Controller) --> Optical inforamtion model
 - Network Config Link Provider (for auto regi links)
 - Host Location Provider (for auto regi host from ARP)
+- SDN-IP Reactive Forwarding App --> SDN-IP
+  ( handle cases at least one host is with Local SDN; https://wiki.onosproject.org/display/ONOS/SDN-IP+Reactive+Routing )
+
 
 ### Critical Applications
 - Default device drivers
