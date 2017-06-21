@@ -210,7 +210,13 @@ default
    - Packet In/Out are available
 
 
-## Reference ONOS App
+## Reference ONOS Apps
+
+### GUI Applications Page Activation Steps:
+- Default device drivers (default Run)
+- OpenFlow Provider (for OpenFlow Controller) --> Optical inforamtion model
+- Network Config Link Provider (for auto regi links)
+- Host Location Provider (for auto regi host from ARP)
 
 ### Critical Applications
 - Default device drivers
