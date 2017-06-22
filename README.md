@@ -204,17 +204,17 @@ ONOS SDN-IP Network Configuration Service config: network-cfg.json
   with valid route ip configed as interfaces value
 
 
-1. Inter Leaf Switch Forwarding (via Spine Switch)
-- SDN-IP Reactive Forwarding App
-  - handles inter switch (hnx--hmx) routing by adding host intents
-  - reactiveRoutings ip4LocalPrefixes of type PRIVATE only
-  - TO CHECK: ECMP handling for SL-SS allocation per host intents compile
-
-2. Intra Leaf Switch Forwarding
+1. Intra Leaf Switch Forwarding
 - VLAN L2 Broadcast Network App (VPLS)
   - add name per each ports
   - add config per vpls and it's port names in vpls app config
   - ?? vpls seems to applied when netcfg loaded after VPLS app started
+
+2. Inter Leaf Switch Forwarding (via Spine Switch)
+- SDN-IP Reactive Forwarding App
+  - handles inter switch (hnx--hmx) routing by adding host intents
+  - reactiveRoutings ip4LocalPrefixes of type PRIVATE only
+  - TO CHECK: ECMP handling for SL-SS allocation per host intents compile
 
 3. External Forwarding (via Spine Switch and External Router)
 - NOT CHECKED YET
@@ -248,6 +248,10 @@ ONOS SDN-IP Network Configuration Service config: network-cfg.json
   - handle cases at least one host is with Local SDN
   - handle ARP on virtual router ip
   - NO hanndling on ICMP on router ip  
+- VLAN L2 Broadcast Network Appp (VPLS)
+  - https://wiki.onosproject.org/display/ONOS/Virtual+Private+LAN+Service+-+VPLS
+  - to handle L2 switch local broadcast/unicast
+  - may configure to include multiple switches
 
 ### Critical Applications
 - Default device drivers
