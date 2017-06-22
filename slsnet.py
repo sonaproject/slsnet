@@ -16,12 +16,12 @@ net = Mininet()
 # Add leaf switch and hosts in rack 1
 # subnet: 10.0.1.0/24
 s10 = net.addSwitch('s10')  #ip='10.0.1.1'
-h11 = net.addHost('h11', ip='10.0.1.11')
-h12 = net.addHost('h12', ip='10.0.1.12')
-h13 = net.addHost('h13', ip='10.0.1.13')
-h14 = net.addHost('h14', ip='10.0.1.14')
-d11 = net.addHost('d11', ip='10.0.1.111')
-d12 = net.addHost('d12', ip='10.0.1.112')
+h11 = net.addHost('h11', ip='10.0.1.11/24', defaultRouter='via 10.0.1.1')
+h12 = net.addHost('h12', ip='10.0.1.12/24', defaultRouter='via 10.0.1.1')
+h13 = net.addHost('h13', ip='10.0.1.13/24', defaultRouter='via 10.0.1.1')
+h14 = net.addHost('h14', ip='10.0.1.14/24', defaultRouter='via 10.0.1.1')
+d11 = net.addHost('d11', ip='10.0.1.111/24', defaultRouter='via 10.0.1.1')
+d12 = net.addHost('d12', ip='10.0.1.112/24', defaultRouter='via 10.0.1.1')
 net.addLink(s10, h11)
 net.addLink(s10, h12)
 net.addLink(s10, h13)
@@ -32,12 +32,12 @@ net.addLink(s10, d12)
 # Add leaf switch and hosts in rack 2
 # subnet: 10.0.2.0/24
 s20 = net.addSwitch('s20') #ip='10.0.2.1'
-h21 = net.addHost('h21', ip='10.0.2.21')
-h22 = net.addHost('h22', ip='10.0.2.22')
-h23 = net.addHost('h23', ip='10.0.2.23')
-h24 = net.addHost('h24', ip='10.0.2.24')
-d21 = net.addHost('d21', ip='10.0.2.221')
-d22 = net.addHost('d22', ip='10.0.2.222')
+h21 = net.addHost('h21', ip='10.0.2.21/24', defaultRouter='via 10.0.2.1')
+h22 = net.addHost('h22', ip='10.0.2.22/24', defaultRouter='via 10.0.2.1')
+h23 = net.addHost('h23', ip='10.0.2.23/24', defaultRouter='via 10.0.2.1')
+h24 = net.addHost('h24', ip='10.0.2.24/24', defaultRouter='via 10.0.2.1')
+d21 = net.addHost('d21', ip='10.0.2.221/24', defaultRouter='via 10.0.2.1')
+d22 = net.addHost('d22', ip='10.0.2.222/24', defaultRouter='via 10.0.2.1')
 net.addLink(s20, h21)
 net.addLink(s20, h22)
 net.addLink(s20, h23)
@@ -55,8 +55,8 @@ net.addLink(ss2, s10)
 net.addLink(ss2, s20)
 
 # Add External Router
-h31 = net.addHost('h31', ip='10.1.0.1')
-h32 = net.addHost('h32', ip='10.1.0.2')
+h31 = net.addHost('h31', ip='10.0.0.1')
+h32 = net.addHost('h32', ip='10.0.0.2')
 net.addLink(ss1, h31);
 net.addLink(ss2, h32);
 
