@@ -113,14 +113,18 @@ Logical Switch Context
 1. L2 Unicast Handling for Hnm (Output to Learned Port or Flood)
 2. L2 Broadcast Handling
 3. ARP Learning for Hnm MAC and IP Learning
-4. Handle ARP Request/Response for LSn's IP as Hnm's Subnet Gateway; consider Proxy ARP/NDP App
+   - Host Location Provider registeres Hosts Info from ARP, NDP or DHCP
+4. Handle ARP Request/Response for LSn's IP as Hnm's Subnet Gateway
+   - CONSIDER: Proxy ARP/NDP App
 5. on dst_mac=LSn, L3 Route to Hnm, (src_mac<-LSn, dst_mac<=Hnm)
 6. on dst_mac=LSn, L3 Route to SSm for non-Subnet IPs (src_mac<-LSn, dst_mac=SSm)
    with Load Balancing on SS's
 
 ### Spine Switch [SSn]
 1. Do ARP Request on EH1 IP and Learn EH1 Mac and IP from ARP response
+   - SEE: Host Location Provider's private sendProve()
 2. Handle ARP Request/Response for SSn's IP for EH1's Request
+   - CONSIDER: Proxy ARP/NDP App
 3. on dst_mac=SSn, L3 Route to LSm for each subnets (src_mac<-SSn,dst_mac<-LSm)
 4. on dst_mac=SSn, L3 Route to EH1 as defaut route (src_mac<-SSn,dst_mac<-EHn)
 
@@ -206,7 +210,16 @@ default
    - Packet In/Out are available
 
 
-## Reference ONOS App
+## Reference ONOS Apps
+
+### GUI Applications Page Activation Steps:
+- Default device drivers (default Run)
+- OpenFlow Provider (for OpenFlow Controller) --> Optical inforamtion model
+- Network Config Link Provider (for auto regi links)
+- Host Location Provider (for auto regi host from ARP)
+- SDN-IP Reactive Forwarding App --> SDN-IP
+  ( handle cases at least one host is with Local SDN; https://wiki.onosproject.org/display/ONOS/SDN-IP+Reactive+Routing )
+
 
 ### Critical Applications
 - Default device drivers
@@ -214,17 +227,17 @@ default
 - Flow specification Device Drivers
 - Flowspec API
 - Intent Synchronizer
-- Host Location Provider (for auto Regi/Deregi Host may be from ARP)
+- **Host Location Provider** (for auto Regi/Deregi Host from ARP/NDP/DHCP)
 - Network Config Link Provider (for auto Regi/Deregi Links)
-- OpenFlow Agent App 
-- OpenFlow Provider (for OpenFlow Switch Connect)
+- OpenFlow Agent App
+- **OpenFlow Provider** (for OpenFlow Switch Connect)
 - Optical information model (for OpenFlow privider)
 
 ### Reference for SLSNET Developement
 - Path Visualization App (might be omitted)
 - FIB installler App
 - Fault Managemnet App
-- Proxy ARP/NDP App
+- **Proxy ARP/NDP App** (registers DefaultNeighbourMessageHandler() on Edge ports)
 - Reactive Forwarding App
 - Virtual Router App
 - Link Dicovery Provider
