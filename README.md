@@ -232,9 +232,10 @@ ONOS SDN-IP Network Configuration Service config: network-cfg.json
 
 ## Reference ONOS Apps
 
-### Apps to Activate (GUI Applications Page)
+### Apps to Activate for SDN-IP Reactive Forwarding
 - Default device drivers (default Run)
 - OpenFlow Provider (for OpenFlow Controller) --> Optical inforamtion model
+- Network Config Host Provider (to handle hosts network config)
 - Network Config Link Provider (for auto regi links)
 - Host Location Provider (for auto regi host from ARP)
 - SDN-IP Reactive Forwarding App --> SDN-IP
@@ -242,7 +243,6 @@ ONOS SDN-IP Network Configuration Service config: network-cfg.json
   - handle cases at least one host is with Local SDN
   - handle ARP on virtual router ip
   - NO hanndling on ICMP on router ip  
-- Network Config Host Provider (to handle hosts network config)
 
 ### Critical Applications
 - Default device drivers
@@ -269,3 +269,4 @@ ONOS SDN-IP Network Configuration Service config: network-cfg.json
 - LLDB Link Provider
 - Network Config Host Provider
 - OpenFlow Provider
+
