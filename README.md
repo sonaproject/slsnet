@@ -203,17 +203,23 @@ ONOS SDN-IP Network Configuration Service config: network-cfg.json
 - port.{device_id}.interfaces must be set for all host ports
   with valid route ip configed as interfaces value
 
+
 1. Inter Leaf Switch Forwarding (via Spine Switch)
-- SDN-IP Reactive Forwarding handles inter switch (hnx--hmx) routing
-  by adding host intents
-- reactiveRoutings ip4LocalPrefixes of type PRIVATE only
-- TO CHECK: ECMP handling for SL-SS allocation per host intents compile
+- SDN-IP Reactive Forwarding App
+  - handles inter switch (hnx--hmx) routing by adding host intents
+  - reactiveRoutings ip4LocalPrefixes of type PRIVATE only
+  - TO CHECK: ECMP handling for SL-SS allocation per host intents compile
 
 2. Intra Leaf Switch Forwarding
-- NOT HANDLED by SDN-IP Reactive Forwarding
+- VLAN L2 Broadcast Network App (VPLS)
+  - add name per each ports
+  - add config per vpls and it's port names in vpls app config
+  - ?? vpls seems to applied when netcfg loaded after VPLS app started
 
 3. External Forwarding (via Spine Switch and External Router)
 - NOT CHECKED YET
+
+
 
 [DEPRECATED] Config Items
 - per LS Device ID
@@ -235,10 +241,9 @@ ONOS SDN-IP Network Configuration Service config: network-cfg.json
 ### Apps to Activate for SDN-IP Reactive Forwarding
 - Default device drivers (default Run)
 - OpenFlow Provider (for OpenFlow Controller) --> Optical inforamtion model
-- Network Config Host Provider (to handle hosts network config)
 - Network Config Link Provider (for auto regi links)
 - Host Location Provider (for auto regi host from ARP)
-- SDN-IP Reactive Forwarding App --> SDN-IP
+- SDN-IP Reactive Forwarding App --> SDN-IP, Intent Synchronizer
   - https://wiki.onosproject.org/display/ONOS/SDN-IP+Reactive+Routing
   - handle cases at least one host is with Local SDN
   - handle ARP on virtual router ip
@@ -266,7 +271,7 @@ ONOS SDN-IP Network Configuration Service config: network-cfg.json
 - Link Dicovery Provider
 - Host Location Provider
 - Network Config Host Provider
+  --> seems not working good with SDN-IP Reactive Forwarding
 - LLDB Link Provider
-- Network Config Host Provider
 - OpenFlow Provider
 
