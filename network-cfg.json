@@ -1,0 +1,120 @@
+{
+
+  "devices":{
+    "of:0000000000000001":{
+      "basic":{
+        "name":"SS1",
+        "latitude":40,
+        "longitude":-100
+      }
+    },
+    "of:0000000000000002":{
+      "basic":{
+        "name":"SS2",
+        "latitude":40,
+        "longitude":-90
+      }
+    },
+    "of:000000000000000a":{
+      "basic":{
+        "name":"LS1",
+        "latitude":35,
+        "longitude":-100
+      }
+    },
+    "of:0000000000000014":{
+      "basic":{
+        "name":"LS2",
+        "latitude":35,
+        "longitude":-90
+      }
+    }
+  },
+
+  "ports" : {
+      "of:0000000000000001/3" : {
+          "interfaces" : [
+              {
+                  "ips"  : [ "10.0.0.10/24" ],
+                  "mac"  : "00:00:00:00:00:01"
+              }
+          ]
+      },
+      "of:0000000000000002/3" : {
+          "interfaces" : [
+              {
+                  "ips"  : [ "10.0.0.20/24" ],
+                  "mac"  : "00:00:00:00:00:01"
+              }
+          ]
+      },
+      "of:000000000000000a/1" : {
+          "interfaces" : [
+              {
+                  "ips"  : [ "10.0.1.1/24" ],
+                  "mac"  : "00:00:00:00:00:01"
+              }
+          ]
+      },
+      "of:0000000000000014/1" : {
+          "interfaces" : [
+              {
+                  "ips"  : [ "10.0.2.1/24" ],
+                  "mac"  : "00:00:00:00:00:01"
+              }
+          ]
+      }
+  },
+
+  "hosts":{
+    "B2:83:F9:6D:76:77/-1":{
+      "basic":{
+        "uiType":"router",
+        "latitude":42.512684,
+        "longitude":-126.4902853,
+        "ips":[
+          "10.0.0.1"
+        ]
+      }
+    },
+    "46:70:73:DB:A5:1F/-1":{
+      "basic":{
+        "uiType":"router",
+        "latitude":41.3851357,
+        "longitude":-126.4902853,
+        "ips":[
+          "10.0.0.2"
+        ]
+      }
+    }
+  },
+
+  "apps" : {
+    "org.onosproject.reactive.routing" : {
+      "reactiveRouting" : {
+        "ip4LocalPrefixes" : [
+           {
+             "ipPrefix" : "10.0.0.0/24",
+             "type" : "PUBLIC",
+             "gatewayIp" : "10.0.0.1"
+           },
+           {
+             "ipPrefix" : "10.0.1.0/24",
+             "type" : "PRIVATE",
+             "gatewayIp" : "10.0.1.1"
+           },
+           {
+             "ipPrefix" : "10.0.2.0/24",
+             "type" : "PRIVATE",
+             "gatewayIp" : "10.0.1.14"
+           }
+        ],
+        "ip6LocalPrefixes" : [
+        ],
+        "virtualGatewayMacAddress" : "00:00:00:00:00:01"
+      }
+    }
+  }
+
+}
+
