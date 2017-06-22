@@ -133,9 +133,85 @@ Logical Switch Context
 4. on SSn-EH1 link failed, LSx forward to other SS EH1 link available
 
 
+## ONOS Application Activation
 
-## OpenFlow Flow Entries and Controller Actions 
+- Default device drivers (default Run)
+- OpenFlow Provider (for OpenFlow Controller) --> Optical inforamtion model
+- Network Config Link Provider (for auto regi links)
+- Host Location Provider (for auto regi host from ARP)
+- SDN-IP Reactive Forwarding App --> SDN-IP, Intent Synchronizer
+  - https://wiki.onosproject.org/display/ONOS/SDN-IP+Reactive+Routing
+  - handle cases at least one host is with Local SDN
+  - handle ARP on virtual router ip
+  - NO hanndling on ICMP on router ip  
+- VLAN L2 Broadcast Network Appp (VPLS)
+  - https://wiki.onosproject.org/display/ONOS/Virtual+Private+LAN+Service+-+VPLS
+  - to handle L2 switch local broadcast/unicast
+  - may configure to include multiple switches
+
+
+## ONOS Configuration
+
+ONOS SDN-IP Network Configuration Service config: network-cfg.json 
+- to clean: onos-netcfg localhost delete
+- to update: onos-netcfg localhost network-cfg.json
+  - each call updates loaded network config (onos netcfg to see loaded config)
+  - updated values are immediately applied to existing entries
+- hosts.basic.location value is not allowed
+- port.{device_id}.interfaces must be set for all host ports
+  with valid route ip configed as interfaces value
+
+
+### 1. Intra Leaf Switch Forwarding
+VLAN L2 Broadcast Network App (VPLS)
+- add name per each ports
+- add config per vpls and it's port names in vpls app config
+- ?? vpls seems to applied when netcfg loaded after VPLS app started
+
+### 2. Inter Leaf Switch Forwarding (via Spine Switch)
+SDN-IP Reactive Forwarding App
+- handles inter switch (hnx--hmx) routing by adding host intents
+- reactiveRoutings ip4LocalPrefixes of type PRIVATE only
+- TO CHECK: ECMP handling for SL-SS allocation per host intents compile
+
+### 3. External Forwarding (via Spine Switch and External Router)
+NOT CHECKED YET
+
+
+
+## Reference ONOS Apps
+
+### Critical Applications
+- Default device drivers
+- Flow Space Analysis App
+- Flow specification Device Drivers
+- Flowspec API
+- Intent Synchronizer
+- Host Location Provider (for auto Regi/Deregi Host from ARP/NDP/DHCP)
+- Network Config Link Provider (for auto Regi/Deregi Links)
+- OpenFlow Agent App
+- OpenFlow Provider (for OpenFlow Switch Connect)
+- Optical information model (for OpenFlow privider)
+
+### Reference for SLSNET Developement
+- Path Visualization App (might be omitted)
+- FIB installler App
+- Fault Managemnet App
+- Proxy ARP/NDP App (for all flag L2 model, edge ports)
+- Reactive Forwarding App
+- Virtual Router App
+- Link Dicovery Provider
+- Host Location Provider
+- Network Config Host Provider
+  --> seems not working good with SDN-IP Reactive Forwarding
+- LLDB Link Provider
+- OpenFlow Provider
+
+
+
+## [DEPRECATE] OpenFlow Flow Entries and Controller Actions 
 for `Cisco Nexus 3172PQ` as Leaf Switch for ECMP and HA
+
 
 ### Leaf Switch LSn
 
@@ -191,91 +267,19 @@ default
 - LSn's and SSm's mac are known by configuration
   or use Device Info's port MACs for each link
 
-
-## Configuration
-
-ONOS SDN-IP Network Configuration Service config: network-cfg.json 
-- to clean: onos-netcfg localhost delete
-- to update: onos-netcfg localhost network-cfg.json
-  - each call updates loaded network config (onos netcfg to see loaded config)
-  - updated values are immediately applied to existing entries
-- hosts.basic.location value is not allowed
-- port.{device_id}.interfaces must be set for all host ports
-  with valid route ip configed as interfaces value
-
-
-1. Intra Leaf Switch Forwarding
-- VLAN L2 Broadcast Network App (VPLS)
-  - add name per each ports
-  - add config per vpls and it's port names in vpls app config
-  - ?? vpls seems to applied when netcfg loaded after VPLS app started
-
-2. Inter Leaf Switch Forwarding (via Spine Switch)
-- SDN-IP Reactive Forwarding App
-  - handles inter switch (hnx--hmx) routing by adding host intents
-  - reactiveRoutings ip4LocalPrefixes of type PRIVATE only
-  - TO CHECK: ECMP handling for SL-SS allocation per host intents compile
-
-3. External Forwarding (via Spine Switch and External Router)
-- NOT CHECKED YET
-
-
-
-[DEPRECATED] Config Items
+### Config Items
 - per LS Device ID
-  { vIP, vMAC, {ports for SSn}, ports for Hm }
+    { vIP, vMAC, {ports for SSn}, ports for Hm }
 - per SS Device ID
-  { vIP, vMAC, {ports for LSn}, port for EHn }
+    { vIP, vMAC, {ports for LSn}, port for EHn }
 - consider ports for SSn and LSm MAY BE auto detected using ONOS Application:
-  Link Discovery Provider 
+    Link Discovery Provider 
 - LSn is mapped 1:1 to subnet 
-  (do not consider 1:n or n:1 case for now)
+    (do not consider 1:n or n:1 case for now)
 - Assume OpenFlow switch with constraints:
-   - 1 flow table only
-   - no group table
-   - Packet In/Out are available
+    - 1 flow table only
+    - no group table
+    - Packet In/Out are available
 
 
-## Reference ONOS Apps
-
-### Apps to Activate for SDN-IP Reactive Forwarding
-- Default device drivers (default Run)
-- OpenFlow Provider (for OpenFlow Controller) --> Optical inforamtion model
-- Network Config Link Provider (for auto regi links)
-- Host Location Provider (for auto regi host from ARP)
-- SDN-IP Reactive Forwarding App --> SDN-IP, Intent Synchronizer
-  - https://wiki.onosproject.org/display/ONOS/SDN-IP+Reactive+Routing
-  - handle cases at least one host is with Local SDN
-  - handle ARP on virtual router ip
-  - NO hanndling on ICMP on router ip  
-- VLAN L2 Broadcast Network Appp (VPLS)
-  - https://wiki.onosproject.org/display/ONOS/Virtual+Private+LAN+Service+-+VPLS
-  - to handle L2 switch local broadcast/unicast
-  - may configure to include multiple switches
-
-### Critical Applications
-- Default device drivers
-- Flow Space Analysis App
-- Flow specification Device Drivers
-- Flowspec API
-- Intent Synchronizer
-- Host Location Provider (for auto Regi/Deregi Host from ARP/NDP/DHCP)
-- Network Config Link Provider (for auto Regi/Deregi Links)
-- OpenFlow Agent App
-- OpenFlow Provider (for OpenFlow Switch Connect)
-- Optical information model (for OpenFlow privider)
-
-### Reference for SLSNET Developement
-- Path Visualization App (might be omitted)
-- FIB installler App
-- Fault Managemnet App
-- Proxy ARP/NDP App (for all flag L2 model, edge ports)
-- Reactive Forwarding App
-- Virtual Router App
-- Link Dicovery Provider
-- Host Location Provider
-- Network Config Host Provider
-  --> seems not working good with SDN-IP Reactive Forwarding
-- LLDB Link Provider
-- OpenFlow Provider
 
