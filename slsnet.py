@@ -56,7 +56,7 @@ net.addLink(ss2, s20)
 
 # Add External Router
 h31 = net.addHost('h31', ip='10.0.0.1')
-h32 = net.addHost('h32', ip='10.0.0.2')
+h32 = net.addHost('h32', ip='10.0.0.1')
 net.addLink(ss1, h31);
 net.addLink(ss2, h32);
 
