@@ -103,8 +103,6 @@ Logical Switch Context
 1. LSn and HnN are in same subnet Nn
 2. LSn acts as L2 switch for Hnm and L3 Subnet Router for Hnm  
 3. SSn acts as inter-Subnet L3 Router for LSns and Use EH1 as Default Router
-  - consider Network Config Host Provider
-  - consider Network Config Link Provider
 
 
 ## Features
@@ -196,6 +194,34 @@ default
 
 ## Configuration
 
+ONOS SDN-IP Network Configuration Service config: network-cfg.json 
+- to clean: onos-netcfg localhost delete
+- to update: onos-netcfg localhost network-cfg.json
+  - each call updates loaded network config (onos netcfg to see loaded config)
+  - updated values are immediately applied to existing entries
+- hosts.basic.location value is not allowed
+- port.{device_id}.interfaces must be set for all host ports
+  with valid route ip configed as interfaces value
+
+
+1. Inter Leaf Switch Forwarding (via Spine Switch)
+- SDN-IP Reactive Forwarding App
+  - handles inter switch (hnx--hmx) routing by adding host intents
+  - reactiveRoutings ip4LocalPrefixes of type PRIVATE only
+  - TO CHECK: ECMP handling for SL-SS allocation per host intents compile
+
+2. Intra Leaf Switch Forwarding
+- VLAN L2 Broadcast Network App (VPLS)
+  - add name per each ports
+  - add config per vpls and it's port names in vpls app config
+  - ?? vpls seems to applied when netcfg loaded after VPLS app started
+
+3. External Forwarding (via Spine Switch and External Router)
+- NOT CHECKED YET
+
+
+
+[DEPRECATED] Config Items
 - per LS Device ID
   { vIP, vMAC, {ports for SSn}, ports for Hm }
 - per SS Device ID
@@ -212,14 +238,16 @@ default
 
 ## Reference ONOS Apps
 
-### GUI Applications Page Activation Steps:
+### Apps to Activate for SDN-IP Reactive Forwarding
 - Default device drivers (default Run)
 - OpenFlow Provider (for OpenFlow Controller) --> Optical inforamtion model
 - Network Config Link Provider (for auto regi links)
 - Host Location Provider (for auto regi host from ARP)
-- SDN-IP Reactive Forwarding App --> SDN-IP
-  ( handle cases at least one host is with Local SDN; https://wiki.onosproject.org/display/ONOS/SDN-IP+Reactive+Routing )
-
+- SDN-IP Reactive Forwarding App --> SDN-IP, Intent Synchronizer
+  - https://wiki.onosproject.org/display/ONOS/SDN-IP+Reactive+Routing
+  - handle cases at least one host is with Local SDN
+  - handle ARP on virtual router ip
+  - NO hanndling on ICMP on router ip  
 
 ### Critical Applications
 - Default device drivers
@@ -227,22 +255,23 @@ default
 - Flow specification Device Drivers
 - Flowspec API
 - Intent Synchronizer
-- **Host Location Provider** (for auto Regi/Deregi Host from ARP/NDP/DHCP)
+- Host Location Provider (for auto Regi/Deregi Host from ARP/NDP/DHCP)
 - Network Config Link Provider (for auto Regi/Deregi Links)
 - OpenFlow Agent App
-- **OpenFlow Provider** (for OpenFlow Switch Connect)
+- OpenFlow Provider (for OpenFlow Switch Connect)
 - Optical information model (for OpenFlow privider)
 
 ### Reference for SLSNET Developement
 - Path Visualization App (might be omitted)
 - FIB installler App
 - Fault Managemnet App
-- **Proxy ARP/NDP App** (registers DefaultNeighbourMessageHandler() on Edge ports)
+- Proxy ARP/NDP App (for all flag L2 model, edge ports)
 - Reactive Forwarding App
 - Virtual Router App
 - Link Dicovery Provider
 - Host Location Provider
 - Network Config Host Provider
+  --> seems not working good with SDN-IP Reactive Forwarding
 - LLDB Link Provider
-- Network Config Host Provider
 - OpenFlow Provider
+
