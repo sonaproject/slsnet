@@ -48,15 +48,17 @@ net.addLink(s20, d22)
 # Add spine switches and nat
 # subnet: 10.0.0.0/16
 ss1 = net.addSwitch('ss1')  #ip='10.0.0.10'
-ss2 = net.addSwitch('ss2')  #ip='10.0.0.20'
+ss2 = net.addSwitch('ss2')  #ip='10.0.0.10'
 net.addLink(ss1, s10)
 net.addLink(ss1, s20)
 net.addLink(ss2, s10)
 net.addLink(ss2, s20)
 
 # Add External Router
-h31 = net.addHost('h31', ip='10.0.0.1/24')
-h32 = net.addHost('h32', ip='10.0.0.2/24')
+h31 = net.addHost('h31', ip='10.0.0.31/24', defaultRoute='via 10.0.0.10',
+                  mac= '00:00:00:00:03:01')
+h32 = net.addHost('h32', ip='10.0.0.32/24', defaultRoute='via 10.0.0.10',
+                  mac= '00:00:00:00:03:02')
 net.addLink(ss1, h31);
 net.addLink(ss2, h32);
 
@@ -68,10 +70,10 @@ setLogLevel('info')
 net.start()
 
 # reveal hosts to switches
-for h in [h11, h12, h13, h14, d11, d12] :
-    net.ping(hosts=[h, h31], timeout='1')
-for h in [h21, h22, h23, h24, d21, d22] :
-    net.ping(hosts=[h, h32], timeout='1')
+#for h in [h11, h12, h13, h14, d11, d12] :
+#  net.ping(hosts=[h, h31], timeout='2')
+#for h in [h21, h22, h23, h24, d21, d22] :
+#  net.ping(hosts=[h, h32], timeout='2')
 
 # do interactive shell
 CLI(net)
