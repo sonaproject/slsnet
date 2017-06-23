@@ -284,8 +284,8 @@ SDN-IP Reactive Forwarding App
 Use ONOS Incubator API/Command routes/route-add which affect SND-IP Intents generation for local-external traffic
 - register default route with onos cli route command: `onos -lonos 'route-add 0.0.0.0/0 10.0.0.31'`
   - to show route table: `onos -lonos routes`    
-- cf. if ip4LocalPrifixes are used for default route, intents for every external hosts are installed
-  `{ "ipPrefix" : "0.0.0.0/0", "type" : "PRIVATE", "gatewayIp" : "10.0.0.31" }`
+- [SHOULD NOT] if ip4LocalPrifixes are used for default route, intents for every external hosts are installed
+  - `{ "ipPrefix" : "0.0.0.0/0", "type" : "PRIVATE", "gatewayIp" : "10.0.0.31" }`
 
 
 ## Reference ONOS Apps
