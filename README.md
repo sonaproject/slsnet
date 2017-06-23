@@ -154,14 +154,12 @@ Logical Switch Context
 
 ## ONOS Configuration
 
-ONOS SDN-IP Network Configuration Service: network-cfg.json 
-- to clean: onos-netcfg localhost delete
-- to update: onos-netcfg localhost network-cfg.json
+ONOS SDN-IP Network Configuration Service: [`network-cfg.json`](network-cfg.json)
+- to clean: `onos-netcfg localhost delete`
+- to update: `onos-netcfg localhost network-cfg.json`
   - each call updates loaded network config (onos netcfg to see loaded config)
   - updated values are immediately applied to existing entries
 - hosts.basic.location value is not allowed
-- port.{device_id}.interfaces must be set for all host ports
-  with valid route ip configed as interfaces value
 
 ### 0. Lock down links by Network Config
 Network Config Link Provider 
@@ -224,6 +222,8 @@ VLAN L2 Broadcast Network App (VPLS)
 ### 2. Inter Leaf Switch Forwarding (via Spine Switch)
 SDN-IP Reactive Forwarding App
 - handles inter switch (hnx--hmx) routing by adding host intents
+- port.{device_id}.interfaces must be set for all host ports
+  with valid route ip configed as interfaces value
 - reactiveRoutings ip4LocalPrefixes of type PRIVATE only
 - TO CHECK: ECMP handling for SL-SS allocation per host intents compile
 
