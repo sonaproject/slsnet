@@ -182,7 +182,7 @@ NOT CHECKED YET
 ### May Lock down links by netcfg
 - Network Config Link Provider 
   may lock down topology and prevent unexpected link usage:
-```:json
+```json
   "links" : {
     "of:0000000000000001/1-of:000000000000000a/7" : { "basic" : {} },
     "of:0000000000000001/2-of:0000000000000014/7" : { "basic" : {} },
