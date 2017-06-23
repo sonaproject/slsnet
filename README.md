@@ -137,8 +137,11 @@ Logical Switch Context
 
 - Default device drivers (default Run)
 - OpenFlow Provider (for OpenFlow Controller) --> Optical inforamtion model
-- Network Config Link Provider (for auto regi links)
 - Host Location Provider (for auto regi host from ARP)
+- Network Config Link Provider (for auto regi links)
+  - https://wiki.onosproject.org/display/ONOS/Network+Config+Link+Provider
+  - do netcfg links and prevent unexpected links
+  - auto Regi/Deregi Links
 - SDN-IP Reactive Forwarding App --> SDN-IP, Intent Synchronizer
   - https://wiki.onosproject.org/display/ONOS/SDN-IP+Reactive+Routing
   - handle cases at least one host is with Local SDN
@@ -152,7 +155,7 @@ Logical Switch Context
 
 ## ONOS Configuration
 
-ONOS SDN-IP Network Configuration Service config: network-cfg.json 
+ONOS SDN-IP Network Configuration Service: network-cfg.json 
 - to clean: onos-netcfg localhost delete
 - to update: onos-netcfg localhost network-cfg.json
   - each call updates loaded network config (onos netcfg to see loaded config)
@@ -161,6 +164,9 @@ ONOS SDN-IP Network Configuration Service config: network-cfg.json
 - port.{device_id}.interfaces must be set for all host ports
   with valid route ip configed as interfaces value
 
+**Network Config Link Provider**
+- to lock down topology and prevent unexpected link usage
+- links netcfg and prevent unexpected links by config linkDiscoveryMode=STRICT
 
 ### 1. Intra Leaf Switch Forwarding
 VLAN L2 Broadcast Network App (VPLS)
