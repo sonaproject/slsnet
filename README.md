@@ -170,13 +170,12 @@ VLAN L2 Broadcast Network App (VPLS)
 - **ISSUE: VPLS seems to applied when netcfg loaded after VPLS app started !!!**
 
 ```
-  {
-    "ports" : {
-      ... port : interfaces : "name" : {name for VPLS} ...
-    },
+  "ports" : {
+    ... port : interfaces : "name" : {name for VPLS} ...
+  },
     
-    "apps" : {
-        "org.onosproject.vpls" : {
+  "apps" : {
+    "org.onosproject.vpls" : {
       "vpls" : {
         "vplsList" : [
           { "name" : "VPLS1", "interfaces" : ["h11", "h12", "h13", "h14", "d11", "d12" ] },
@@ -254,7 +253,6 @@ NOT CHECKED YET
   may lock down topology and prevent unexpected link usage:
 
 ```
-{
   "links" : {
     "of:0000000000000001/1-of:000000000000000a/7" : { "basic" : {} },
     "of:0000000000000001/2-of:0000000000000014/7" : { "basic" : {} },
@@ -266,12 +264,12 @@ NOT CHECKED YET
     "of:0000000000000001/8-of:0000000000000002/1" : { "basic" : {} },
     "of:0000000000000014/8-of:0000000000000002/2" : { "basic" : {} }
   },
+  
   "apps" : {
     "org.onosproject.core" : {
       "core" : { "linkDiscoveryMode" : "STRICT" }
     }
   }
-}
 ```
 
 ## Reference ONOS Apps
@@ -375,6 +373,3 @@ default
     - 1 flow table only
     - no group table
     - Packet In/Out are available
-
-
-
