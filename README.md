@@ -32,7 +32,7 @@ from: 정종식
 - 시스코 스위치가 OpenFlow 1.3을 지원하지만 multi-table은 지원하지 않고 single table만 지원할 가능성이 높음
 - 이 경우 ECMP 지원은 불가능함
  
-```
+```txt
 Device# show openflow switch 1
 
 Logical Switch Context
@@ -84,9 +84,10 @@ Logical Switch Context
 
 ## Topology
 
-```
+```txt
        EH1
       /   \
+     /     \
   [SS1]   [SS2]
     |  \ /  |
     |   X   |
@@ -100,9 +101,25 @@ Logical Switch Context
    +- D12  +- D22
 ```
 
-1. LSn and HnN are in same subnet Nn
-2. LSn acts as L2 switch for Hnm and L3 Subnet Router for Hnm  
-3. SSn acts as inter-Subnet L3 Router for LSns and Use EH1 as Default Router
+Mininet topology model: [`slsnet.py`]
+```txt
+   h31     h32
+    |       |
+  [ss1]   [ss2]
+    |  \ /  |
+    |   X   |
+    |  / \  |
+  [s10]   [s20]
+   +- h11  +- h21
+   +- h12  +- h22
+   +- h13  +- h23
+   +- h14  +- h24
+   +- d11  +- h21
+   +- d12  +- h22
+```
+
+- LSn acts as L2 switch for Hnm and L3 Subnet Router for Hnm  
+- SSn acts as inter-Subnet L3 Router for LSns and Use EH1 as Default Router
 
 
 ## Features
@@ -165,7 +182,7 @@ ONOS SDN-IP Network Configuration Service: [`network-cfg.json`](network-cfg.json
 Network Config Link Provider 
   may lock down topology and prevent unexpected link usage:
 
-```
+```txt
   "links" : {
     "of:0000000000000001/1-of:000000000000000a/7" : { "basic" : {} },
     "of:0000000000000001/2-of:0000000000000014/7" : { "basic" : {} },
@@ -228,7 +245,7 @@ SDN-IP Reactive Forwarding App
 - TO CHECK: ECMP handling for SL-SS allocation per host intents compile
 - **ISSUE: sometimes reactive forwarding seems not working; intents not installed**
 
-```
+```txt
   "devices":{
     "of:0000000000000001":{ "basic":{ "name":"SS1", "latitude":40, "longitude":-100 } },
     "of:0000000000000002":{ "basic":{ "name":"SS2", "latitude":40, "longitude":-90  } },
@@ -285,7 +302,8 @@ Use ONOS Incubator API/Command routes/route-add which affect SND-IP Intents gene
 - register default route with onos cli route command: `onos -lonos 'route-add 0.0.0.0/0 10.0.0.31'`
   - to show route table: `onos -lonos routes`
   - Password authentication
-```
+
+```txt
 Password: 
 Table: ipv4
     Network            Next Hop        Source (Node)
@@ -296,7 +314,8 @@ Table: ipv6
     Network            Next Hop        Source (Node)
    Total: 0
 ```
-- [SHOULD NOT] if ip4LocalPrifixes are used for default route, intents for every external hosts are installed
+
+- - [SHOULD NOT] if ip4LocalPrifixes are used for default route, intents for every external hosts are installed
   - `{ "ipPrefix" : "0.0.0.0/0", "type" : "PRIVATE", "gatewayIp" : "10.0.0.31" }`
 
 
