@@ -138,9 +138,8 @@ Logical Switch Context
 - Default device drivers (default Run)
 - OpenFlow Provider (for OpenFlow Controller) --> Optical inforamtion model
 - Host Location Provider (for auto regi host from ARP)
-- Network Config Link Provider (for auto regi links)
+- Network Config Link Provider
   - https://wiki.onosproject.org/display/ONOS/Network+Config+Link+Provider
-  - do netcfg links and prevent unexpected links
   - auto Regi/Deregi Links
 - SDN-IP Reactive Forwarding App --> SDN-IP, Intent Synchronizer
   - https://wiki.onosproject.org/display/ONOS/SDN-IP+Reactive+Routing
@@ -164,15 +163,11 @@ ONOS SDN-IP Network Configuration Service: network-cfg.json
 - port.{device_id}.interfaces must be set for all host ports
   with valid route ip configed as interfaces value
 
-**Network Config Link Provider**
-- to lock down topology and prevent unexpected link usage
-- links netcfg and prevent unexpected links by config linkDiscoveryMode=STRICT
-
 ### 1. Intra Leaf Switch Forwarding
 VLAN L2 Broadcast Network App (VPLS)
 - add name per each ports
 - add config per vpls and it's port names in vpls app config
-- ?? vpls seems to applied when netcfg loaded after VPLS app started
+- ISSUE: VPLS seems to applied when netcfg loaded after VPLS app started
 
 ### 2. Inter Leaf Switch Forwarding (via Spine Switch)
 SDN-IP Reactive Forwarding App
@@ -184,6 +179,27 @@ SDN-IP Reactive Forwarding App
 NOT CHECKED YET
 
 
+### May Lock down links by netcfg
+- Network Config Link Provider 
+  may lock down topology and prevent unexpected link usage:
+```:json
+  "links" : {
+    "of:0000000000000001/1-of:000000000000000a/7" : { "basic" : {} },
+    "of:0000000000000001/2-of:0000000000000014/7" : { "basic" : {} },
+    "of:0000000000000002/1-of:000000000000000a/8" : { "basic" : {} },
+    "of:0000000000000002/2-of:0000000000000014/8" : { "basic" : {} },
+
+    "of:000000000000000a/7-of:0000000000000001/1" : { "basic" : {} },
+    "of:0000000000000014/7-of:0000000000000001/2" : { "basic" : {} },
+    "of:0000000000000001/8-of:0000000000000002/1" : { "basic" : {} },
+    "of:0000000000000014/8-of:0000000000000002/2" : { "basic" : {} }
+  },
+  "apps" : {
+    "org.onosproject.core" : {
+      "core" : { "linkDiscoveryMode" : "STRICT" }
+    }
+  }
+```
 
 ## Reference ONOS Apps
 
