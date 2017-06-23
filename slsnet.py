@@ -48,7 +48,7 @@ net.addLink(s20, d22)
 # Add spine switches and nat
 # subnet: 10.0.0.0/16
 ss1 = net.addSwitch('ss1')  #ip='10.0.0.10'
-ss2 = net.addSwitch('ss2')  #ip='10.0.0.10'
+ss2 = net.addSwitch('ss2')  #ip='10.0.0.20'
 net.addLink(ss1, s10)
 net.addLink(ss1, s20)
 net.addLink(ss2, s10)
