@@ -191,7 +191,7 @@ Network Config Link Provider
 VLAN L2 Broadcast Network App (VPLS)
 - add name-only interface per each ports to handle (should be separate interface to SDN-IP's)
 - add config per vpls and it's port names in vpls app config
-- **ISSUE: VPLS seems to applied when netcfg loaded after VPLS app started !!!**
+- **ISSUE: VPLS seems to try once when Network Config is loaded: devices must be alive at the netcfg loading time !!!**
 
 ```
   "ports" : {
