@@ -226,6 +226,7 @@ SDN-IP Reactive Forwarding App
   with valid route ip configed as interfaces value
 - reactiveRoutings ip4LocalPrefixes of type PRIVATE only
 - TO CHECK: ECMP handling for SL-SS allocation per host intents compile
+- **ISSUE: sometimes reactive forwarding seems not working; intents not installed**
 
 ```
   "devices":{
