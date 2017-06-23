@@ -1,5 +1,37 @@
+# OBSOLETE Texts Archive #
 
-## [DEPRECATE] OpenFlow Flow Entries and Controller Actions 
+
+## Features
+
+### Leaf Switch [LSn]
+1. L2 Unicast Handling for Hnm (Output to Learned Port or Flood)
+2. L2 Broadcast Handling
+3. ARP Learning for Hnm MAC and IP Learning
+   - Host Location Provider registeres Hosts Info from ARP, NDP or DHCP
+4. Handle ARP Request/Response for LSn's IP as Hnm's Subnet Gateway
+   - CONSIDER: Proxy ARP/NDP App
+5. on dst_mac=LSn, L3 Route to Hnm, (src_mac<-LSn, dst_mac<=Hnm)
+6. on dst_mac=LSn, L3 Route to SSm for non-Subnet IPs (src_mac<-LSn, dst_mac=SSm)
+   with Load Balancing on SS's
+
+### Spine Switch [SSn]
+1. Do ARP Request on EH1 IP and Learn EH1 Mac and IP from ARP response
+   - SEE: Host Location Provider's private sendProve()
+2. Handle ARP Request/Response for SSn's IP for EH1's Request
+   - CONSIDER: Proxy ARP/NDP App
+3. on dst_mac=SSn, L3 Route to LSm for each subnets (src_mac<-SSn,dst_mac<-LSm)
+4. on dst_mac=SSn, L3 Route to EH1 as defaut route (src_mac<-SSn,dst_mac<-EHn)
+
+### High Avaliablility [LSn and SSn]
+1. on SSn-LSm link failed, SSn forward to other SS with SSm link available via LSx
+2. on SSn-LSm link failed, LSx forward to other SS with SSm link available
+3. on SSn-EH1 link failed, SSn forward to other SS EH1 link available via LSx
+4. on SSn-EH1 link failed, LSx forward to other SS EH1 link available
+
+
+
+
+## OpenFlow Flow Entries and Controller Actions 
 for `Cisco Nexus 3172PQ` as Leaf Switch for ECMP and HA
 
 

@@ -32,7 +32,7 @@ from: 정종식
 - 시스코 스위치가 OpenFlow 1.3을 지원하지만 multi-table은 지원하지 않고 single table만 지원할 가능성이 높음
 - 이 경우 ECMP 지원은 불가능함
  
-```
+```txt
 Device# show openflow switch 1
 
 Logical Switch Context
@@ -84,9 +84,10 @@ Logical Switch Context
 
 ## Topology
 
-```
+```txt
        EH1
       /   \
+     /     \
   [SS1]   [SS2]
     |  \ /  |
     |   X   |
@@ -100,41 +101,30 @@ Logical Switch Context
    +- D12  +- D22
 ```
 
-1. LSn and HnN are in same subnet Nn
-2. LSn acts as L2 switch for Hnm and L3 Subnet Router for Hnm  
-3. SSn acts as inter-Subnet L3 Router for LSns and Use EH1 as Default Router
+Mininet topology model: [`slsnet.py`](slsnet.py)
+```txt
+   h31     h32
+    |       |
+  [ss1]   [ss2]
+    |  \ /  |
+    |   X   |
+    |  / \  |
+  [s10]   [s20]
+   +- h11  +- h21
+   +- h12  +- h22
+   +- h13  +- h23
+   +- h14  +- h24
+   +- d11  +- h21
+   +- d12  +- h22
+```
+
+- LSn acts as L2 switch for Hnm and L3 Subnet Router for Hnm  
+- SSn acts as inter-Subnet L3 Router for LSns and Use EH1 as Default Router
 
 
-## Features
+## ONOS Configuration
 
-### Leaf Switch [LSn]
-1. L2 Unicast Handling for Hnm (Output to Learned Port or Flood)
-2. L2 Broadcast Handling
-3. ARP Learning for Hnm MAC and IP Learning
-   - Host Location Provider registeres Hosts Info from ARP, NDP or DHCP
-4. Handle ARP Request/Response for LSn's IP as Hnm's Subnet Gateway
-   - CONSIDER: Proxy ARP/NDP App
-5. on dst_mac=LSn, L3 Route to Hnm, (src_mac<-LSn, dst_mac<=Hnm)
-6. on dst_mac=LSn, L3 Route to SSm for non-Subnet IPs (src_mac<-LSn, dst_mac=SSm)
-   with Load Balancing on SS's
-
-### Spine Switch [SSn]
-1. Do ARP Request on EH1 IP and Learn EH1 Mac and IP from ARP response
-   - SEE: Host Location Provider's private sendProve()
-2. Handle ARP Request/Response for SSn's IP for EH1's Request
-   - CONSIDER: Proxy ARP/NDP App
-3. on dst_mac=SSn, L3 Route to LSm for each subnets (src_mac<-SSn,dst_mac<-LSm)
-4. on dst_mac=SSn, L3 Route to EH1 as defaut route (src_mac<-SSn,dst_mac<-EHn)
-
-### High Avaliablility [LSn and SSn]
-1. on SSn-LSm link failed, SSn forward to other SS with SSm link available via LSx
-2. on SSn-LSm link failed, LSx forward to other SS with SSm link available
-3. on SSn-EH1 link failed, SSn forward to other SS EH1 link available via LSx
-4. on SSn-EH1 link failed, LSx forward to other SS EH1 link available
-
-
-## ONOS Application Activation
-
+**ONOS Application Activation**
 - Default device drivers (default Run)
 - OpenFlow Provider (for OpenFlow Controller) --> Optical inforamtion model
 - Host Location Provider (for auto regi host from ARP)
@@ -151,10 +141,7 @@ Logical Switch Context
   - handle ARP on virtual router ip
   - NO hanndling on ICMP on router ip  
 
-
-## ONOS Configuration
-
-ONOS SDN-IP Network Configuration Service: [`network-cfg.json`](network-cfg.json)
+**ONOS Network Configuration** [`network-cfg.json`](network-cfg.json)
 - to clean: `onos-netcfg localhost delete`
 - to update: `onos-netcfg localhost network-cfg.json`
   - each call updates loaded network config (onos netcfg to see loaded config)
@@ -165,7 +152,7 @@ ONOS SDN-IP Network Configuration Service: [`network-cfg.json`](network-cfg.json
 Network Config Link Provider 
   may lock down topology and prevent unexpected link usage:
 
-```
+```txt
   "links" : {
     "of:0000000000000001/1-of:000000000000000a/7" : { "basic" : {} },
     "of:0000000000000001/2-of:0000000000000014/7" : { "basic" : {} },
@@ -228,7 +215,7 @@ SDN-IP Reactive Forwarding App
 - TO CHECK: ECMP handling for SL-SS allocation per host intents compile
 - **ISSUE: sometimes reactive forwarding seems not working; intents not installed**
 
-```
+```txt
   "devices":{
     "of:0000000000000001":{ "basic":{ "name":"SS1", "latitude":40, "longitude":-100 } },
     "of:0000000000000002":{ "basic":{ "name":"SS2", "latitude":40, "longitude":-90  } },
@@ -281,7 +268,25 @@ SDN-IP Reactive Forwarding App
 ```
 
 ### 3. External Forwarding (via Spine Switch and External Router)
-NOT CHECKED YET
+Use ONOS Incubator API/Command routes/route-add which affect SND-IP Intents generation for local-external traffic
+- register default route with onos cli route command: `onos -lonos 'route-add 0.0.0.0/0 10.0.0.31'`
+  - to show route table: `onos -lonos routes`
+  - Password authentication
+
+```txt
+Password: 
+Table: ipv4
+    Network            Next Hop        Source (Node)
+>   0.0.0.0/0          10.0.0.31       STATIC (-)
+   Total: 1
+
+Table: ipv6
+    Network            Next Hop        Source (Node)
+   Total: 0
+```
+
+- - [SHOULD NOT] if ip4LocalPrifixes are used for default route, intents for every external hosts are installed
+  - `{ "ipPrefix" : "0.0.0.0/0", "type" : "PRIVATE", "gatewayIp" : "10.0.0.31" }`
 
 
 ## Reference ONOS Apps
