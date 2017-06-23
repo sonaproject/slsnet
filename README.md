@@ -163,17 +163,52 @@ ONOS SDN-IP Network Configuration Service: network-cfg.json
 - port.{device_id}.interfaces must be set for all host ports
   with valid route ip configed as interfaces value
 
+### 0. Lock down links by Network Config
+Network Config Link Provider 
+  may lock down topology and prevent unexpected link usage:
+
+```
+  "links" : {
+    "of:0000000000000001/1-of:000000000000000a/7" : { "basic" : {} },
+    "of:0000000000000001/2-of:0000000000000014/7" : { "basic" : {} },
+    "of:0000000000000002/1-of:000000000000000a/8" : { "basic" : {} },
+    "of:0000000000000002/2-of:0000000000000014/8" : { "basic" : {} },
+
+    "of:000000000000000a/7-of:0000000000000001/1" : { "basic" : {} },
+    "of:0000000000000014/7-of:0000000000000001/2" : { "basic" : {} },
+    "of:0000000000000001/8-of:0000000000000002/1" : { "basic" : {} },
+    "of:0000000000000014/8-of:0000000000000002/2" : { "basic" : {} }
+  },
+  
+  "apps" : {
+    "org.onosproject.core" : {
+      "core" : { "linkDiscoveryMode" : "STRICT" }
+    }
+  }
+```
+
 ### 1. Intra Leaf Switch Forwarding
 VLAN L2 Broadcast Network App (VPLS)
-- add name per each ports
+- add name-only interface per each ports to handle (should be separate interface to SDN-IP's)
 - add config per vpls and it's port names in vpls app config
 - **ISSUE: VPLS seems to applied when netcfg loaded after VPLS app started !!!**
 
 ```
   "ports" : {
-    ... port : interfaces : "name" : {name for VPLS} ...
+    "of:000000000000000a/1" : { "interfaces" : [ { "name" : "h11" } ] },
+    "of:000000000000000a/2" : { "interfaces" : [ { "name" : "h12" } ] },
+    "of:000000000000000a/3" : { "interfaces" : [ { "name" : "h13" } ] },
+    "of:000000000000000a/4" : { "interfaces" : [ { "name" : "h14" } ] },
+    "of:000000000000000a/5" : { "interfaces" : [ { "name" : "d11" } ] },
+    "of:000000000000000a/6" : { "interfaces" : [ { "name" : "d12" } ] },
+
+    "of:0000000000000014/1" : { "interfaces" : [ { "name" : "h21" } ] },
+    "of:0000000000000014/2" : { "interfaces" : [ { "name" : "h22" } ] },
+    "of:0000000000000014/3" : { "interfaces" : [ { "name" : "h23" } ] },
+    "of:0000000000000014/4" : { "interfaces" : [ { "name" : "h24" } ] },
+    "of:0000000000000014/5" : { "interfaces" : [ { "name" : "d21" } ] },
+    "of:0000000000000014/6" : { "interfaces" : [ { "name" : "d22" } ] },
   },
-    
   "apps" : {
     "org.onosproject.vpls" : {
       "vpls" : {
@@ -203,27 +238,27 @@ SDN-IP Reactive Forwarding App
   "ports" : {
     "of:0000000000000001/1" : { "interfaces" : [ { "name" : "SS1_LS1" } ] },
     "of:0000000000000001/2" : { "interfaces" : [ { "name" : "SS1_LS2" } ] },
-    "of:0000000000000001/3" : { "interfaces" : [ { "name" : "SS1_h31", "ips" : [ "10.0.0.10/24" ], "mac"  : "00:00:00:00:00:01" } ] },
+    "of:0000000000000001/3" : { "interfaces" : [ { "name" : "SS1_h31" }, { "ips" : [ "10.0.0.10/24" ], "mac"  : "00:00:00:00:00:01" } ] },
 
     "of:0000000000000002/1" : { "interfaces" : [ { "name" : "SS2_LS1" } ] },
     "of:0000000000000002/2" : { "interfaces" : [ { "name" : "SS2_LS2" } ] },
-    "of:0000000000000002/3" : { "interfaces" : [ { "name" : "SS2_h32", "ips"  : [ "10.0.0.10/24" ], "mac"  : "00:00:00:00:00:01" } ] },
+    "of:0000000000000002/3" : { "interfaces" : [ { "name" : "SS2_h32" }, { "ips"  : [ "10.0.0.10/24" ], "mac"  : "00:00:00:00:00:01" } ] },
 
-    "of:000000000000000a/1" : { "interfaces" : [ { "name" : "h11", "ips" : [ "10.0.1.1/24" ], "mac" : "00:00:00:00:00:01" } ] },
-    "of:000000000000000a/2" : { "interfaces" : [ { "name" : "h12", "ips" : [ "10.0.1.1/24" ], "mac" : "00:00:00:00:00:01" } ] },
-    "of:000000000000000a/3" : { "interfaces" : [ { "name" : "h13", "ips" : [ "10.0.1.1/24" ], "mac" : "00:00:00:00:00:01" } ] },
-    "of:000000000000000a/4" : { "interfaces" : [ { "name" : "h14", "ips" : [ "10.0.1.1/24" ], "mac" : "00:00:00:00:00:01" } ] },
-    "of:000000000000000a/5" : { "interfaces" : [ { "name" : "d11", "ips" : [ "10.0.1.1/24" ], "mac" : "00:00:00:00:00:01" } ] },
-    "of:000000000000000a/6" : { "interfaces" : [ { "name" : "d12", "ips" : [ "10.0.1.1/24" ], "mac" : "00:00:00:00:00:01" } ] },
+    "of:000000000000000a/1" : { "interfaces" : [ { "name" : "h11" }, { "ips" : [ "10.0.1.1/24" ], "mac" : "00:00:00:00:00:01" } ] },
+    "of:000000000000000a/2" : { "interfaces" : [ { "name" : "h12" }, { "ips" : [ "10.0.1.1/24" ], "mac" : "00:00:00:00:00:01" } ] },
+    "of:000000000000000a/3" : { "interfaces" : [ { "name" : "h13" }, { "ips" : [ "10.0.1.1/24" ], "mac" : "00:00:00:00:00:01" } ] },
+    "of:000000000000000a/4" : { "interfaces" : [ { "name" : "h14" }, { "ips" : [ "10.0.1.1/24" ], "mac" : "00:00:00:00:00:01" } ] },
+    "of:000000000000000a/5" : { "interfaces" : [ { "name" : "d11" }, { "ips" : [ "10.0.1.1/24" ], "mac" : "00:00:00:00:00:01" } ] },
+    "of:000000000000000a/6" : { "interfaces" : [ { "name" : "d12" }, { "ips" : [ "10.0.1.1/24" ], "mac" : "00:00:00:00:00:01" } ] },
     "of:000000000000000a/7" : { "interfaces" : [ { "name" : "LS1_SS1" } ] },
     "of:000000000000000a/8" : { "interfaces" : [ { "name" : "LS1_SS2" } ] },
 
-    "of:0000000000000014/1" : { "interfaces" : [ { "name" : "h21", "ips" : [ "10.0.2.1/24" ], "mac" : "00:00:00:00:00:01" } ] },
-    "of:0000000000000014/2" : { "interfaces" : [ { "name" : "h22", "ips" : [ "10.0.2.1/24" ], "mac" : "00:00:00:00:00:01" } ] },
-    "of:0000000000000014/3" : { "interfaces" : [ { "name" : "h23", "ips" : [ "10.0.2.1/24" ], "mac" : "00:00:00:00:00:01" } ] },
-    "of:0000000000000014/4" : { "interfaces" : [ { "name" : "h24", "ips" : [ "10.0.2.1/24" ], "mac" : "00:00:00:00:00:01" } ] },
-    "of:0000000000000014/5" : { "interfaces" : [ { "name" : "d21", "ips" : [ "10.0.2.1/24" ], "mac" : "00:00:00:00:00:01" } ] },
-    "of:0000000000000014/6" : { "interfaces" : [ { "name" : "d22", "ips" : [ "10.0.2.1/24" ], "mac" : "00:00:00:00:00:01" } ] },
+    "of:0000000000000014/1" : { "interfaces" : [ { "name" : "h21" }, { "ips" : [ "10.0.2.1/24" ], "mac" : "00:00:00:00:00:01" } ] },
+    "of:0000000000000014/2" : { "interfaces" : [ { "name" : "h22" }, { "ips" : [ "10.0.2.1/24" ], "mac" : "00:00:00:00:00:01" } ] },
+    "of:0000000000000014/3" : { "interfaces" : [ { "name" : "h23" }, { "ips" : [ "10.0.2.1/24" ], "mac" : "00:00:00:00:00:01" } ] },
+    "of:0000000000000014/4" : { "interfaces" : [ { "name" : "h24" }, { "ips" : [ "10.0.2.1/24" ], "mac" : "00:00:00:00:00:01" } ] },
+    "of:0000000000000014/5" : { "interfaces" : [ { "name" : "d21" }, { "ips" : [ "10.0.2.1/24" ], "mac" : "00:00:00:00:00:01" } ] },
+    "of:0000000000000014/6" : { "interfaces" : [ { "name" : "d22" }, { "ips" : [ "10.0.2.1/24" ], "mac" : "00:00:00:00:00:01" } ] },
     "of:0000000000000014/7" : { "interfaces" : [ { "name" : "LS2_SS1" } ] },
     "of:0000000000000014/8" : { "interfaces" : [ { "name" : "LS2_SS2" } ] }
   },
@@ -247,30 +282,6 @@ SDN-IP Reactive Forwarding App
 ### 3. External Forwarding (via Spine Switch and External Router)
 NOT CHECKED YET
 
-
-### May Lock down links by netcfg
-- Network Config Link Provider 
-  may lock down topology and prevent unexpected link usage:
-
-```
-  "links" : {
-    "of:0000000000000001/1-of:000000000000000a/7" : { "basic" : {} },
-    "of:0000000000000001/2-of:0000000000000014/7" : { "basic" : {} },
-    "of:0000000000000002/1-of:000000000000000a/8" : { "basic" : {} },
-    "of:0000000000000002/2-of:0000000000000014/8" : { "basic" : {} },
-
-    "of:000000000000000a/7-of:0000000000000001/1" : { "basic" : {} },
-    "of:0000000000000014/7-of:0000000000000001/2" : { "basic" : {} },
-    "of:0000000000000001/8-of:0000000000000002/1" : { "basic" : {} },
-    "of:0000000000000014/8-of:0000000000000002/2" : { "basic" : {} }
-  },
-  
-  "apps" : {
-    "org.onosproject.core" : {
-      "core" : { "linkDiscoveryMode" : "STRICT" }
-    }
-  }
-```
 
 ## Reference ONOS Apps
 
