@@ -101,7 +101,7 @@ Logical Switch Context
    +- D12  +- D22
 ```
 
-Mininet topology model: [`slsnet.py`]
+Mininet topology model: [`slsnet.py`](slsnet.py)
 ```txt
    h31     h32
     |       |
