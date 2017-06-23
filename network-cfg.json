@@ -62,6 +62,7 @@
     "org.onosproject.reactive.routing" : {
       "reactiveRouting" : {
         "ip4LocalPrefixes" : [
+           { "ipPrefix" : "0.0.0.0/0", "type" : "PRIVATE", "gatewayIp" : "10.0.0.31" },
            { "ipPrefix" : "10.0.0.0/24", "type" : "PRIVATE", "gatewayIp" : "10.0.0.10" },
            { "ipPrefix" : "10.0.1.0/24", "type" : "PRIVATE", "gatewayIp" : "10.0.1.1"  },
            { "ipPrefix" : "10.0.2.0/24", "type" : "PRIVATE", "gatewayIp" : "10.0.1.14" }
@@ -70,7 +71,7 @@
         ],
         "virtualGatewayMacAddress" : "00:00:00:00:00:01"
       }
-    },
+    }
   }
 
 }
