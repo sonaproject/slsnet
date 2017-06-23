@@ -167,13 +167,83 @@ ONOS SDN-IP Network Configuration Service: network-cfg.json
 VLAN L2 Broadcast Network App (VPLS)
 - add name per each ports
 - add config per vpls and it's port names in vpls app config
-- ISSUE: VPLS seems to applied when netcfg loaded after VPLS app started
+- **ISSUE: VPLS seems to applied when netcfg loaded after VPLS app started !!!**
+
+```
+  {
+    "ports" : {
+      ... port : interfaces : "name" : {name for VPLS} ...
+    },
+    
+    "apps" : {
+        "org.onosproject.vpls" : {
+      "vpls" : {
+        "vplsList" : [
+          { "name" : "VPLS1", "interfaces" : ["h11", "h12", "h13", "h14", "d11", "d12" ] },
+          { "name" : "VPLS2", "interfaces" : ["h21", "h22", "h23", "h24", "d21", "d22" ] }
+        ]
+      }
+    }
+  }
+```
 
 ### 2. Inter Leaf Switch Forwarding (via Spine Switch)
 SDN-IP Reactive Forwarding App
 - handles inter switch (hnx--hmx) routing by adding host intents
 - reactiveRoutings ip4LocalPrefixes of type PRIVATE only
 - TO CHECK: ECMP handling for SL-SS allocation per host intents compile
+
+```
+  "devices":{
+    "of:0000000000000001":{ "basic":{ "name":"SS1", "latitude":40, "longitude":-100 } },
+    "of:0000000000000002":{ "basic":{ "name":"SS2", "latitude":40, "longitude":-90  } },
+    "of:000000000000000a":{ "basic":{ "name":"LS1", "latitude":35, "longitude":-100 } },
+    "of:0000000000000014":{ "basic":{ "name":"LS2", "latitude":35, "longitude":-90  } }
+  },
+  
+  "ports" : {
+    "of:0000000000000001/1" : { "interfaces" : [ { "name" : "SS1_LS1" } ] },
+    "of:0000000000000001/2" : { "interfaces" : [ { "name" : "SS1_LS2" } ] },
+    "of:0000000000000001/3" : { "interfaces" : [ { "name" : "SS1_h31", "ips" : [ "10.0.0.10/24" ], "mac"  : "00:00:00:00:00:01" } ] },
+
+    "of:0000000000000002/1" : { "interfaces" : [ { "name" : "SS2_LS1" } ] },
+    "of:0000000000000002/2" : { "interfaces" : [ { "name" : "SS2_LS2" } ] },
+    "of:0000000000000002/3" : { "interfaces" : [ { "name" : "SS2_h32", "ips"  : [ "10.0.0.10/24" ], "mac"  : "00:00:00:00:00:01" } ] },
+
+    "of:000000000000000a/1" : { "interfaces" : [ { "name" : "h11", "ips" : [ "10.0.1.1/24" ], "mac" : "00:00:00:00:00:01" } ] },
+    "of:000000000000000a/2" : { "interfaces" : [ { "name" : "h12", "ips" : [ "10.0.1.1/24" ], "mac" : "00:00:00:00:00:01" } ] },
+    "of:000000000000000a/3" : { "interfaces" : [ { "name" : "h13", "ips" : [ "10.0.1.1/24" ], "mac" : "00:00:00:00:00:01" } ] },
+    "of:000000000000000a/4" : { "interfaces" : [ { "name" : "h14", "ips" : [ "10.0.1.1/24" ], "mac" : "00:00:00:00:00:01" } ] },
+    "of:000000000000000a/5" : { "interfaces" : [ { "name" : "d11", "ips" : [ "10.0.1.1/24" ], "mac" : "00:00:00:00:00:01" } ] },
+    "of:000000000000000a/6" : { "interfaces" : [ { "name" : "d12", "ips" : [ "10.0.1.1/24" ], "mac" : "00:00:00:00:00:01" } ] },
+    "of:000000000000000a/7" : { "interfaces" : [ { "name" : "LS1_SS1" } ] },
+    "of:000000000000000a/8" : { "interfaces" : [ { "name" : "LS1_SS2" } ] },
+
+    "of:0000000000000014/1" : { "interfaces" : [ { "name" : "h21", "ips" : [ "10.0.2.1/24" ], "mac" : "00:00:00:00:00:01" } ] },
+    "of:0000000000000014/2" : { "interfaces" : [ { "name" : "h22", "ips" : [ "10.0.2.1/24" ], "mac" : "00:00:00:00:00:01" } ] },
+    "of:0000000000000014/3" : { "interfaces" : [ { "name" : "h23", "ips" : [ "10.0.2.1/24" ], "mac" : "00:00:00:00:00:01" } ] },
+    "of:0000000000000014/4" : { "interfaces" : [ { "name" : "h24", "ips" : [ "10.0.2.1/24" ], "mac" : "00:00:00:00:00:01" } ] },
+    "of:0000000000000014/5" : { "interfaces" : [ { "name" : "d21", "ips" : [ "10.0.2.1/24" ], "mac" : "00:00:00:00:00:01" } ] },
+    "of:0000000000000014/6" : { "interfaces" : [ { "name" : "d22", "ips" : [ "10.0.2.1/24" ], "mac" : "00:00:00:00:00:01" } ] },
+    "of:0000000000000014/7" : { "interfaces" : [ { "name" : "LS2_SS1" } ] },
+    "of:0000000000000014/8" : { "interfaces" : [ { "name" : "LS2_SS2" } ] }
+  },
+  
+  "apps" : {
+      "org.onosproject.reactive.routing" : {
+      "reactiveRouting" : {
+        "ip4LocalPrefixes" : [
+           { "ipPrefix" : "10.0.0.0/24", "type" : "PRIVATE", "gatewayIp" : "10.0.0.10" },
+           { "ipPrefix" : "10.0.1.0/24", "type" : "PRIVATE", "gatewayIp" : "10.0.1.1"  },
+           { "ipPrefix" : "10.0.2.0/24", "type" : "PRIVATE", "gatewayIp" : "10.0.1.14" }
+        ],
+        "ip6LocalPrefixes" : [
+        ],
+        "virtualGatewayMacAddress" : "00:00:00:00:00:01"
+      }
+    }
+  }
+```
 
 ### 3. External Forwarding (via Spine Switch and External Router)
 NOT CHECKED YET
@@ -182,7 +252,9 @@ NOT CHECKED YET
 ### May Lock down links by netcfg
 - Network Config Link Provider 
   may lock down topology and prevent unexpected link usage:
-```json
+
+```
+{
   "links" : {
     "of:0000000000000001/1-of:000000000000000a/7" : { "basic" : {} },
     "of:0000000000000001/2-of:0000000000000014/7" : { "basic" : {} },
@@ -199,6 +271,7 @@ NOT CHECKED YET
       "core" : { "linkDiscoveryMode" : "STRICT" }
     }
   }
+}
 ```
 
 ## Reference ONOS Apps
