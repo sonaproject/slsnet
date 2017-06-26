@@ -278,10 +278,12 @@ SDN-IP Reactive Forwarding App
 ```
 
 ### 3. External Forwarding (via Spine Switch and External Router)
-Use ONOS Incubator API/Command routes/route-add which affect SND-IP Intents generation for local-external traffic
+Use ONOS Incubator API/Command routes/route-add which affect SND-IP Intents for local-external traffic
 - register default route with onos cli route command: `onos -lonos 'route-add 0.0.0.0/0 10.0.0.31'`
   - to show route table: `onos -lonos routes`
   - Password authentication
+- registers MultiPointToSinglePointIntent for source={all edge ports with named interface} to target={port for next hop}
+  (seems auto probe for the next hop host)
 
 ```txt
 Password: 
