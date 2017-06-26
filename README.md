@@ -125,16 +125,32 @@ Mininet topology model: [`slsnet.py`](slsnet.py)
 ## ONOS Configuration
 
 **ONOS Application Activation**
+
+onos cli command:
+```
+app activate org.onosproject.openflow-base
+app activate org.onosproject.hostprovider
+app activate org.onosproject.netcfglinksprovider
+app activate org.onosproject.vpls
+app activate org.onosproject.reactive-routing
+```
+
 - Default device drivers (default Run)
 - OpenFlow Provider (for OpenFlow Controller) --> Optical inforamtion model
 - Host Location Provider (for auto regi host from ARP)
+
 - Network Config Link Provider
   - https://wiki.onosproject.org/display/ONOS/Network+Config+Link+Provider
   - auto Regi/Deregi Links
+
 - VLAN L2 Broadcast Network Appp (VPLS)
   - https://wiki.onosproject.org/display/ONOS/Virtual+Private+LAN+Service+-+VPLS
   - to handle L2 switch local broadcast/unicast
   - may configure to include multiple switches
+OR
+- Proxy ARP/NDP App
+  - Forwards ARP/NDP Appropriately without intents installed for each host
+
 - SDN-IP Reactive Forwarding App --> SDN-IP, Intent Synchronizer
   - https://wiki.onosproject.org/display/ONOS/SDN-IP+Reactive+Routing
   - handle cases at least one host is with Local SDN
@@ -147,6 +163,10 @@ Mininet topology model: [`slsnet.py`](slsnet.py)
   - each call updates loaded network config (onos netcfg to see loaded config)
   - updated values are immediately applied to existing entries
 - hosts.basic.location value is not allowed
+
+**CAUTION: SDN-IP with Host IP-MAC Updates**
+- SDN-IP Installed Intents's Host MAC is not updated when Host's MAC value is changed (ex. restart Mininet)
+  - The related flow seem not working for DST MAC is updated as old MAC, then receiving host DROPs IT!!!
 
 ### 0. Lock down links by Network Config
 Network Config Link Provider 
@@ -205,6 +225,14 @@ VLAN L2 Broadcast Network App (VPLS)
     }
   }
 ```
+
+OR
+
+Proxy ARP/NDP App
+- Forwards and proxy host's ARP/NDP request
+- No configuration needed
+- Cannot handle broadcast IP traffics
+
 
 ### 2. Inter Leaf Switch Forwarding (via Spine Switch)
 SDN-IP Reactive Forwarding App
@@ -268,10 +296,12 @@ SDN-IP Reactive Forwarding App
 ```
 
 ### 3. External Forwarding (via Spine Switch and External Router)
-Use ONOS Incubator API/Command routes/route-add which affect SND-IP Intents generation for local-external traffic
+Use ONOS Incubator API/Command routes/route-add which affect SND-IP Intents for local-external traffic
 - register default route with onos cli route command: `onos -lonos 'route-add 0.0.0.0/0 10.0.0.31'`
   - to show route table: `onos -lonos routes`
   - Password authentication
+- registers MultiPointToSinglePointIntent for source={all edge ports with named interface} to target={port for next hop}
+  (seems auto probe for the next hop host)
 
 ```txt
 Password: 
@@ -317,3 +347,6 @@ Table: ipv6
 - LLDB Link Provider
 - OpenFlow Provider
 
+
+## ISSUE
+- How to cover host's MAC updates applied to SDN-IP's already-installed intents
