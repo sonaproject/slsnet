@@ -347,3 +347,6 @@ Table: ipv6
 - LLDB Link Provider
 - OpenFlow Provider
 
+
+## ISSUE
+- How to cover host's MAC updates applied to SDN-IP's already-installed intents
