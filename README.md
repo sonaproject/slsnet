@@ -125,6 +125,16 @@ Mininet topology model: [`slsnet.py`](slsnet.py)
 ## ONOS Configuration
 
 **ONOS Application Activation**
+
+onos cli command:
+```
+app activate org.onosproject.openflow-base
+app activate org.onosproject.hostprovider
+app activate org.onosproject.netcfglinksprovider
+app activate org.onosproject.vpls
+app activate org.onosproject.reactive-routing
+```
+
 - Default device drivers (default Run)
 - OpenFlow Provider (for OpenFlow Controller) --> Optical inforamtion model
 - Host Location Provider (for auto regi host from ARP)
