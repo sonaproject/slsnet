@@ -143,7 +143,8 @@ app activate org.onosproject.slsnet
 
 ### ONOS Network Configuration
 
-- to update: `onos-netcfg localhost [slsnet_cfg.json](slsnet_cfg.json)`
+- [slsnet_cfg.json](slsnet_cfg.json)
+- to update: `onos-netcfg localhost slsnet_cfg.json`
   - each call updates loaded network config (onos netcfg to see loaded config)
   - updated values are immediately applied to existing entries
 - to clean: `onos-netcfg localhost delete`
