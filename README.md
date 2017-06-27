@@ -122,7 +122,7 @@ Mininet topology model: [`slsnet.py`](slsnet.py)
 - SSn acts as inter-Subnet L3 Router for LSns and Use EH1 as Default Router
 
 
-========
+<br>
 
 ## [TBD] SLSNET Application
 
@@ -136,8 +136,6 @@ app activate org.onosproject.hostprovider
 app activate org.onosproject.netcfglinksprovider
 app activate org.onosproject.slsnet
 ```
-
-- Default device drivers (default Run)
 - OpenFlow Provider (for OpenFlow Controller) --> Optical inforamtion model
 - Host Location Provider (for auto regi host from ARP)
 - Network Config Link Provider (for auto Regi/Deregi Links)
@@ -145,8 +143,8 @@ app activate org.onosproject.slsnet
 
 ### ONOS Network Configuration
 
-- [`slsnet-cfg.json`](slsnet-cfg.json)
-- to update: `onos-netcfg localhost slsnet-cfg.json`
+- [`slsnet_cfg.json`](slsnet_cfg.json)
+- to update: `onos-netcfg localhost slsnet_cfg.json`
   - each call updates loaded network config (onos netcfg to see loaded config)
   - updated values are immediately applied to existing entries
 - to clean: `onos-netcfg localhost delete`
