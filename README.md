@@ -122,19 +122,127 @@ Mininet topology model: [`slsnet.py`](slsnet.py)
 - SSn acts as inter-Subnet L3 Router for LSns and Use EH1 as Default Router
 
 
-## ONOS Configuration
+========
 
-**ONOS Application Activation**
+## [TBD] SLSNET Application
+
+
+### ONOS Application Activation
+
+onos cli command:
+```
+app activate org.onosproject.openflow-base
+app activate org.onosproject.hostprovider
+app activate org.onosproject.netcfglinksprovider
+app activate org.onosproject.slsnet
+```
+
 - Default device drivers (default Run)
 - OpenFlow Provider (for OpenFlow Controller) --> Optical inforamtion model
 - Host Location Provider (for auto regi host from ARP)
+- Network Config Link Provider (for auto Regi/Deregi Links)
+
+
+### ONOS Network Configuration
+
+- [`slsnet-cfg.json`](slsnet-cfg.json)
+- to update: `onos-netcfg localhost slsnet-cfg.json`
+  - each call updates loaded network config (onos netcfg to see loaded config)
+  - updated values are immediately applied to existing entries
+- to clean: `onos-netcfg localhost delete`
+
+```none
+
+  "devices":{
+    "of:0000000000000001":{ "basic":{ "name":"SS1", "latitude":40, "longitude":-100 } },
+    "of:0000000000000002":{ "basic":{ "name":"SS2", "latitude":40, "longitude":-90  } },
+    "of:000000000000000a":{ "basic":{ "name":"LS1", "latitude":35, "longitude":-100 } },
+    "of:0000000000000014":{ "basic":{ "name":"LS2", "latitude":35, "longitude":-90  } }
+  },
+
+  "ports" : {
+    "of:0000000000000001/1" : { "interfaces" : [ { "name" : "SS1_LS1" } ] },
+    "of:0000000000000001/2" : { "interfaces" : [ { "name" : "SS1_LS2" } ] },
+    "of:0000000000000001/3" : { "interfaces" : [ { "name" : "SS1_h31" } ] },
+    
+    "of:0000000000000002/1" : { "interfaces" : [ { "name" : "SS2_LS1" } ] },
+    "of:0000000000000002/2" : { "interfaces" : [ { "name" : "SS2_LS2" } ] },
+    "of:0000000000000002/3" : { "interfaces" : [ { "name" : "SS2_h32" } ] },
+
+    "of:000000000000000a/1" : { "interfaces" : [ { "name" : "h11" } ] },
+    "of:000000000000000a/2" : { "interfaces" : [ { "name" : "h12" } ] },
+    "of:000000000000000a/3" : { "interfaces" : [ { "name" : "h13" } ] },
+    "of:000000000000000a/4" : { "interfaces" : [ { "name" : "h14" } ] },
+    "of:000000000000000a/5" : { "interfaces" : [ { "name" : "d11" } ] },
+    "of:000000000000000a/6" : { "interfaces" : [ { "name" : "d12" } ] },
+    "of:000000000000000a/7" : { "interfaces" : [ { "name" : "LS1_SS1" } ] },
+    "of:000000000000000a/8" : { "interfaces" : [ { "name" : "LS1_SS2" } ] },
+  
+    "of:0000000000000014/1" : { "interfaces" : [ { "name" : "h21" } ] },
+    "of:0000000000000014/2" : { "interfaces" : [ { "name" : "h22" } ] },
+    "of:0000000000000014/3" : { "interfaces" : [ { "name" : "h23" } ] },
+    "of:0000000000000014/4" : { "interfaces" : [ { "name" : "h24" } ] },
+    "of:0000000000000014/5" : { "interfaces" : [ { "name" : "d21" } ] },
+    "of:0000000000000014/6" : { "interfaces" : [ { "name" : "d22" } ] },
+    "of:0000000000000014/7" : { "interfaces" : [ { "name" : "LS2_SS1" } ] },
+    "of:0000000000000014/8" : { "interfaces" : [ { "name" : "LS2_SS2" } ] }
+  },
+
+  "apps" : {
+    "org.onosproject.slsnet" : {
+      "subnetList" : [
+        {
+          "interfaces" : ["h11", "h12", "h13", "h14", "d11", "d12" ],
+          "ipv4" : { "prefix" : "10.0.1.0/24", "gatewayIp" : "10.0.1.1", "gatewayMac" : "00:00:00:00:01:01" }
+        },
+        {
+          "interfaces" : ["h21", "h22", "h23", "h24", "d21", "d22" ],
+          "ipv4" : { "prefix" : "10.0.2.0/24", "gatewayIp" : "10.0.2.1", "gatewayMac" : "00:00:00:00:02:01" }
+        }
+      ]
+      "gatewayList" : [
+         "ipv4" : { "prefix" : "0.0.0.0/0", "gatewayIp" : "10.0.0.31" },
+      ]
+    }
+  }
+  
+```
+
+
+========
+
+# [OLD] SLSNET with ONOS Bundle Application
+
+
+## ONOS Configuration
+
+**ONOS Application Activation**
+
+onos cli command:
+```
+app activate org.onosproject.openflow-base
+app activate org.onosproject.hostprovider
+app activate org.onosproject.netcfglinksprovider
+app activate org.onosproject.vpls
+app activate org.onosproject.reactive-routing
+```
+
+- Default device drivers (default Run)
+- OpenFlow Provider (for OpenFlow Controller) --> Optical inforamtion model
+- Host Location Provider (for auto regi host from ARP)
+
 - Network Config Link Provider
   - https://wiki.onosproject.org/display/ONOS/Network+Config+Link+Provider
   - auto Regi/Deregi Links
+
 - VLAN L2 Broadcast Network Appp (VPLS)
   - https://wiki.onosproject.org/display/ONOS/Virtual+Private+LAN+Service+-+VPLS
   - to handle L2 switch local broadcast/unicast
   - may configure to include multiple switches
+OR
+- Proxy ARP/NDP App
+  - Forwards ARP/NDP Appropriately without intents installed for each host
+
 - SDN-IP Reactive Forwarding App --> SDN-IP, Intent Synchronizer
   - https://wiki.onosproject.org/display/ONOS/SDN-IP+Reactive+Routing
   - handle cases at least one host is with Local SDN
@@ -142,11 +250,16 @@ Mininet topology model: [`slsnet.py`](slsnet.py)
   - NO hanndling on ICMP on router ip  
 
 **ONOS Network Configuration** [`network-cfg.json`](network-cfg.json)
-- to clean: `onos-netcfg localhost delete`
 - to update: `onos-netcfg localhost network-cfg.json`
   - each call updates loaded network config (onos netcfg to see loaded config)
   - updated values are immediately applied to existing entries
+- to clean: `onos-netcfg localhost delete`
 - hosts.basic.location value is not allowed
+
+
+**CAUTION: SDN-IP with Host IP-MAC Updates**
+- SDN-IP Installed Intents's Host MAC is not updated when Host's MAC value is changed (ex. restart Mininet)
+  - The related flow seem not working for DST MAC is updated as old MAC, then receiving host DROPs IT!!!
 
 ### 0. Lock down links by Network Config
 Network Config Link Provider 
@@ -205,6 +318,14 @@ VLAN L2 Broadcast Network App (VPLS)
     }
   }
 ```
+
+OR
+
+Proxy ARP/NDP App
+- Forwards and proxy host's ARP/NDP request
+- No configuration needed
+- Cannot handle broadcast IP traffics
+
 
 ### 2. Inter Leaf Switch Forwarding (via Spine Switch)
 SDN-IP Reactive Forwarding App
@@ -268,10 +389,12 @@ SDN-IP Reactive Forwarding App
 ```
 
 ### 3. External Forwarding (via Spine Switch and External Router)
-Use ONOS Incubator API/Command routes/route-add which affect SND-IP Intents generation for local-external traffic
+Use ONOS Incubator API/Command routes/route-add which affect SND-IP Intents for local-external traffic
 - register default route with onos cli route command: `onos -lonos 'route-add 0.0.0.0/0 10.0.0.31'`
   - to show route table: `onos -lonos routes`
   - Password authentication
+- registers MultiPointToSinglePointIntent for source={all edge ports with named interface} to target={port for next hop}
+  (seems auto probe for the next hop host)
 
 ```txt
 Password: 
@@ -317,3 +440,6 @@ Table: ipv6
 - LLDB Link Provider
 - OpenFlow Provider
 
+
+## ISSUE
+- How to cover host's MAC updates applied to SDN-IP's already-installed intents
