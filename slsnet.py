@@ -77,12 +77,12 @@ net.start()
 #  net.ping(hosts=[h, h21], timeout='1')
 #  net.ping(hosts=[h, h21], timeout='1')
 
-#for h in [h11, h12, h13, h14, d11, d12] :
-#  net.ping(hosts=[h, h31], timeout='1')
-#  net.ping(hosts=[h, h31], timeout='1')
-#for h in [h21, h22, h23, h24, d21, d22] :
-#  net.ping(hosts=[h, h32], timeout='1')
-#  net.ping(hosts=[h, h32], timeout='1')
+for h in [h11, h12, h13, h14, d11, d12] :
+  net.ping(hosts=[h, h31], timeout='1')
+  net.ping(hosts=[h, h31], timeout='1')
+for h in [h21, h22, h23, h24, d21, d22] :
+  net.ping(hosts=[h, h32], timeout='1')
+  net.ping(hosts=[h, h32], timeout='1')
 
 # do interactive shell
 CLI(net)
