@@ -46,9 +46,9 @@
           "interfaces" : ["h21", "h22", "h23", "h24", "d21", "d22" ],
           "ipv4" : { "prefix" : "10.0.2.0/24", "gatewayIp" : "10.0.2.1", "gatewayMac" : "00:00:00:00:02:01" }
         }
-      ]
-      "gatewayList" : [
-         "ipv4" : { "prefix" : "0.0.0.0/0", "gatewayIp" : "10.0.0.31" }
+      ],
+      "ipv4GatewayList" : [
+         { "prefix" : "0.0.0.0/0", "gatewayIp" : "10.0.0.31" }
       ]
     }
   }
