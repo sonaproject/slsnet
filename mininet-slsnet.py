@@ -1,6 +1,6 @@
 #!/usr/bin/python
 
-# Mininet modile for Simple Leaf-Spine Network
+# Mininet model for Simple Leaf-Spine Network
 
 from mininet.topo import Topo
 from mininet.net import Mininet
