@@ -51,6 +51,9 @@
         ],
         "ip6LocalPrefixes" : [
         ],
+        "ip4Routes" : [
+           { "ipPrefix" : "0.0.0.0/0", "gatewayIp" : "10.0.0.31" }
+        ],
         "virtualGatewayMacAddress" : "00:00:00:00:00:01"
       }
     }

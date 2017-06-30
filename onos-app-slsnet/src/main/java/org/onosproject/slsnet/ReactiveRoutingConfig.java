@@ -37,6 +37,7 @@ public class ReactiveRoutingConfig extends Config<ApplicationId> {
 
     public static final String IP4LOCALPREFIXES = "ip4LocalPrefixes";
     public static final String IP6LOCALPREFIXES = "ip6LocalPrefixes";
+    public static final String IP4ROUTES = "ip4Routes";
     public static final String IPPREFIX = "ipPrefix";
     public static final String TYPE = "type";
     public static final String GATEWAYIP = "gatewayIp";
@@ -92,6 +93,29 @@ public class ReactiveRoutingConfig extends Config<ApplicationId> {
         });
 
         return prefixes;
+    }
+
+    /**
+     * Gets the set of configured IPv4 Routes.
+     *
+     * @return IPv4 routes
+     */
+    public Set<RoutingEntry> ip4RoutingEntries() {
+        Set<RoutingEntry> routes = Sets.newHashSet();
+
+        JsonNode routesNode = object.get(IP4ROUTES);
+        if (routesNode == null) {
+            log.warn("ip4Routes is null!");
+            return routes;
+        }
+
+        routesNode.forEach(jsonNode -> {
+            routes.add(new RoutingEntry(
+                    IpPrefix.valueOf(jsonNode.get(IPPREFIX).asText()),
+                    IpAddress.valueOf(jsonNode.get(GATEWAYIP).asText())));
+        });
+
+        return routes;
     }
 
     /**

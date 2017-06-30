@@ -59,7 +59,7 @@ public class VplsConfigManager {
     private static final String NET_CONF_EVENT = "Received NetworkConfigEvent {}";
     private static final String CONFIG_NULL = "VPLS configuration not defined";
     private static final int INITIAL_RELOAD_CONFIG_DELAY = 0;
-    private static final int INITIAL_RELOAD_CONFIG_PERIOD = 1000;
+    private static final int INITIAL_RELOAD_CONFIG_PERIOD = 60;  //org:1000
     private static final int NUM_THREADS = 1;
     private static final String VPLS = "vpls";
     private final Logger log = LoggerFactory.getLogger(getClass());
