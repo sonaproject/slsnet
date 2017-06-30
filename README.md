@@ -143,8 +143,8 @@ app activate org.onosproject.slsnet
 
 ### ONOS Network Configuration
 
-- [slsnet_cfg.json](slsnet_cfg.json)
-- to update: `onos-netcfg localhost slsnet_cfg.json`
+- [slsnet-cfg.json](slsnet-cfg.json)
+- to update: `onos-netcfg localhost slsnet-cfg.json`
   - each call updates loaded network config (onos netcfg to see loaded config)
   - updated values are immediately applied to existing entries
 - to clean: `onos-netcfg localhost delete`
@@ -198,8 +198,8 @@ app activate org.onosproject.slsnet
           "ipv4" : { "prefix" : "10.0.2.0/24", "gatewayIp" : "10.0.2.1", "gatewayMac" : "00:00:00:00:02:01" }
         }
       ]
-      "gatewayList" : [
-         "ipv4" : { "prefix" : "0.0.0.0/0", "gatewayIp" : "10.0.0.31" },
+      "ipv4GatewayList" : [
+        { "prefix" : "0.0.0.0/0", "gatewayIp" : "10.0.0.31" }
       ]
     }
   }
@@ -247,8 +247,8 @@ OR
   - handle ARP on virtual router ip
   - NO hanndling on ICMP on router ip  
 
-**ONOS Network Configuration** [`network-cfg.json`](network-cfg.json)
-- to update: `onos-netcfg localhost network-cfg.json`
+**ONOS Network Configuration** [`network-cfg-base-app.json`](network-cfg-base-app.json)
+- to update: `onos-netcfg localhost network-cfg-base-app.json`
   - each call updates loaded network config (onos netcfg to see loaded config)
   - updated values are immediately applied to existing entries
 - to clean: `onos-netcfg localhost delete`
