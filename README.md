@@ -276,36 +276,27 @@ Folling app are auto activated by SLSNET app's dependency
 -->
 
 
-- Network Config Link Provider
-  - https://wiki.onosproject.org/display/ONOS/Network+Config+Link+Provider
-  - auto Regi/Deregi Links
+## Roles of SLSNET App's Sub Features
 
-- VLAN L2 Broadcast Network Appp (VPLS)
-  - https://wiki.onosproject.org/display/ONOS/Virtual+Private+LAN+Service+-+VPLS
-  - to handle L2 switch local broadcast/unicast
-  - may configure to include multiple switches
+SLSNET VLAN L2 Broadcast Network App (VPLS)
+- https://wiki.onosproject.org/display/ONOS/Virtual+Private+LAN+Service+-+VPLS
+- to handle L2 switch local broadcast/unicast
+- may configure to include multiple switches
 
-- SDN-IP Reactive Forwarding App --> SDN-IP, Intent Synchronizer
-  - https://wiki.onosproject.org/display/ONOS/SDN-IP+Reactive+Routing
-  - handle cases at least one host is with Local SDN
-  - handle ARP on virtual router ip
-  - NO hanndling on ICMP on router ip  
-
-- SDN-IP Installed Intents's Host MAC is not updated when Host's MAC value is changed (ex. restart Mininet)
-  - The related flow seem not working for DST MAC is updated as old MAC, then receiving host DROPs IT!!!
-
-VLAN L2 Broadcast Network App (VPLS)
-- add name-only interface per each ports to handle (should be separate interface to SDN-IP's)
-- add config per vpls and it's port names in vpls app config
-
-SDN-IP Reactive Forwarding App
+SLSNET SDN-IP Reactive Forwarding App
+- https://wiki.onosproject.org/display/ONOS/SDN-IP+Reactive+Routing
 - handles inter switch (hnx--hmx) routing by adding host intents
 - port.{device_id}.interfaces must be set for all host ports
   with valid route ip configed as interfaces value
 - reactiveRoutings ip4LocalPrefixes of type PRIVATE only
-- TO CHECK: ECMP handling for SL-SS allocation per host intents compile
+- handle ARP on virtual router ip
+- NO hanndling on ICMP on router ip  
+- ** TO CHECK: ECMP handling for SL-SS allocation per host intents compile **
+- ** ISSUE SDN-IP Installed Intents's Host MAC is not updated when Host's MAC value is changed (ex. restart Mininet)
+  - The related flow seem not working for DST MAC is updated as old MAC, then receiving host DROPs IT!!! **
 
-Use ONOS Incubator API/Command routes/route-add which affect SND-IP Intents for local-external traffic
+SLSNET SDN-IP
+- affect SND-IP Intents for local<->external traffic
 - register default route with onos cli route command: `onos -lonos 'route-add 0.0.0.0/0 10.0.0.31'`
   - to show route table: `onos -lonos routes`
   - Password authentication
