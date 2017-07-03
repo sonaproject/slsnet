@@ -87,7 +87,10 @@ Logical Switch Context
 <table>
 <tr><td>
 Network Diagram
-
+</td><td>
+Mininet topology model: [`slsnet.py`](slsnet.py)
+</td></tr>
+<tr><td>
 <pre>
        EH1
       /   \
@@ -103,13 +106,8 @@ Network Diagram
    +- H14  +- H24
    +- D11  +- D21
    +- D12  +- D22 
-</pre>
-
-</td>
-<td>
-Mininet topology model: [`slsnet.py`](slsnet.py)
-
-<pre>
+</pre></td>
+<td><pre>
    h31(10.0.0.31/24)    h32(10.0.0.32/24)
            |                    |
            |                    |
@@ -124,9 +122,7 @@ Mininet topology model: [`slsnet.py`](slsnet.py)
    +- h14(10.0.1.14)    +- h24(10.0.2.24)
    +- d11(10.0.1.111)   +- d21(10.0.2.221)
    +- d12(10.0.1.112)   +- d22(10.0.2.222)
-</pre>
-
-</td></tr>
+</pre></td></tr>
 </table>
 
 - LSn acts as L2 switch for Hnm and L3 Subnet Router for Hnm  
