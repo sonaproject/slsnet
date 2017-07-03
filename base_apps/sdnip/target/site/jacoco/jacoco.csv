@@ -1,0 +1,16 @@
+GROUP,PACKAGE,CLASS,INSTRUCTION_MISSED,INSTRUCTION_COVERED,BRANCH_MISSED,BRANCH_COVERED,LINE_MISSED,LINE_COVERED,COMPLEXITY_MISSED,COMPLEXITY_COVERED,METHOD_MISSED,METHOD_COVERED
+onos-app-slsnet-sdnip,org.onosproject.sdnip,SdnIpFib.new Object() {...},11,79,0,0,0,3,0,1,0,1
+onos-app-slsnet-sdnip,org.onosproject.sdnip,SdnIpFib.InternalNetworkConfigListener,18,6,6,0,6,1,5,1,1,1
+onos-app-slsnet-sdnip,org.onosproject.sdnip,SdnIpFib.InternalInterfaceListener,12,28,2,2,3,7,2,3,0,2
+onos-app-slsnet-sdnip,org.onosproject.sdnip,SdnIp.new ConfigFactory() {...},13,0,0,0,2,0,2,0,2,0
+onos-app-slsnet-sdnip,org.onosproject.sdnip,PeerConnectivityManager.new Object() {...},65,0,0,0,2,0,1,0,1,0
+onos-app-slsnet-sdnip,org.onosproject.sdnip,PeerConnectivityManager.InternalNetworkConfigListener,22,6,8,0,7,1,6,1,1,1
+onos-app-slsnet-sdnip,org.onosproject.sdnip,SdnIpFib.InternalRouteListener,0,28,1,2,0,7,1,3,0,2
+onos-app-slsnet-sdnip,org.onosproject.sdnip,SdnIpFib,231,485,31,23,36,141,35,21,14,15
+onos-app-slsnet-sdnip,org.onosproject.sdnip,SdnIp,203,0,14,0,20,0,27,0,20,0
+onos-app-slsnet-sdnip,org.onosproject.sdnip,PeerConnectivityManager,70,619,12,24,19,163,13,18,2,11
+onos-app-slsnet-sdnip,org.onosproject.sdnip,PeerConnectivityManager.InternalInterfaceListener,12,6,2,0,4,1,2,1,1,1
+onos-app-slsnet-sdnip,org.onosproject.sdnip.cli.completer,SdnIpEncapCompleter,11,0,0,0,4,0,2,0,2,0
+onos-app-slsnet-sdnip,org.onosproject.sdnip.cli.completer,SdnIpCommandCompleter,11,0,0,0,2,0,2,0,2,0
+onos-app-slsnet-sdnip,org.onosproject.sdnip.cli,SdnIpCommand,90,0,12,0,21,0,9,0,3,0
+onos-app-slsnet-sdnip,org.onosproject.sdnip.config,SdnIpConfig,17,12,1,1,4,4,2,2,1,2

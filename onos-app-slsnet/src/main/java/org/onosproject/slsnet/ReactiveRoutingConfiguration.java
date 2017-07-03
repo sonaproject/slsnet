@@ -93,7 +93,7 @@ public class ReactiveRoutingConfiguration implements
             reactiveRoutingConfigFactory =
             new ConfigFactory<ApplicationId, ReactiveRoutingConfig>(
                     SubjectFactories.APP_SUBJECT_FACTORY,
-                    ReactiveRoutingConfig.class, "reactiveRouting") {
+                    ReactiveRoutingConfig.class, "ipNetwork") {
         @Override
         public ReactiveRoutingConfig createConfig() {
             return new ReactiveRoutingConfig();

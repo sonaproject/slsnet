@@ -1,0 +1,42 @@
+GROUP,PACKAGE,CLASS,INSTRUCTION_MISSED,INSTRUCTION_COVERED,BRANCH_MISSED,BRANCH_COVERED,LINE_MISSED,LINE_COVERED,COMPLEXITY_MISSED,COMPLEXITY_COVERED,METHOD_MISSED,METHOD_COVERED
+onos-app-slsnet-vpls,org.onosproject.vpls,VplsOperationManager.InternalLeadershipListener,0,48,1,3,0,7,1,4,0,3
+onos-app-slsnet-vpls,org.onosproject.vpls,VplsManager.VplsStoreDelegate,8,53,3,9,2,17,3,6,0,2
+onos-app-slsnet-vpls,org.onosproject.vpls,VplsOperationManager.VplsOperationExecutor,36,356,6,15,7,94,6,25,1,18
+onos-app-slsnet-vpls,org.onosproject.vpls,VplsOperationManager.Direction,5,33,0,0,0,3,1,3,1,3
+onos-app-slsnet-vpls,org.onosproject.vpls,VplsNeighbourHandler.new Object() {...},2,17,0,0,0,1,0,1,0,1
+onos-app-slsnet-vpls,org.onosproject.vpls,VplsManager.new Object() {...},3,23,0,0,0,1,0,1,0,1
+onos-app-slsnet-vpls,org.onosproject.vpls,VplsNeighbourHandler,60,261,10,18,0,60,15,22,10,13
+onos-app-slsnet-vpls,org.onosproject.vpls,VplsNeighbourHandler.VplsInterfaceListener,4,6,0,0,2,1,1,1,1,1
+onos-app-slsnet-vpls,org.onosproject.vpls,VplsOperationManager.VplsOperationExecutor.IntentCompleter,9,91,3,9,4,22,3,6,0,3
+onos-app-slsnet-vpls,org.onosproject.vpls,VplsNeighbourHandler.VplsNeighbourMessageHandler,7,24,1,2,1,7,1,3,0,2
+onos-app-slsnet-vpls,org.onosproject.vpls,VplsOperationManager,72,242,13,25,0,60,19,20,12,8
+onos-app-slsnet-vpls,org.onosproject.vpls,VplsOperationManager.new Object() {...},10,77,0,0,0,4,0,1,0,1
+onos-app-slsnet-vpls,org.onosproject.vpls,VplsOperationManager.VplsOperationScheduler,23,142,2,5,4,36,2,7,0,5
+onos-app-slsnet-vpls,org.onosproject.vpls,VplsNeighbourHandler.VplsConfigListener,4,6,0,0,2,1,1,1,1,1
+onos-app-slsnet-vpls,org.onosproject.vpls,VplsManager.VplsHostListener,3,72,4,4,2,17,4,5,0,5
+onos-app-slsnet-vpls,org.onosproject.vpls,VplsManager,56,196,10,2,3,60,15,13,9,13
+onos-app-slsnet-vpls,org.onosproject.vpls.cli,VplsCommandEnum,5,146,2,6,0,21,3,8,1,6
+onos-app-slsnet-vpls,org.onosproject.vpls.cli,VplsCommand.new Object() {...},8,53,0,0,0,1,0,1,0,1
+onos-app-slsnet-vpls,org.onosproject.vpls.cli,VplsCommand,213,384,26,39,45,118,26,28,0,18
+onos-app-slsnet-vpls,org.onosproject.vpls.api,VplsData,8,186,2,10,2,50,2,21,0,17
+onos-app-slsnet-vpls,org.onosproject.vpls.api,VplsOperation,16,70,2,6,2,19,3,8,1,6
+onos-app-slsnet-vpls,org.onosproject.vpls.api,VplsOperationException,0,10,0,0,0,4,0,2,0,2
+onos-app-slsnet-vpls,org.onosproject.vpls.api,VplsData.VplsState,5,73,0,0,0,7,1,3,1,3
+onos-app-slsnet-vpls,org.onosproject.vpls.api,VplsOperation.Operation,5,43,0,0,0,4,1,3,1,3
+onos-app-slsnet-vpls,org.onosproject.vpls.config,VplsConfigManager.new Object() {...},4,29,0,0,0,1,0,1,0,1
+onos-app-slsnet-vpls,org.onosproject.vpls.config,VplsConfigManager.new ConfigFactory() {...},4,9,0,0,1,1,1,1,1,1
+onos-app-slsnet-vpls,org.onosproject.vpls.config,VplsConfig,5,88,5,5,2,16,5,7,0,7
+onos-app-slsnet-vpls,org.onosproject.vpls.config,VplsConfigManager.InternalNetworkConfigListener,0,33,2,3,0,8,2,3,0,2
+onos-app-slsnet-vpls,org.onosproject.vpls.config,VplsConfigManager,76,315,16,22,2,77,22,22,12,13
+onos-app-slsnet-vpls,org.onosproject.vpls.config,VplsAppConfig,6,349,9,31,1,81,9,31,0,20
+onos-app-slsnet-vpls,org.onosproject.vpls.store,VplsStoreEvent.Type,5,43,0,0,0,4,1,3,1,3
+onos-app-slsnet-vpls,org.onosproject.vpls.store,VplsStoreEvent,0,5,0,0,0,2,0,1,0,1
+onos-app-slsnet-vpls,org.onosproject.vpls.store,DistributedVplsStore,84,208,11,5,12,55,17,10,9,10
+onos-app-slsnet-vpls,org.onosproject.vpls.store,DistributedVplsStore.InternalVplsDataListener,7,74,3,6,2,18,3,4,0,2
+onos-app-slsnet-vpls,org.onosproject.vpls.store,DistributedVplsStore.new Object() {...},5,39,0,0,0,2,0,1,0,1
+onos-app-slsnet-vpls,org.onosproject.vpls.cli.completer,VplsCommandCompleter.new Object() {...},19,0,0,0,1,0,1,0,1,0
+onos-app-slsnet-vpls,org.onosproject.vpls.cli.completer,VplsNameCompleter,4,16,1,1,1,4,1,2,0,2
+onos-app-slsnet-vpls,org.onosproject.vpls.cli.completer,VplsOptArgCompleter,14,102,5,9,5,31,5,9,0,6
+onos-app-slsnet-vpls,org.onosproject.vpls.cli.completer,VplsOptArgCompleter.new Object() {...},3,23,0,0,0,1,0,1,0,1
+onos-app-slsnet-vpls,org.onosproject.vpls.cli.completer,VplsCommandCompleter,16,25,5,3,5,9,4,2,0,2
+onos-app-slsnet-vpls,org.onosproject.vpls.intent,VplsIntentUtility,7,334,4,14,4,94,5,19,1,14

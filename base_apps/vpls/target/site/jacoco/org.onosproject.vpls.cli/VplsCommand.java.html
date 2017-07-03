@@ -1,0 +1,416 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="ko"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>VplsCommand.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">onos-app-slsnet-vpls</a> &gt; <a href="index.source.html" class="el_package">org.onosproject.vpls.cli</a> &gt; <span class="el_source">VplsCommand.java</span></div><h1>VplsCommand.java</h1><pre class="source lang-java linenums">/*
+ * Copyright 2015-present Open Networking Laboratory
+ *
+ * Licensed under the Apache License, Version 2.0 (the &quot;License&quot;);
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package org.onosproject.vpls.cli;
+
+import com.google.common.collect.ImmutableSet;
+import org.apache.karaf.shell.commands.Argument;
+import org.apache.karaf.shell.commands.Command;
+import org.onosproject.cli.AbstractShellCommand;
+import org.onosproject.incubator.net.intf.Interface;
+import org.onosproject.incubator.net.intf.InterfaceService;
+import org.onosproject.net.EncapsulationType;
+import org.onosproject.vpls.api.VplsData;
+import org.onosproject.vpls.api.Vpls;
+import org.onosproject.vpls.api.VplsData.VplsState;
+
+import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
+
+import static com.google.common.base.Strings.isNullOrEmpty;
+import static org.onosproject.vpls.api.VplsData.VplsState.*;
+
+
+/**
+ * CLI to interact with the VPLS application.
+ */
+@Command(scope = &quot;onos&quot;, name = &quot;vpls&quot;,
+        description = &quot;Manages the VPLS application&quot;)
+<span class="fc" id="L44">public class VplsCommand extends AbstractShellCommand {</span>
+<span class="fc" id="L45">    private static final Set&lt;VplsState&gt; CHANGING_STATE =</span>
+<span class="fc" id="L46">            ImmutableSet.of(ADDING, REMOVING, UPDATING);</span>
+
+    // Color codes and style
+    private static final String BOLD = &quot;\u001B[1m&quot;;
+    private static final String COLOR_ERROR = &quot;\u001B[31m&quot;;
+    private static final String RESET = &quot;\u001B[0m&quot;;
+
+    // Messages and string formatter
+    private static final String ENCAP_NOT_FOUND =
+            COLOR_ERROR + &quot;Encapsulation type &quot; + BOLD + &quot;%s&quot; + RESET +
+                    COLOR_ERROR + &quot; not found&quot; + RESET;
+
+    private static final String IFACE_NOT_FOUND =
+            COLOR_ERROR + &quot;Interface &quot; + BOLD + &quot;%s&quot; + RESET + COLOR_ERROR +
+                    &quot; not found&quot; + RESET;
+
+    private static final String IFACE_ALREADY_ASSOCIATED =
+            COLOR_ERROR + &quot;Interface &quot; + BOLD + &quot;%s&quot; + RESET + COLOR_ERROR +
+                    &quot; already associated to VPLS &quot; + BOLD + &quot;%s&quot; + RESET +
+                    COLOR_ERROR + &quot;&quot; + RESET;
+
+    private static final String INSERT_VPLS_NAME =
+            COLOR_ERROR + &quot;Missing the &quot; + BOLD + &quot;VPLS name.&quot; + RESET +
+                    COLOR_ERROR + &quot; Specifying a VPLS name is mandatory.&quot; +
+                    RESET;
+
+    private static final String INSERT_ENCAP_TYPE =
+            COLOR_ERROR + &quot;Missing the &quot; + BOLD + &quot;encapsulation type.&quot; +
+                    RESET + COLOR_ERROR + &quot; Encapsulation type is mandatory.&quot; +
+                    RESET;
+
+    private static final String INSERT_INTERFACE =
+            COLOR_ERROR + &quot;Missing the &quot; + BOLD + &quot;interface name.&quot; +
+                    RESET + COLOR_ERROR + &quot; Specifying an interface name is&quot; +
+                    &quot; mandatory.&quot; + RESET;
+
+    private static final String SEPARATOR = &quot;----------------&quot;;
+
+    private static final String VPLS_ALREADY_EXISTS =
+            COLOR_ERROR + &quot;VPLS &quot; + BOLD + &quot;%s&quot; + RESET + COLOR_ERROR +
+                    &quot; already exists&quot; + RESET;
+
+    private static final String VPLS_COMMAND_NOT_FOUND =
+            COLOR_ERROR + &quot;VPLS command &quot; + BOLD + &quot;%s&quot; + RESET + COLOR_ERROR +
+                    &quot; not found&quot; + RESET;
+
+    private static final String VPLS_DISPLAY = &quot;VPLS name: &quot; + BOLD +
+            &quot;%s&quot; + RESET + &quot;\nAssociated interfaces: %s\nEncapsulation: %s\n&quot; +
+            &quot;State: %s&quot;;
+
+    private static final String VPLS_NOT_FOUND =
+            COLOR_ERROR + &quot;VPLS &quot; + BOLD + &quot;%s&quot; + RESET + COLOR_ERROR +
+                    &quot; not found&quot; + RESET;
+
+    private static final String IFACE_NOT_ASSOCIATED =
+            COLOR_ERROR + &quot;Interface &quot; + BOLD + &quot;%s&quot; + RESET + COLOR_ERROR +
+                    &quot; cannot be removed from VPLS &quot; + BOLD + &quot;%s&quot; + RESET + &quot;.&quot;;
+
+    protected static Vpls vpls;
+    protected static InterfaceService interfaceService;
+
+<span class="fc" id="L107">    @Argument(index = 0, name = &quot;command&quot;, description = &quot;Command name (add-if|&quot; +</span>
+            &quot;create|delete|list|rem-if|set-encap|show)&quot;,
+            required = true, multiValued = false)
+    String command = null;
+
+<span class="fc" id="L112">    @Argument(index = 1, name = &quot;vplsName&quot;, description = &quot;The name of the VPLS&quot;,</span>
+            required = false, multiValued = false)
+    String vplsName = null;
+
+<span class="fc" id="L116">    @Argument(index = 2, name = &quot;optArg&quot;, description = &quot;The interface name or&quot; +</span>
+            &quot; the encapsulation type for set-encap&quot;,
+            required = false, multiValued = false)
+    String optArg = null;
+
+    @Override
+    protected void execute() {
+<span class="pc bpc" id="L123" title="1 of 2 branches missed.">        if (vpls == null) {</span>
+<span class="nc" id="L124">            vpls = get(Vpls.class);</span>
+        }
+<span class="pc bpc" id="L126" title="1 of 2 branches missed.">        if (interfaceService == null) {</span>
+<span class="nc" id="L127">            interfaceService = get(InterfaceService.class);</span>
+        }
+
+<span class="fc" id="L130">        VplsCommandEnum enumCommand = VplsCommandEnum.enumFromString(command);</span>
+<span class="pc bpc" id="L131" title="1 of 2 branches missed.">        if (enumCommand != null) {</span>
+<span class="pc bpc" id="L132" title="1 of 9 branches missed.">            switch (enumCommand) {</span>
+                case ADD_IFACE:
+<span class="fc" id="L134">                    addIface(vplsName, optArg);</span>
+<span class="fc" id="L135">                    break;</span>
+                case CREATE:
+<span class="fc" id="L137">                    create(vplsName);</span>
+<span class="fc" id="L138">                    break;</span>
+                case DELETE:
+<span class="fc" id="L140">                    delete(vplsName);</span>
+<span class="fc" id="L141">                    break;</span>
+                case LIST:
+<span class="fc" id="L143">                    list();</span>
+<span class="fc" id="L144">                    break;</span>
+                case REMOVE_IFACE:
+<span class="fc" id="L146">                    removeIface(vplsName, optArg);</span>
+<span class="fc" id="L147">                    break;</span>
+                case SET_ENCAP:
+<span class="fc" id="L149">                    setEncap(vplsName, optArg);</span>
+<span class="fc" id="L150">                    break;</span>
+                case SHOW:
+<span class="fc" id="L152">                    show(vplsName);</span>
+<span class="fc" id="L153">                    break;</span>
+                case CLEAN:
+<span class="fc" id="L155">                    cleanVpls();</span>
+<span class="fc" id="L156">                    break;</span>
+                default:
+<span class="nc" id="L158">                    print(VPLS_COMMAND_NOT_FOUND, command);</span>
+            }
+        } else {
+<span class="nc" id="L161">            print(VPLS_COMMAND_NOT_FOUND, command);</span>
+        }
+<span class="fc" id="L163">    }</span>
+
+    /**
+     * Adds an inteterface to a VPLS.
+     *
+     * @param vplsName the name of the VLPS
+     * @param ifaceName the name of the interface to add
+     */
+    protected void addIface(String vplsName, String ifaceName) {
+<span class="pc bpc" id="L172" title="1 of 2 branches missed.">        if (vplsName == null) {</span>
+<span class="nc" id="L173">            print(INSERT_VPLS_NAME);</span>
+<span class="nc" id="L174">            return;</span>
+        }
+<span class="pc bpc" id="L176" title="1 of 2 branches missed.">        if (ifaceName == null) {</span>
+<span class="nc" id="L177">            print(INSERT_INTERFACE);</span>
+<span class="nc" id="L178">            return;</span>
+        }
+
+<span class="fc" id="L181">        Interface iface = getInterface(ifaceName);</span>
+<span class="fc" id="L182">        VplsData vplsData = vpls.getVpls(vplsName);</span>
+
+<span class="pc bpc" id="L184" title="1 of 2 branches missed.">        if (vplsData == null) {</span>
+<span class="nc" id="L185">            print(VPLS_NOT_FOUND, vplsName);</span>
+<span class="nc" id="L186">            return;</span>
+        }
+<span class="pc bpc" id="L188" title="1 of 2 branches missed.">        if (CHANGING_STATE.contains(vplsData.state())) {</span>
+            // when a VPLS is updating, we shouldn't try modify it.
+<span class="nc" id="L190">            print(&quot;VPLS %s still updating, please wait it finished&quot;, vplsData.name());</span>
+<span class="nc" id="L191">            return;</span>
+        }
+<span class="pc bpc" id="L193" title="1 of 2 branches missed.">        if (iface == null) {</span>
+<span class="nc" id="L194">            print(IFACE_NOT_FOUND, ifaceName);</span>
+<span class="nc" id="L195">            return;</span>
+        }
+<span class="fc bfc" id="L197" title="All 2 branches covered.">        if (isIfaceAssociated(iface)) {</span>
+<span class="fc" id="L198">            print(IFACE_ALREADY_ASSOCIATED,</span>
+<span class="fc" id="L199">                  ifaceName, getVplsByInterface(iface).name());</span>
+<span class="fc" id="L200">            return;</span>
+        }
+<span class="fc" id="L202">        vpls.addInterface(vplsData, iface);</span>
+<span class="fc" id="L203">    }</span>
+
+    /**
+     * Creates a new VPLS.
+     *
+     * @param vplsName the name of the VLPS
+     */
+    protected void create(String vplsName) {
+<span class="pc bpc" id="L211" title="2 of 4 branches missed.">        if (vplsName == null || vplsName.isEmpty()) {</span>
+<span class="nc" id="L212">            print(INSERT_VPLS_NAME);</span>
+<span class="nc" id="L213">            return;</span>
+        }
+<span class="fc" id="L215">        VplsData vplsData = vpls.getVpls(vplsName);</span>
+<span class="pc bpc" id="L216" title="1 of 2 branches missed.">        if (vplsData != null) {</span>
+<span class="nc" id="L217">            print(VPLS_ALREADY_EXISTS, vplsName);</span>
+<span class="nc" id="L218">            return;</span>
+        }
+<span class="fc" id="L220">        vpls.createVpls(vplsName, EncapsulationType.NONE);</span>
+<span class="fc" id="L221">    }</span>
+
+    /**
+     * Deletes a VPLS.
+     *
+     * @param vplsName the name of the VLPS
+     */
+    protected void delete(String vplsName) {
+<span class="pc bpc" id="L229" title="1 of 2 branches missed.">        if (vplsName == null) {</span>
+<span class="nc" id="L230">            print(INSERT_VPLS_NAME);</span>
+<span class="nc" id="L231">            return;</span>
+        }
+<span class="fc" id="L233">        VplsData vplsData = vpls.getVpls(vplsName);</span>
+<span class="pc bpc" id="L234" title="1 of 2 branches missed.">        if (vplsData == null) {</span>
+<span class="nc" id="L235">            print(VPLS_NOT_FOUND, vplsName);</span>
+<span class="nc" id="L236">            return;</span>
+        }
+<span class="pc bpc" id="L238" title="1 of 2 branches missed.">        if (CHANGING_STATE.contains(vplsData.state())) {</span>
+            // when a VPLS is updating, we shouldn't try modify it.
+<span class="nc" id="L240">            print(&quot;VPLS %s still updating, please wait it finished&quot;, vplsData.name());</span>
+<span class="nc" id="L241">            return;</span>
+        }
+<span class="fc" id="L243">        vpls.removeVpls(vplsData);</span>
+<span class="fc" id="L244">    }</span>
+
+    /**
+     * Lists the configured VPLSs.
+     */
+    protected void list() {
+<span class="fc" id="L250">        List&lt;String&gt; vplsNames = vpls.getAllVpls().stream()</span>
+<span class="fc" id="L251">                .map(VplsData::name)</span>
+<span class="fc" id="L252">                .collect(Collectors.toList());</span>
+<span class="fc" id="L253">        Collections.sort(vplsNames);</span>
+
+<span class="fc" id="L255">        vplsNames.forEach(vpls -&gt; {</span>
+<span class="fc" id="L256">            print(vpls);</span>
+<span class="fc" id="L257">        });</span>
+<span class="fc" id="L258">    }</span>
+
+    /**
+     * Removes an interface from a VPLS.
+     *
+     * @param vplsName the name of the VLPS
+     * @param ifaceName the name of the interface to remove
+     */
+    protected void removeIface(String vplsName, String ifaceName) {
+<span class="pc bpc" id="L267" title="1 of 2 branches missed.">        if (vplsName == null) {</span>
+<span class="nc" id="L268">            print(INSERT_VPLS_NAME);</span>
+<span class="nc" id="L269">            return;</span>
+        }
+<span class="pc bpc" id="L271" title="1 of 2 branches missed.">        if (ifaceName == null) {</span>
+<span class="nc" id="L272">            print(INSERT_INTERFACE);</span>
+<span class="nc" id="L273">            return;</span>
+        }
+<span class="fc" id="L275">        VplsData vplsData = vpls.getVpls(vplsName);</span>
+<span class="fc" id="L276">        Interface iface = getInterface(ifaceName);</span>
+<span class="pc bpc" id="L277" title="1 of 2 branches missed.">        if (vplsData == null) {</span>
+<span class="nc" id="L278">            print(VPLS_NOT_FOUND, vplsName);</span>
+<span class="nc" id="L279">            return;</span>
+        }
+<span class="pc bpc" id="L281" title="1 of 2 branches missed.">        if (CHANGING_STATE.contains(vplsData.state())) {</span>
+            // when a VPLS is updating, we shouldn't try modify it.
+<span class="nc" id="L283">            print(&quot;VPLS %s still updating, please wait it finished&quot;, vplsData.name());</span>
+<span class="nc" id="L284">            return;</span>
+        }
+<span class="pc bpc" id="L286" title="1 of 2 branches missed.">        if (iface == null) {</span>
+<span class="nc" id="L287">            print(IFACE_NOT_FOUND, ifaceName);</span>
+<span class="nc" id="L288">            return;</span>
+        }
+<span class="pc bpc" id="L290" title="1 of 2 branches missed.">        if (!vplsData.interfaces().contains(iface)) {</span>
+<span class="nc" id="L291">            print(IFACE_NOT_ASSOCIATED, ifaceName, vplsName);</span>
+<span class="nc" id="L292">            return;</span>
+        }
+<span class="fc" id="L294">        vpls.removeInterface(vplsData, iface);</span>
+<span class="fc" id="L295">    }</span>
+
+    /**
+     * Sets the encapsulation type for a VPLS.
+     *
+     * @param vplsName the name of the VPLS
+     * @param encap the encapsulation type
+     */
+    protected void setEncap(String vplsName, String encap) {
+<span class="pc bpc" id="L304" title="1 of 2 branches missed.">        if (vplsName == null) {</span>
+<span class="nc" id="L305">            print(INSERT_VPLS_NAME);</span>
+<span class="nc" id="L306">            return;</span>
+        }
+<span class="pc bpc" id="L308" title="1 of 2 branches missed.">        if (encap == null) {</span>
+<span class="nc" id="L309">            print(INSERT_ENCAP_TYPE);</span>
+<span class="nc" id="L310">            return;</span>
+        }
+<span class="fc" id="L312">        VplsData vplsData = vpls.getVpls(vplsName);</span>
+<span class="pc bpc" id="L313" title="1 of 2 branches missed.">        if (vplsData == null) {</span>
+<span class="nc" id="L314">            print(VPLS_NOT_FOUND, vplsName);</span>
+<span class="nc" id="L315">            return;</span>
+        }
+<span class="fc" id="L317">        EncapsulationType encapType = EncapsulationType.enumFromString(encap);</span>
+<span class="fc bfc" id="L318" title="All 2 branches covered.">        if (encapType.equals(EncapsulationType.NONE) &amp;&amp;</span>
+<span class="pc bpc" id="L319" title="1 of 2 branches missed.">            !encapType.toString().equals(encap)) {</span>
+<span class="nc" id="L320">            print(ENCAP_NOT_FOUND, encap);</span>
+<span class="nc" id="L321">            return;</span>
+        }
+<span class="fc" id="L323">        vpls.setEncapsulationType(vplsData, encapType);</span>
+<span class="fc" id="L324">    }</span>
+
+    /**
+     * Shows the details of one or more VPLSs.
+     *
+     * @param vplsName the name of the VPLS
+     */
+    protected void show(String vplsName) {
+<span class="fc bfc" id="L332" title="All 2 branches covered.">        if (!isNullOrEmpty(vplsName)) {</span>
+            // A VPLS name is provided. Check first if the VPLS exists
+<span class="fc" id="L334">            VplsData vplsData = vpls.getVpls(vplsName);</span>
+<span class="pc bpc" id="L335" title="1 of 2 branches missed.">            if (vplsData != null) {</span>
+<span class="fc" id="L336">                Set&lt;String&gt; ifaceNames = vplsData.interfaces().stream()</span>
+<span class="fc" id="L337">                        .map(Interface::name)</span>
+<span class="fc" id="L338">                        .collect(Collectors.toSet());</span>
+<span class="fc" id="L339">                print(VPLS_DISPLAY,</span>
+                      vplsName,
+                      ifaceNames,
+<span class="fc" id="L342">                      vplsData.encapsulationType().toString(),</span>
+<span class="fc" id="L343">                      vplsData.state());</span>
+<span class="fc" id="L344">            } else {</span>
+<span class="nc" id="L345">                print(VPLS_NOT_FOUND, vplsName);</span>
+            }
+<span class="fc" id="L347">        } else {</span>
+<span class="fc" id="L348">            Collection&lt;VplsData&gt; vplses = vpls.getAllVpls();</span>
+            // No VPLS names are provided. Display all VPLSs configured
+<span class="fc" id="L350">            print(SEPARATOR);</span>
+<span class="fc" id="L351">            vplses.forEach(vplsData -&gt; {</span>
+<span class="fc" id="L352">                Set&lt;String&gt; ifaceNames = vplsData.interfaces().stream()</span>
+<span class="fc" id="L353">                        .map(Interface::name)</span>
+<span class="fc" id="L354">                        .collect(Collectors.toSet());</span>
+<span class="fc" id="L355">                print(VPLS_DISPLAY,</span>
+<span class="fc" id="L356">                      vplsData.name(),</span>
+                      ifaceNames,
+<span class="fc" id="L358">                      vplsData.encapsulationType().toString(),</span>
+<span class="fc" id="L359">                      vplsData.state());</span>
+<span class="fc" id="L360">                print(SEPARATOR);</span>
+<span class="fc" id="L361">            });</span>
+        }
+<span class="fc" id="L363">    }</span>
+
+    /**
+     * Remove all VPLS.
+     */
+    protected void cleanVpls() {
+<span class="fc" id="L369">        vpls.removeAllVpls();</span>
+<span class="fc" id="L370">    }</span>
+
+
+    /**
+     * States if an interface is already associated to a VPLS.
+     *
+     * @param iface the interface
+     * @return true if the interface is already associated to a VPLS; false
+     * otherwise
+     */
+    private static boolean isIfaceAssociated(Interface iface) {
+<span class="fc" id="L381">        return vpls.getAllVpls()</span>
+<span class="fc" id="L382">                .stream()</span>
+<span class="fc" id="L383">                .map(VplsData::interfaces)</span>
+<span class="fc" id="L384">                .flatMap(Collection::stream)</span>
+<span class="fc" id="L385">                .anyMatch(iface::equals);</span>
+    }
+
+    /**
+     * Gets a network interface by given interface name.
+     *
+     * @param interfaceName the interface name
+     * @return the network interface
+     */
+    private Interface getInterface(String interfaceName) {
+        // FIXME: only returns first interface it found
+        // multiple interface with same name not support
+<span class="fc" id="L397">        return interfaceService.getInterfaces().stream()</span>
+<span class="fc" id="L398">                .filter(iface -&gt; iface.name().equals(interfaceName))</span>
+<span class="fc" id="L399">                .findFirst()</span>
+<span class="fc" id="L400">                .orElse(null);</span>
+    }
+
+    /**
+     * Gets a VPLS related to the network interface.
+     *
+     * @param iface the network interface
+     * @return the VPLS related to the network interface
+     */
+    private VplsData getVplsByInterface(Interface iface) {
+<span class="fc" id="L410">        return vpls.getAllVpls().stream()</span>
+<span class="fc" id="L411">                .filter(vplsData -&gt; vplsData.interfaces().contains(iface))</span>
+<span class="fc" id="L412">                .findFirst()</span>
+<span class="fc" id="L413">                .orElse(null);</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span></div></body></html>

@@ -35,9 +35,8 @@ public class ReactiveRoutingConfig extends Config<ApplicationId> {
 
     private final Logger log = LoggerFactory.getLogger(getClass());
 
-    public static final String IP4LOCALPREFIXES = "ip4LocalPrefixes";
-    public static final String IP6LOCALPREFIXES = "ip6LocalPrefixes";
-    public static final String IP4ROUTES = "ip4Routes";
+    public static final String IP4SUBNETS = "ip4Subnets";
+    public static final String IP6SUBNETS = "ip6Subnets";
     public static final String IPPREFIX = "ipPrefix";
     public static final String TYPE = "type";
     public static final String GATEWAYIP = "gatewayIp";
@@ -52,9 +51,9 @@ public class ReactiveRoutingConfig extends Config<ApplicationId> {
     public Set<LocalIpPrefixEntry> localIp4PrefixEntries() {
         Set<LocalIpPrefixEntry> prefixes = Sets.newHashSet();
 
-        JsonNode prefixesNode = object.get(IP4LOCALPREFIXES);
+        JsonNode prefixesNode = object.get(IP4SUBNETS);
         if (prefixesNode == null) {
-            log.warn("ip4LocalPrefixes is null!");
+            log.warn("ip4Subnets is null!");
             return prefixes;
         }
 
@@ -62,7 +61,7 @@ public class ReactiveRoutingConfig extends Config<ApplicationId> {
 
             prefixes.add(new LocalIpPrefixEntry(
                     IpPrefix.valueOf(jsonNode.get(IPPREFIX).asText()),
-                    LocalIpPrefixEntry.IpPrefixType.valueOf(jsonNode.get(TYPE).asText()),
+                    LocalIpPrefixEntry.IpPrefixType.valueOf("PRIVATE"),
                     IpAddress.valueOf(jsonNode.get(GATEWAYIP).asText())));
         });
 
@@ -77,10 +76,11 @@ public class ReactiveRoutingConfig extends Config<ApplicationId> {
     public Set<LocalIpPrefixEntry> localIp6PrefixEntries() {
         Set<LocalIpPrefixEntry> prefixes = Sets.newHashSet();
 
-        JsonNode prefixesNode = object.get(IP6LOCALPREFIXES);
+        JsonNode prefixesNode = object.get(IP6SUBNETS);
 
         if (prefixesNode == null) {
-            log.warn("ip6LocalPrefixes is null!");
+            /* no warning for ip6 case is not implemented */
+            /*log.warn("ip6LocalPrefixes is null!"); */
             return prefixes;
         }
 
@@ -88,34 +88,11 @@ public class ReactiveRoutingConfig extends Config<ApplicationId> {
 
             prefixes.add(new LocalIpPrefixEntry(
                     IpPrefix.valueOf(jsonNode.get(IPPREFIX).asText()),
-                    LocalIpPrefixEntry.IpPrefixType.valueOf(jsonNode.get(TYPE).asText()),
+                    LocalIpPrefixEntry.IpPrefixType.valueOf("PRIVATE"),
                     IpAddress.valueOf(jsonNode.get(GATEWAYIP).asText())));
         });
 
         return prefixes;
-    }
-
-    /**
-     * Gets the set of configured IPv4 Routes.
-     *
-     * @return IPv4 routes
-     */
-    public Set<RoutingEntry> ip4RoutingEntries() {
-        Set<RoutingEntry> routes = Sets.newHashSet();
-
-        JsonNode routesNode = object.get(IP4ROUTES);
-        if (routesNode == null) {
-            log.warn("ip4Routes is null!");
-            return routes;
-        }
-
-        routesNode.forEach(jsonNode -> {
-            routes.add(new RoutingEntry(
-                    IpPrefix.valueOf(jsonNode.get(IPPREFIX).asText()),
-                    IpAddress.valueOf(jsonNode.get(GATEWAYIP).asText())));
-        });
-
-        return routes;
     }
 
     /**
