@@ -150,6 +150,7 @@ Folling app are auto activated by SLSNET app's dependency
 - OpenFlow Provider (for OpenFlow Controller) --> Optical inforamtion model
 - Host Location Provider (for auto regi host from ARP)
 - Network Config Link Provider (for auto Regi/Deregi Links)
+- Proxy ARP/NDP (to do ARP response for host nodes, request of which is intercepted by Host Location Prorvider)
 
 
 ### ONOS Network Configuration
