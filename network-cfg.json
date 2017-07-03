@@ -39,8 +39,8 @@
     "org.onosproject.slsnet" : {
       "vpls" : {
         "vplsList" : [
-          { "name" : "VPLS1", "interfaces" : ["h11", "h12", "h13", "h14", "d11", "d12" ] },
-          { "name" : "VPLS2", "interfaces" : ["h21", "h22", "h23", "h24", "d21", "d22" ] }
+          { "name" : "LEAF1", "interfaces" : ["h11", "h12", "h13", "h14", "d11", "d12" ] },
+          { "name" : "LEAF2", "interfaces" : ["h21", "h22", "h23", "h24", "d21", "d22" ] }
         ]
       },
       "ipNetwork" : {
