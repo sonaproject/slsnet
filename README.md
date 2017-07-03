@@ -84,7 +84,11 @@ Logical Switch Context
 
 ## Topology
 
-```txt
+<table>
+<tr><td>
+Network Diagram
+
+<pre>
        EH1
       /   \
      /     \
@@ -98,12 +102,16 @@ Logical Switch Context
    +- H13  +- H23
    +- H14  +- H24
    +- D11  +- D21
-   +- D12  +- D22
-```
+   +- D12  +- D22 
+</pre>
 
+</td>
+<td>
 Mininet topology model: [`slsnet.py`](slsnet.py)
-```txt
+
+<pre>
    h31(10.0.0.31/24)    h32(10.0.0.32/24)
+           |                    |
            |                    |
   [ss1(10.0.0.10/24)]  [ss2(10.0.0.20/24)]
            |        \ /         |
@@ -116,7 +124,10 @@ Mininet topology model: [`slsnet.py`](slsnet.py)
    +- h14(10.0.1.14)    +- h24(10.0.2.24)
    +- d11(10.0.1.111)   +- d21(10.0.2.221)
    +- d12(10.0.1.112)   +- d22(10.0.2.222)
-```
+</pre>
+
+</td></tr>
+<table>
 
 - LSn acts as L2 switch for Hnm and L3 Subnet Router for Hnm  
 - SSn acts as inter-Subnet L3 Router for LSns and Use EH1 as Default Router
@@ -234,11 +245,10 @@ SLSNET SDN-IP Reactive Forwarding App
 - ** ISSUE SDN-IP Installed Intents's Host MAC is not updated when Host's MAC value is changed (ex. restart Mininet)
   - The related flow seem not working for DST MAC is updated as old MAC, then receiving host DROPs IT!!! **
 
-SLSNET SDN-IP
+SLSNET SDN-IP + Incubator Routing API
 - affect SND-IP Intents for local<->external traffic
-- register default route with onos cli route command: `onos -lonos 'route-add 0.0.0.0/0 10.0.0.31'`
-  - to show route table: `onos -lonos routes`
-  - Password authentication
+- register default route by netcfg "routes" subject within org.onosproject.slsnet app configuration
+- onos cli command: `routes`
 - registers MultiPointToSinglePointIntent for source={all edge ports with named interface} to target={port for next hop}
   (seems auto probe for the next hop host)
 
