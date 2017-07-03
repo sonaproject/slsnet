@@ -35,6 +35,8 @@ import org.onosproject.core.ApplicationId;
 import org.onosproject.core.CoreService;
 import org.onosproject.incubator.net.intf.InterfaceService;
 import org.onosproject.net.ConnectPoint;
+import org.onosproject.incubator.net.routing.Route;
+import org.onosproject.incubator.net.routing.RouteAdminService;
 import org.onosproject.net.config.ConfigFactory;
 import org.onosproject.net.config.NetworkConfigEvent;
 import org.onosproject.net.config.NetworkConfigListener;
@@ -74,6 +76,9 @@ public class ReactiveRoutingConfiguration implements
 
     @Reference(cardinality = ReferenceCardinality.MANDATORY_UNARY)
     protected InterfaceService interfaceService;
+
+    @Reference(cardinality = ReferenceCardinality.MANDATORY_UNARY)
+    protected RouteAdminService routeService;
 
     private Set<IpAddress> gatewayIpAddresses = new HashSet<>();
     private Set<ConnectPoint> bgpPeerConnectPoints = new HashSet<>();
@@ -148,7 +153,7 @@ public class ReactiveRoutingConfiguration implements
         BgpConfig bgpConfig = configService.getConfig(routerAppId, BgpConfig.class);
 
         if (bgpConfig == null) {
-            log.info("BGP config is null!");
+            /*log.info("BGP config is null!"); */
             return;
         } else {
             bgpPeerConnectPoints =
@@ -174,6 +179,30 @@ public class ReactiveRoutingConfiguration implements
                     IpPrefix.valueOf(ipAddress, Ip6Address.BIT_LENGTH)))
                     .iterator().hasNext();
         }
+    }
+
+    /* ipRoutes config event handling */
+    private void processRouteConfigAdded(NetworkConfigEvent event) {
+        Set<Route> routes = ((ReactiveRoutingConfig) event.config().get()).getRoutes();
+        routeService.update(routes);
+    }
+
+    private void processRouteConfigUpdated(NetworkConfigEvent event) {
+        Set<Route> routes = ((ReactiveRoutingConfig) event.config().get()).getRoutes();
+        Set<Route> prevRoutes = ((ReactiveRoutingConfig) event.prevConfig().get()).getRoutes();
+        Set<Route> pendingRemove = prevRoutes.stream()
+                .filter(prevRoute -> routes.stream()
+                        .noneMatch(route -> route.prefix().equals(prevRoute.prefix())))
+                .collect(Collectors.toSet());
+        Set<Route> pendingUpdate = routes.stream()
+                .filter(route -> !pendingRemove.contains(route)).collect(Collectors.toSet());
+        routeService.update(pendingUpdate);
+        routeService.withdraw(pendingRemove);
+    }
+
+    private void processRouteConfigRemoved(NetworkConfigEvent event) {
+        Set<Route> prevRoutes = ((ReactiveRoutingConfig) event.prevConfig().get()).getRoutes();
+        routeService.withdraw(prevRoutes);
     }
 
     @Override
@@ -203,20 +232,26 @@ public class ReactiveRoutingConfiguration implements
 
         @Override
         public void event(NetworkConfigEvent event) {
-            switch (event.type()) {
-            case CONFIG_REGISTERED:
-                break;
-            case CONFIG_UNREGISTERED:
-                break;
-            case CONFIG_ADDED:
-            case CONFIG_UPDATED:
-            case CONFIG_REMOVED:
-                if (event.configClass() == ReactiveRoutingConfigurationService.CONFIG_CLASS) {
+            if (event.configClass().equals(ReactiveRoutingConfigurationService.CONFIG_CLASS)) {
+                switch (event.type()) {
+                case CONFIG_ADDED:
                     setUpConfiguration();
+                    processRouteConfigAdded(event);
+                    break;
+
+                case CONFIG_UPDATED:
+                    setUpConfiguration();
+                    processRouteConfigUpdated(event);
+                    break;
+
+                case CONFIG_REMOVED:
+                    setUpConfiguration();
+                    processRouteConfigRemoved(event);
+                    break;
+
+                default:
+                    break;
                 }
-                break;
-            default:
-                break;
             }
         }
     }

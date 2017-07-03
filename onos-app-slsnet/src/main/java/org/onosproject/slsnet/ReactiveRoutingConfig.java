@@ -23,6 +23,7 @@ import org.onlab.packet.IpPrefix;
 import org.onlab.packet.MacAddress;
 import org.onosproject.core.ApplicationId;
 import org.onosproject.net.config.Config;
+import org.onosproject.incubator.net.routing.Route;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -37,6 +38,7 @@ public class ReactiveRoutingConfig extends Config<ApplicationId> {
 
     public static final String IP4SUBNETS = "ip4Subnets";
     public static final String IP6SUBNETS = "ip6Subnets";
+    public static final String IPROUTES = "ipRoutes";
     public static final String IPPREFIX = "ipPrefix";
     public static final String TYPE = "type";
     public static final String GATEWAYIP = "gatewayIp";
@@ -58,7 +60,6 @@ public class ReactiveRoutingConfig extends Config<ApplicationId> {
         }
 
         prefixesNode.forEach(jsonNode -> {
-
             prefixes.add(new LocalIpPrefixEntry(
                     IpPrefix.valueOf(jsonNode.get(IPPREFIX).asText()),
                     LocalIpPrefixEntry.IpPrefixType.valueOf("PRIVATE"),
@@ -77,7 +78,6 @@ public class ReactiveRoutingConfig extends Config<ApplicationId> {
         Set<LocalIpPrefixEntry> prefixes = Sets.newHashSet();
 
         JsonNode prefixesNode = object.get(IP6SUBNETS);
-
         if (prefixesNode == null) {
             /* no warning for ip6 case is not implemented */
             /*log.warn("ip6LocalPrefixes is null!"); */
@@ -85,7 +85,6 @@ public class ReactiveRoutingConfig extends Config<ApplicationId> {
         }
 
         prefixesNode.forEach(jsonNode -> {
-
             prefixes.add(new LocalIpPrefixEntry(
                     IpPrefix.valueOf(jsonNode.get(IPPREFIX).asText()),
                     LocalIpPrefixEntry.IpPrefixType.valueOf("PRIVATE"),
@@ -93,6 +92,34 @@ public class ReactiveRoutingConfig extends Config<ApplicationId> {
         });
 
         return prefixes;
+    }
+
+    /**
+     * Returns all routes in this configuration.
+     *
+     * @return A set of route.
+     */
+    public Set<Route> getRoutes() {
+        Set<Route> routes = Sets.newHashSet();
+
+        JsonNode routesNode = object.get(IPROUTES);
+        if (routesNode == null) {
+            /* no warning for ip6 case is not implemented */
+            /*log.warn("ip6LocalPrefixes is null!"); */
+            return routes;
+        }
+
+        routesNode.forEach(jsonNode -> {
+            try {
+                routes.add(new Route(Route.Source.STATIC,
+                      IpPrefix.valueOf(jsonNode.path(IPPREFIX).asText()),
+                      IpAddress.valueOf(jsonNode.path(GATEWAYIP).asText())));
+            } catch (IllegalArgumentException e) {
+                // Ignores routes that cannot be parsed correctly
+            }
+        });
+
+        return routes;
     }
 
     /**

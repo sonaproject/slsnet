@@ -49,11 +49,11 @@
            { "ipPrefix" : "10.0.1.0/24", "gatewayIp" : "10.0.1.1"  },
            { "ipPrefix" : "10.0.2.0/24", "gatewayIp" : "10.0.2.1" }
         ],
+        "ipRoutes" : [
+          { "ipPrefix" : "0.0.0.0/0", "gatewayIp" : "10.0.0.31" }
+        ],
         "virtualGatewayMacAddress" : "00:00:00:00:00:01"
-      },
-      "routes" : [
-        { "prefix" : "0.0.0.0/0", "nextHop" : "10.0.0.31" }
-      ]
+      }
     }
   }
 
