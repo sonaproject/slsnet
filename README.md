@@ -84,7 +84,14 @@ Logical Switch Context
 
 ## Topology
 
-```txt
+<table>
+<tr><td>
+Network Diagram
+</td><td>
+Mininet Model: <a href="slsnet.py"><code>slsnet.py</code></a>
+</td></tr>
+<tr><td>
+<pre>
        EH1
       /   \
      /     \
@@ -98,12 +105,11 @@ Logical Switch Context
    +- H13  +- H23
    +- H14  +- H24
    +- D11  +- D21
-   +- D12  +- D22
-```
-
-Mininet topology model: [`slsnet.py`](slsnet.py)
-```txt
+   +- D12  +- D22 
+</pre></td>
+<td><pre>
    h31(10.0.0.31/24)    h32(10.0.0.32/24)
+           |                    |
            |                    |
   [ss1(10.0.0.10/24)]  [ss2(10.0.0.20/24)]
            |        \ /         |
@@ -116,7 +122,8 @@ Mininet topology model: [`slsnet.py`](slsnet.py)
    +- h14(10.0.1.14)    +- h24(10.0.2.24)
    +- d11(10.0.1.111)   +- d21(10.0.2.221)
    +- d12(10.0.1.112)   +- d22(10.0.2.222)
-```
+</pre></td></tr>
+</table>
 
 - LSn acts as L2 switch for Hnm and L3 Subnet Router for Hnm  
 - SSn acts as inter-Subnet L3 Router for LSns and Use EH1 as Default Router
@@ -143,78 +150,18 @@ Folling app are auto activated by SLSNET app's dependency
 - OpenFlow Provider (for OpenFlow Controller) --> Optical inforamtion model
 - Host Location Provider (for auto regi host from ARP)
 - Network Config Link Provider (for auto Regi/Deregi Links)
+- Proxy ARP/NDP (to do ARP response for host nodes, request of which is intercepted by Host Location Prorvider)
 
 
 ### ONOS Network Configuration
 
-- [network-cfg.json](network-cfg.json)
+- SEE: [network-cfg.json](network-cfg.json)
 - to update: `onos-netcfg localhost network-cfg.json`
   - each call updates loaded network config (onos netcfg to see loaded config)
   - updated values are immediately applied to existing entries
 - to clean: `onos-netcfg localhost delete`
 - to be applied at onos restarts, copy `network-cfg.json` to `${ONOS_HOME}/config/`
 
-```none
-{
-
-  "devices":{
-    "of:0000000000000001":{ "basic":{ "name":"SS1", "latitude":40, "longitude":-100 } },
-    "of:0000000000000002":{ "basic":{ "name":"SS2", "latitude":40, "longitude":-90  } },
-    "of:000000000000000a":{ "basic":{ "name":"LS1", "latitude":35, "longitude":-100 } },
-    "of:0000000000000014":{ "basic":{ "name":"LS2", "latitude":35, "longitude":-90  } }
-  },
-
-  "ports" : {
-    "of:0000000000000001/1" : { "interfaces" : [ { "name" : "SS1_LS1" } ] },
-    "of:0000000000000001/2" : { "interfaces" : [ { "name" : "SS1_LS2" } ] },
-    "of:0000000000000001/3" : { "interfaces" : [ { "name" : "SS1_h31", "ips" : [ "10.0.0.10/24" ], "mac"  : "00:00:00:00:00:01" } ] },
-
-    "of:0000000000000002/1" : { "interfaces" : [ { "name" : "SS2_LS1" } ] },
-    "of:0000000000000002/2" : { "interfaces" : [ { "name" : "SS2_LS2" } ] },
-    "of:0000000000000002/3" : { "interfaces" : [ { "name" : "SS2_h32", "ips" : [ "10.0.0.20/24" ], "mac"  : "00:00:00:00:00:01" } ] },
-
-    "of:000000000000000a/1" : { "interfaces" : [ { "name" : "h11", "ips" : [ "10.0.1.1/24" ], "mac" : "00:00:00:00:00:01" } ] },
-    "of:000000000000000a/2" : { "interfaces" : [ { "name" : "h12", "ips" : [ "10.0.1.1/24" ], "mac" : "00:00:00:00:00:01" } ] },
-    "of:000000000000000a/3" : { "interfaces" : [ { "name" : "h13", "ips" : [ "10.0.1.1/24" ], "mac" : "00:00:00:00:00:01" } ] },
-    "of:000000000000000a/4" : { "interfaces" : [ { "name" : "h14", "ips" : [ "10.0.1.1/24" ], "mac" : "00:00:00:00:00:01" } ] },
-    "of:000000000000000a/5" : { "interfaces" : [ { "name" : "d11", "ips" : [ "10.0.1.1/24" ], "mac" : "00:00:00:00:00:01" } ] },
-    "of:000000000000000a/6" : { "interfaces" : [ { "name" : "d12", "ips" : [ "10.0.1.1/24" ], "mac" : "00:00:00:00:00:01" } ] },
-    "of:000000000000000a/7" : { "interfaces" : [ { "name" : "LS1_SS1" } ] },
-    "of:000000000000000a/8" : { "interfaces" : [ { "name" : "LS1_SS2" } ] },
-
-    "of:0000000000000014/1" : { "interfaces" : [ { "name" : "h21", "ips" : [ "10.0.2.1/24" ], "mac" : "00:00:00:00:00:01" } ] },
-    "of:0000000000000014/2" : { "interfaces" : [ { "name" : "h22", "ips" : [ "10.0.2.1/24" ], "mac" : "00:00:00:00:00:01" } ] },
-    "of:0000000000000014/3" : { "interfaces" : [ { "name" : "h23", "ips" : [ "10.0.2.1/24" ], "mac" : "00:00:00:00:00:01" } ] },
-    "of:0000000000000014/4" : { "interfaces" : [ { "name" : "h24", "ips" : [ "10.0.2.1/24" ], "mac" : "00:00:00:00:00:01" } ] },
-    "of:0000000000000014/5" : { "interfaces" : [ { "name" : "d21", "ips" : [ "10.0.2.1/24" ], "mac" : "00:00:00:00:00:01" } ] },
-    "of:0000000000000014/6" : { "interfaces" : [ { "name" : "d22", "ips" : [ "10.0.2.1/24" ], "mac" : "00:00:00:00:00:01" } ] },
-    "of:0000000000000014/7" : { "interfaces" : [ { "name" : "LS2_SS1" } ] },
-    "of:0000000000000014/8" : { "interfaces" : [ { "name" : "LS2_SS2" } ] }
-  },
-
-  "apps" : {
-    "org.onosproject.slsnet" : {
-      "vpls" : {
-        "vplsList" : [
-          { "name" : "VPLS1", "interfaces" : ["h11", "h12", "h13", "h14", "d11", "d12" ] },
-          { "name" : "VPLS2", "interfaces" : ["h21", "h22", "h23", "h24", "d21", "d22" ] }
-        ]
-      },
-      "reactiveRouting" : {
-        "ip4LocalPrefixes" : [
-           { "ipPrefix" : "10.0.0.0/24", "type" : "PRIVATE", "gatewayIp" : "10.0.0.10" },
-           { "ipPrefix" : "10.0.1.0/24", "type" : "PRIVATE", "gatewayIp" : "10.0.1.1"  },
-           { "ipPrefix" : "10.0.2.0/24", "type" : "PRIVATE", "gatewayIp" : "10.0.2.1" }
-        ],
-        "ip6LocalPrefixes" : [
-        ],
-        "virtualGatewayMacAddress" : "00:00:00:00:00:01"
-      }
-    }
-  }
-
-}  
-```
 
 <!-- EXPECTED FUTURE CONIFUGRATION TO-BE
 ```none
@@ -295,11 +242,10 @@ SLSNET SDN-IP Reactive Forwarding App
 - ** ISSUE SDN-IP Installed Intents's Host MAC is not updated when Host's MAC value is changed (ex. restart Mininet)
   - The related flow seem not working for DST MAC is updated as old MAC, then receiving host DROPs IT!!! **
 
-SLSNET SDN-IP
+SLSNET SDN-IP + Incubator Routing API
 - affect SND-IP Intents for local<->external traffic
-- register default route with onos cli route command: `onos -lonos 'route-add 0.0.0.0/0 10.0.0.31'`
-  - to show route table: `onos -lonos routes`
-  - Password authentication
+- register default route by netcfg "routes" subject within org.onosproject.slsnet app configuration
+- onos cli command: `routes`
 - registers MultiPointToSinglePointIntent for source={all edge ports with named interface} to target={port for next hop}
   (seems auto probe for the next hop host)
 
