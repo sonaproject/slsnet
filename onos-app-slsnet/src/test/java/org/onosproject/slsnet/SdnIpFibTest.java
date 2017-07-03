@@ -58,7 +58,6 @@ import org.onosproject.net.host.InterfaceIpAddress;
 import org.onosproject.net.intent.AbstractIntentTest;
 import org.onosproject.net.intent.Key;
 import org.onosproject.net.intent.MultiPointToSinglePointIntent;
-import org.onosproject.slsnet.config.SdnIpConfig;
 
 import java.util.Collections;
 import java.util.List;
@@ -654,17 +653,17 @@ public class SdnIpFibTest extends AbstractIntentTest {
         @Override
         public <S, C extends Config<S>> C getConfig(S subject, Class<C> configClass) {
             ApplicationId appId =
-                    new TestApplicationId(SlsNet.SDN_IP_APP);
+                    new TestApplicationId(SlsNet.APP_ID);
 
             ObjectMapper mapper = new ObjectMapper();
             ConfigApplyDelegate delegate = new MockCfgDelegate();
             JsonNode emptyTree = new ObjectMapper().createObjectNode();
 
-            SdnIpConfig sdnIpConfig = new SdnIpConfig();
+            SlsNetConfig slsNetConfig = new SlsNetConfig();
 
-            sdnIpConfig.init(appId, "slsip-test", emptyTree, mapper, delegate);
+            slsNetConfig.init(appId, "slsip-test", emptyTree, mapper, delegate);
 
-            return (C) sdnIpConfig;
+            return (C) slsNetConfig;
         }
     }
 

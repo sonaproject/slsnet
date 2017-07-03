@@ -47,7 +47,6 @@ import org.onosproject.net.intent.constraint.EncapsulationConstraint;
 import org.onosproject.intentsync.IntentSynchronizationService;
 import org.onosproject.routing.RoutingService;
 import org.onosproject.routing.config.BgpConfig;
-import org.onosproject.slsnet.config.SdnIpConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -138,10 +137,9 @@ public class PeerConnectivityManager {
      */
     private void setUpConnectivity() {
         BgpConfig bgpConfig = configService.getConfig(routerAppId, RoutingService.CONFIG_CLASS);
-        SdnIpConfig sdnIpConfig = configService.getConfig(appId, SdnIpConfig.class);
 
         Set<BgpConfig.BgpSpeakerConfig> bgpSpeakers;
-        EncapsulationType encap;
+        EncapsulationType encap = EncapsulationType.NONE;
 
         if (bgpConfig == null) {
             log.debug("No BGP config available");
@@ -150,12 +148,6 @@ public class PeerConnectivityManager {
             bgpSpeakers = bgpConfig.bgpSpeakers();
         }
 
-        if (sdnIpConfig == null) {
-            log.debug("No SDN-IP config available");
-            encap = EncapsulationType.NONE;
-        } else {
-            encap = sdnIpConfig.encap();
-        }
 
         Map<Key, PointToPointIntent> existingIntents = new HashMap<>(peerIntents);
 
@@ -525,7 +517,7 @@ public class PeerConnectivityManager {
             case CONFIG_UPDATED:
             case CONFIG_REMOVED:
                 if (event.configClass() == RoutingService.CONFIG_CLASS ||
-                    event.configClass() == SdnIpConfig.class) {
+                    event.configClass() == SlsNetConfig.class) {
                     setUpConnectivity();
                 }
                 break;

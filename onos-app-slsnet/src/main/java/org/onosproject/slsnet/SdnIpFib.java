@@ -55,7 +55,6 @@ import org.onosproject.net.intent.MultiPointToSinglePointIntent;
 import org.onosproject.net.intent.constraint.EncapsulationConstraint;
 import org.onosproject.net.intent.constraint.PartialFailureConstraint;
 import org.onosproject.intentsync.IntentSynchronizationService;
-import org.onosproject.slsnet.config.SdnIpConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -106,7 +105,7 @@ public class SdnIpFib {
 
     @Activate
     public void activate() {
-        appId = coreService.getAppId(SlsNet.SDN_IP_APP);
+        appId = coreService.getAppId(SlsNet.APP_ID);
         interfaceService.addListener(interfaceListener);
         networkConfigService.addListener(networkConfigListener);
         routeService.addListener(routeListener);
@@ -445,15 +444,7 @@ public class SdnIpFib {
     }
 
     private EncapsulationType encap() {
-        SdnIpConfig sdnIpConfig =
-                networkConfigService.getConfig(appId, SdnIpConfig.class);
-
-        if (sdnIpConfig == null) {
-            log.debug("No SDN-IP config available");
-            return EncapsulationType.NONE;
-        } else {
-            return sdnIpConfig.encap();
-        }
+        return EncapsulationType.NONE;
     }
 
     private class InternalRouteListener implements RouteListener {
@@ -484,7 +475,7 @@ public class SdnIpFib {
                 case CONFIG_ADDED:
                 case CONFIG_UPDATED:
                 case CONFIG_REMOVED:
-                    if (event.configClass() == SdnIpConfig.class) {
+                    if (event.configClass() == SlsNetConfig.class) {
                         encapUpdate();
                     }
                     break;

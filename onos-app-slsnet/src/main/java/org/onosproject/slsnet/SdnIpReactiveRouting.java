@@ -87,7 +87,7 @@ public class SdnIpReactiveRouting {
     protected IntentSynchronizationService intentSynchronizer;
 
     @Reference(cardinality = ReferenceCardinality.MANDATORY_UNARY)
-    protected ReactiveRoutingConfigurationService config;
+    protected SlsNet config;
 
     @Reference(cardinality = ReferenceCardinality.MANDATORY_UNARY)
     protected InterfaceService interfaceService;
