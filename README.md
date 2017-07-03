@@ -127,7 +127,7 @@ Mininet topology model: [`slsnet.py`](slsnet.py)
 </pre>
 
 </td></tr>
-<table>
+</table>
 
 - LSn acts as L2 switch for Hnm and L3 Subnet Router for Hnm  
 - SSn acts as inter-Subnet L3 Router for LSns and Use EH1 as Default Router
