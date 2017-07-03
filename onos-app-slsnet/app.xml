@@ -17,7 +17,7 @@
 <app name="org.onosproject.slsnet" origin="ON.Lab" version="${project.version}"
      category="Traffic Steering" url="http://onosproject.org" title="Simple Leaf-Spine Network App"
      featuresRepo="mvn:${project.groupId}/${project.artifactId}/${project.version}/xml/features"
-     features="${project.artifactId}" apps="org.onosproject.intentsynchronizer,org.onosproject.openflow-base,org.onosproject.netcfglinksprovider,org.onosproject.hostprovider">
+     features="${project.artifactId}" apps="org.onosproject.intentsynchronizer,org.onosproject.openflow-base,org.onosproject.netcfglinksprovider,org.onosproject.hostprovider,org.onosproject.proxyarp">
     <description>${project.description}</description>
     <artifact>mvn:${project.groupId}/${project.artifactId}/${project.version}</artifact>
     <artifact>mvn:${project.groupId}/onos-app-routing-api/${project.version}</artifact>
