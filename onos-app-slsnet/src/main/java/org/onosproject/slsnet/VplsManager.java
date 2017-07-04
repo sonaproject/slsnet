@@ -29,13 +29,6 @@ import org.onosproject.net.Host;
 import org.onosproject.net.host.HostEvent;
 import org.onosproject.net.host.HostListener;
 import org.onosproject.net.host.HostService;
-import org.onosproject.store.StoreDelegate;
-import org.onosproject.slsnet.api.VplsData;
-import org.onosproject.slsnet.api.VplsOperationService;
-import org.onosproject.slsnet.api.VplsOperation;
-import org.onosproject.slsnet.api.Vpls;
-import org.onosproject.slsnet.api.VplsStore;
-import org.onosproject.slsnet.store.VplsStoreEvent;
 import org.slf4j.Logger;
 
 import java.util.Collection;
@@ -67,21 +60,15 @@ public class VplsManager implements Vpls {
     @Reference(cardinality = ReferenceCardinality.MANDATORY_UNARY)
     protected VplsOperationService operationService;
 
-    private StoreDelegate<VplsStoreEvent> vplsStoreDelegate;
-    private HostListener vplsHostListener;
+    private HostListener vplsHostListener = new VplsHostListener();
 
     @Activate
     public void activate() {
-        vplsStoreDelegate = new VplsStoreDelegate();
-        vplsHostListener = new VplsHostListener();
-
-        vplsStore.setDelegate(vplsStoreDelegate);
         hostService.addListener(vplsHostListener);
     }
 
     @Deactivate
     public void deactivate() {
-        vplsStore.unsetDelegate(vplsStoreDelegate);
         hostService.removeListener(vplsHostListener);
     }
 
@@ -90,13 +77,7 @@ public class VplsManager implements Vpls {
         requireNonNull(vplsName);
         requireNonNull(encapsulationType);
 
-        if (vplsStore.getVpls(vplsName) != null) {
-            return null;
-        }
-
         VplsData vplsData = VplsData.of(vplsName, encapsulationType);
-        vplsStore.addVpls(vplsData);
-
         return vplsData;
     }
 
@@ -228,44 +209,4 @@ public class VplsManager implements Vpls {
         }
     }
 
-    /**
-     * Store delegate for VPLS store.
-     * Handles VPLS store event and generate VPLS operation according to event
-     * type.
-     */
-    class VplsStoreDelegate implements StoreDelegate<VplsStoreEvent> {
-
-        @Override
-        public void notify(VplsStoreEvent event) {
-            VplsOperation vplsOperation;
-            VplsOperation.Operation op;
-            VplsData vplsData = event.subject();
-            switch (event.type()) {
-                case ADD:
-                    op = VplsOperation.Operation.ADD;
-                    break;
-                case REMOVE:
-                    op = VplsOperation.Operation.REMOVE;
-                    break;
-                case UPDATE:
-                    if (vplsData.state() == VplsData.VplsState.FAILED ||
-                            vplsData.state() == VplsData.VplsState.ADDED ||
-                            vplsData.state() == VplsData.VplsState.REMOVED) {
-                        // Update the state only. Nothing to do if it is updated
-                        // to ADDED, REMOVED or FAILED
-                        op = null;
-                    } else {
-                        op = VplsOperation.Operation.UPDATE;
-                    }
-                    break;
-                default:
-                    log.warn(UNSUPPORTED_STORE_EVENT_TYPE, event.type());
-                    return;
-            }
-            if (op != null) {
-                vplsOperation = VplsOperation.of(vplsData, op);
-                operationService.submit(vplsOperation);
-            }
-        }
-    }
 }

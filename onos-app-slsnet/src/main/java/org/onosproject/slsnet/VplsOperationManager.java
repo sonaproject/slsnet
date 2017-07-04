@@ -45,12 +45,6 @@ import org.onosproject.net.intent.IntentUtils;
 import org.onosproject.net.intent.Key;
 import org.onosproject.net.intent.MultiPointToSinglePointIntent;
 import org.onosproject.net.intent.SinglePointToMultiPointIntent;
-import org.onosproject.slsnet.api.VplsData;
-import org.onosproject.slsnet.api.VplsOperationException;
-import org.onosproject.slsnet.api.VplsOperationService;
-import org.onosproject.slsnet.api.VplsOperation;
-import org.onosproject.slsnet.api.VplsStore;
-import org.onosproject.slsnet.intent.VplsIntentUtility;
 import org.slf4j.Logger;
 
 import java.util.Collection;

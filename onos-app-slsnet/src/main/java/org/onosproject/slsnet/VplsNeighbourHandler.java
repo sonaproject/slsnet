@@ -37,8 +37,6 @@ import org.onosproject.net.config.NetworkConfigEvent;
 import org.onosproject.net.config.NetworkConfigListener;
 import org.onosproject.net.config.NetworkConfigService;
 import org.onosproject.net.host.HostService;
-import org.onosproject.slsnet.api.VplsData;
-import org.onosproject.slsnet.api.VplsStore;
 import org.slf4j.Logger;
 
 import java.util.Collection;

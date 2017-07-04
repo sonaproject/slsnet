@@ -135,6 +135,10 @@ public class SlsNet implements SlsNetService {
         log.info("SlsNet stopped");
     }
 
+    public ApplicationId getAppId() {
+        return appId;
+    }
+
     /**
      * Set up reactive routing information from configuration.
      */
