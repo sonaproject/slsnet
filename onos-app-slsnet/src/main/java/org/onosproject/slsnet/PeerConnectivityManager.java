@@ -138,6 +138,8 @@ public class PeerConnectivityManager {
     private void setUpConnectivity() {
         BgpConfig bgpConfig = configService.getConfig(routerAppId, RoutingService.CONFIG_CLASS);
 
+        log.info("PeerConnectivityManager.setUpConnectivity() called");
+
         Set<BgpConfig.BgpSpeakerConfig> bgpSpeakers;
         EncapsulationType encap = EncapsulationType.NONE;
 
@@ -509,10 +511,6 @@ public class PeerConnectivityManager {
         @Override
         public void event(NetworkConfigEvent event) {
             switch (event.type()) {
-            case CONFIG_REGISTERED:
-                break;
-            case CONFIG_UNREGISTERED:
-                break;
             case CONFIG_ADDED:
             case CONFIG_UPDATED:
             case CONFIG_REMOVED:

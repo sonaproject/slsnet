@@ -41,9 +41,9 @@ import org.onosproject.incubator.net.routing.RouteService;
 import org.onosproject.net.ConnectPoint;
 import org.onosproject.net.EncapsulationType;
 import org.onosproject.net.FilteredConnectPoint;
-import org.onosproject.net.config.NetworkConfigEvent;
-import org.onosproject.net.config.NetworkConfigListener;
 import org.onosproject.net.config.NetworkConfigService;
+import org.onosproject.net.config.NetworkConfigListener;
+import org.onosproject.net.config.NetworkConfigEvent;
 import org.onosproject.net.flow.DefaultTrafficSelector;
 import org.onosproject.net.flow.DefaultTrafficTreatment;
 import org.onosproject.net.flow.TrafficSelector;
@@ -88,10 +88,13 @@ public class SdnIpFib {
     @Reference(cardinality = ReferenceCardinality.MANDATORY_UNARY)
     protected RouteService routeService;
 
+    @Reference(cardinality = ReferenceCardinality.MANDATORY_UNARY)
+    protected SlsNetConfigService config;
+
     private final InternalRouteListener routeListener = new InternalRouteListener();
     private final InternalInterfaceListener interfaceListener = new InternalInterfaceListener();
     private final InternalNetworkConfigListener networkConfigListener =
-            new InternalNetworkConfigListener();
+                new InternalNetworkConfigListener();
 
     private static final int PRIORITY_OFFSET = 100;
     private static final int PRIORITY_MULTIPLIER = 5;
@@ -114,6 +117,7 @@ public class SdnIpFib {
     @Deactivate
     public void deactivate() {
         interfaceService.removeListener(interfaceListener);
+        networkConfigService.removeListener(networkConfigListener);
         routeService.removeListener(routeListener);
     }
 
@@ -185,7 +189,7 @@ public class SdnIpFib {
 
         Set<FilteredConnectPoint> ingressFilteredCPs = Sets.newHashSet();
 
-        // TODO this should be only peering interfaces
+        // TODO: To be checked with VPLS interfaces 
         interfaceService.getInterfaces().forEach(intf -> {
             // Get ony ingress interfaces with IPs configured
             if (validIngressIntf(intf, egressInterface)) {
@@ -329,6 +333,9 @@ public class SdnIpFib {
     private TrafficSelector.Builder buildIngressTrafficSelector(Interface intf, IpPrefix prefix) {
         TrafficSelector.Builder selector = buildTrafficSelector(intf);
 
+        // TODO: to be merged with reactive routing 
+
+
         // Match the destination IP prefix at the first hop
         if (prefix.isIp4()) {
             selector.matchEthType(Ethernet.TYPE_IPV4);
@@ -360,6 +367,13 @@ public class SdnIpFib {
         if (!vlanId.equals(VlanId.NONE)) {
             selector.matchVlanId(vlanId);
         }
+
+        // Assume EthDst = Virtual Gateway MAC
+        MacAddress dstMac = config.getVirtualGatewayMacAddress();
+        if (dstMac != null) {
+          selector.matchEthDst(dstMac);
+        }
+
         return selector;
     }
 
@@ -374,25 +388,18 @@ public class SdnIpFib {
         return false;
     }
 
-    /*
-     * Triggered when the network configuration configuration is modified.
-     * It checks if the encapsulation type has changed from last time, and in
-     * case modifies all intents.
-     */
-    private void encapUpdate() {
+    private void refresh() {
         synchronized (this) {
             // Get the encapsulation type just set from the configuration
             EncapsulationType encap = encap();
 
-
             for (Map.Entry<IpPrefix, MultiPointToSinglePointIntent> entry : routeIntents.entrySet()) {
-                // Get each intent currently registered by SDN-IP
-                MultiPointToSinglePointIntent intent = entry.getValue();
+                 // Get each intent currently registered by SDN-IP
+                 MultiPointToSinglePointIntent intent = entry.getValue();
 
-                // Make sure the same constraint is not already part of the
-                // intent constraints
-                List<Constraint> constraints = intent.constraints();
-                if (!constraints.stream()
+                 // intent constraints
+                 List<Constraint> constraints = intent.constraints();
+                 if (!constraints.stream()
                                 .filter(c -> c instanceof EncapsulationConstraint &&
                                         new EncapsulationConstraint(encap).equals(c))
                                 .findAny()
@@ -424,6 +431,7 @@ public class SdnIpFib {
     private static void setEncap(ConnectivityIntent.Builder builder,
                                  List<Constraint> constraints,
                                  EncapsulationType encap) {
+
         // Constraints might be an immutable list, so a new modifiable list
         // is created
         List<Constraint> newConstraints = new ArrayList<>(constraints);
@@ -444,7 +452,23 @@ public class SdnIpFib {
     }
 
     private EncapsulationType encap() {
-        return EncapsulationType.NONE;
+        return NONE;
+    }
+
+    private class InternalNetworkConfigListener implements NetworkConfigListener {
+        @Override
+        public void event(NetworkConfigEvent event) {
+            switch (event.type()) {
+                case CONFIG_ADDED:
+                case CONFIG_UPDATED:
+                case CONFIG_REMOVED:
+                    if (event.configClass() == SlsNetConfig.class) {
+                       refresh();
+                    }
+                default:
+                    break;
+            }
+        }
     }
 
     private class InternalRouteListener implements RouteListener {
@@ -460,27 +484,6 @@ public class SdnIpFib {
                 break;
             default:
                 break;
-            }
-        }
-    }
-
-    private class InternalNetworkConfigListener implements NetworkConfigListener {
-        @Override
-        public void event(NetworkConfigEvent event) {
-            switch (event.type()) {
-                case CONFIG_REGISTERED:
-                    break;
-                case CONFIG_UNREGISTERED:
-                    break;
-                case CONFIG_ADDED:
-                case CONFIG_UPDATED:
-                case CONFIG_REMOVED:
-                    if (event.configClass() == SlsNetConfig.class) {
-                        encapUpdate();
-                    }
-                    break;
-                default:
-                    break;
             }
         }
     }
