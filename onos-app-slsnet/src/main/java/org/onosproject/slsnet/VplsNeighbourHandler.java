@@ -67,7 +67,7 @@ public class VplsNeighbourHandler {
     protected NeighbourResolutionService neighbourService;
 
     @Reference(cardinality = ReferenceCardinality.MANDATORY_UNARY)
-    protected VplsStore vplsStore;
+    protected SlsNetService vplsStore;
 
     @Reference(cardinality = ReferenceCardinality.MANDATORY_UNARY)
     protected NetworkConfigService configService;
@@ -88,7 +88,7 @@ public class VplsNeighbourHandler {
 
     @Activate
     protected void activate() {
-        appId = coreService.registerApplication(VplsManager.VPLS_APP);
+        appId = coreService.registerApplication(SlsNet.APP_ID);
         interfaceService.addListener(interfaceListener);
         configService.addListener(configListener);
         configNeighbourHandler();

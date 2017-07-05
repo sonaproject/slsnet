@@ -18,9 +18,10 @@ package org.onosproject.slsnet;
 import org.onlab.packet.IpAddress;
 import org.onlab.packet.IpPrefix;
 import org.onlab.packet.MacAddress;
-import org.onosproject.net.ConnectPoint;
+//import org.onosproject.net.ConnectPoint;
 
 import java.util.Set;
+import java.util.Collection;
 
 /**
  * Provides information about the routing configuration.
@@ -29,7 +30,12 @@ public interface SlsNetService {
 
     String APP_ID = "org.onosproject.slsnet";
 
-    MacAddress getVirtualGatewayMacAddress();
+   /**
+    * Gets all the  l2Networks.
+    *
+    * @return all the l2Networks
+    */
+    Collection<VplsData> getAllVpls();
 
     /**
      * Evaluates whether an IP address is a virtual gateway IP address.
@@ -56,11 +62,19 @@ public interface SlsNetService {
     boolean isIpPrefixLocal(IpPrefix ipPrefix);
 
     /**
+     * Get Virtual Gateway Mac Address for Local Subnet Virtual Router
+     * and also for myself to communicate with bgp Peers.
+     *
+     * @return mac address of virtual gateway
+     */
+    MacAddress getVirtualGatewayMacAddress();
+
+    /**
      * Retrieves the entire set of connect points connected to BGP peers in the
      * network.
      *
      * @return the set of connect points connected to BGP peers
      */
-    Set<ConnectPoint> getBgpPeerConnectPoints();
+    Set<String> getRouteInterfaces();
 
 }

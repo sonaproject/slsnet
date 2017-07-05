@@ -33,7 +33,7 @@ import static java.util.Objects.*;
  */
 public final class VplsData {
     /**
-     * States of a VPLS.
+     * States of a Entry.
      */
     public enum VplsState {
         UPDATING,

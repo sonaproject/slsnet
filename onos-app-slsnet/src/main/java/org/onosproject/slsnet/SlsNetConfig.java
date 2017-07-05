@@ -23,6 +23,7 @@ import org.onlab.packet.IpPrefix;
 import org.onlab.packet.MacAddress;
 import org.onosproject.core.ApplicationId;
 import org.onosproject.net.config.Config;
+import org.onosproject.net.EncapsulationType;
 import org.onosproject.incubator.net.routing.Route;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -36,14 +37,44 @@ public class SlsNetConfig extends Config<ApplicationId> {
 
     private final Logger log = LoggerFactory.getLogger(getClass());
 
-    public static final String IP4SUBNETS = "ip4Subnets";
-    public static final String IP6SUBNETS = "ip6Subnets";
-    public static final String IPROUTES = "ipRoutes";
-    public static final String IPPREFIX = "ipPrefix";
-    public static final String TYPE = "type";
-    public static final String GATEWAYIP = "gatewayIp";
-    public static final String VIRTUALGATEWAYMACADDRESS =
+    private static final String L2NETWORKS = "l2Networks";
+    private static final String NAME = "name";
+    private static final String INTERFACES = "interfaces";
+    private static final String IP4SUBNETS = "ip4Subnets";
+    private static final String IP6SUBNETS = "ip6Subnets";
+    private static final String IPROUTES = "ipRoutes";
+    private static final String IPPREFIX = "ipPrefix";
+    private static final String TYPE = "type";
+    private static final String GATEWAYIP = "gatewayIp";
+    private static final String IPROUTEINTERFACES = "ipRouteInterfaces";
+    private static final String VIRTUALGATEWAYMACADDRESS =
                                "virtualGatewayMacAddress";
+
+    /**
+     * Returns all vpls in this configuration.
+     *
+     * @return A set of VPLS.
+     */
+    public Set<VplsConfig> getL2Networks() {
+        Set<VplsConfig> l2Networks = Sets.newHashSet();
+        JsonNode vplsNode = object.get(L2NETWORKS);
+        if (vplsNode == null) {
+            return l2Networks;
+        }
+
+        vplsNode.forEach(jsonNode -> {
+            String name = jsonNode.get(NAME).asText();
+
+            Set<String> ifaces = Sets.newHashSet();
+            JsonNode vplsIfaces = jsonNode.path(INTERFACES);
+            if (!vplsIfaces.toString().isEmpty()) {
+                vplsIfaces.forEach(ifacesNode -> ifaces.add(new String(ifacesNode.asText())));
+            }
+
+            l2Networks.add(new VplsConfig(name, ifaces, EncapsulationType.NONE));
+        });
+        return l2Networks;
+    }
 
     /**
      * Gets the set of configured local IPv4 prefixes.
@@ -130,5 +161,22 @@ public class SlsNetConfig extends Config<ApplicationId> {
     public MacAddress virtualGatewayMacAddress() {
         return MacAddress.valueOf(
                 object.get(VIRTUALGATEWAYMACADDRESS).asText());
+    }
+
+    /**
+     *  Gets of the external gateway interfaces.
+     *
+     * @return interface names
+     */
+    public Set<String> getRouteInterfaces() {
+        Set<String> ifaces = Sets.newHashSet();
+
+        JsonNode routeIfaces = object.get(IPROUTEINTERFACES);
+        if (routeIfaces == null) {
+            return ifaces;
+        }
+        routeIfaces.forEach(ifacesNode -> ifaces.add(ifacesNode.asText()));
+
+        return ifaces;
     }
 }

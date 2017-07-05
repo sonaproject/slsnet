@@ -17,6 +17,7 @@
 package org.onosproject.slsnet;
 
 import com.google.common.collect.ImmutableSet;
+//import com.google.common.collect.Sets;
 import com.googlecode.concurrenttrees.radix.node.concrete.DefaultByteArrayNodeFactory;
 import com.googlecode.concurrenttrees.radixinverted.ConcurrentInvertedRadixTree;
 import com.googlecode.concurrenttrees.radixinverted.InvertedRadixTree;
@@ -34,7 +35,8 @@ import org.onlab.packet.MacAddress;
 import org.onosproject.app.ApplicationService;
 import org.onosproject.core.ApplicationId;
 import org.onosproject.core.CoreService;
-import org.onosproject.net.ConnectPoint;
+//import org.onosproject.net.ConnectPoint;
+import org.onosproject.incubator.net.intf.Interface;
 import org.onosproject.incubator.net.intf.InterfaceService;
 import org.onosproject.incubator.net.routing.Route;
 import org.onosproject.incubator.net.routing.RouteAdminService;
@@ -50,10 +52,18 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.HashSet;
-//import java.util.Objects;
+import java.util.Collection;
+import java.util.Objects;
 import java.util.Set;
+//import java.util.Collection;
 import java.util.stream.Collectors;
 
+//import java.util.concurrent.Executors;
+//import java.util.concurrent.ScheduledExecutorService;
+//import java.util.concurrent.TimeUnit;
+//import java.util.stream.Collectors;
+
+//import static org.onlab.util.Tools.groupedThreads;
 import static org.onosproject.incubator.net.routing.RouteTools.createBinaryString;
 
 
@@ -63,6 +73,8 @@ import static org.onosproject.incubator.net.routing.RouteTools.createBinaryStrin
 @Component(immediate = true)
 @Service
 public class SlsNet implements SlsNetService {
+
+    private ApplicationId appId;
 
     public static final String APP_ID = "org.onosproject.slsnet";
 
@@ -84,18 +96,20 @@ public class SlsNet implements SlsNetService {
     protected InterfaceService interfaceService;
 
     @Reference(cardinality = ReferenceCardinality.MANDATORY_UNARY)
-    protected RouteAdminService routeService;
-
-    @Reference(cardinality = ReferenceCardinality.MANDATORY_UNARY)
     protected IntentSynchronizationService intentSynchronizer;
 
+    // from VPLS
+    /*
+    private static final int INITIAL_RELOAD_CONFIG_DELAY = 0;
+    private static final int INITIAL_RELOAD_CONFIG_PERIOD = 1000
+    private static final int NUM_THREADS = 1;
+    */
 
-    private ApplicationId appId;
+    // l2 broadcast networks
+    private Set<VplsConfig> l2NetworkConfig = new HashSet<>();
+    private Set<VplsData> l2NetworkTable = new HashSet<>();
 
-    private Set<IpAddress> gatewayIpAddresses = new HashSet<>();
-
-    private Set<ConnectPoint> bgpPeerConnectPoints = new HashSet<>();
-
+    // Subnet table
     private InvertedRadixTree<LocalIpPrefixEntry>
             localPrefixTable4 = new ConcurrentInvertedRadixTree<>(
                     new DefaultByteArrayNodeFactory());
@@ -103,7 +117,16 @@ public class SlsNet implements SlsNetService {
             localPrefixTable6 = new ConcurrentInvertedRadixTree<>(
                     new DefaultByteArrayNodeFactory());
 
+    // Virtial Subnet gateway
     private MacAddress virtualGatewayMacAddress;
+    private Set<IpAddress> gatewayIpAddresses = new HashSet<>();
+
+    // Route table
+    @Reference(cardinality = ReferenceCardinality.MANDATORY_UNARY)
+    private RouteAdminService routeService;
+
+    // External router connectPoint from ipRouteInterface
+    private Set<String> routeInterfaces = new HashSet<>();
 
     private final InternalNetworkConfigListener configListener =
             new InternalNetworkConfigListener();
@@ -124,7 +147,7 @@ public class SlsNet implements SlsNetService {
         appId = coreService.registerApplication(APP_ID);
         configService.addListener(configListener);
         registry.registerConfigFactory(reactiveRoutingConfigFactory);
-        setUpConfiguration();
+        setUpConfiguration(null);
         log.info("SlsNet started");
     }
 
@@ -140,9 +163,9 @@ public class SlsNet implements SlsNetService {
     }
 
     /**
-     * Set up reactive routing information from configuration.
+     * Set up from configuration.
      */
-    private void setUpConfiguration() {
+    private void setUpConfiguration(NetworkConfigEvent event) {
         SlsNetConfig config = configService.getConfig(
                 coreService.registerApplication(APP_ID),
                 SlsNetConfig.class);
@@ -150,6 +173,21 @@ public class SlsNet implements SlsNetService {
             log.warn("No reactive routing config available!");
             return;
         }
+
+        // l2Networks
+        l2NetworkConfig = config.getL2Networks();
+        l2NetworkTable = l2NetworkConfig.stream()
+                .map(vplsConfig -> {
+                    Set<Interface> interfaces = vplsConfig.ifaces().stream()
+                            .map(this::getInterfaceByName)
+                            .filter(Objects::nonNull)
+                            .collect(Collectors.toSet());
+                    VplsData vplsData = VplsData.of(vplsConfig.name(), vplsConfig.encap());
+                    vplsData.addInterfaces(interfaces);
+                    return vplsData;
+                }).collect(Collectors.toSet());
+
+        // ipSubnets
         for (LocalIpPrefixEntry entry : config.localIp4PrefixEntries()) {
             localPrefixTable4.put(createBinaryString(entry.ipPrefix()), entry);
             gatewayIpAddresses.add(entry.getGatewayIpAddress());
@@ -158,32 +196,36 @@ public class SlsNet implements SlsNetService {
             localPrefixTable6.put(createBinaryString(entry.ipPrefix()), entry);
             gatewayIpAddresses.add(entry.getGatewayIpAddress());
         }
-
         virtualGatewayMacAddress = config.virtualGatewayMacAddress();
+
+        /* ipRoutes config handling */
+        if (event != null) {
+            Set<Route> routes = ((SlsNetConfig) event.config().get()).getRoutes();
+            Set<Route> prevRoutes = ((SlsNetConfig) event.prevConfig().get()).getRoutes();
+            Set<Route> pendingRemove = prevRoutes.stream()
+                    .filter(prevRoute -> routes.stream()
+                            .noneMatch(route -> route.prefix().equals(prevRoute.prefix())))
+                    .collect(Collectors.toSet());
+            Set<Route> pendingUpdate = routes.stream()
+                    .filter(route -> !pendingRemove.contains(route)).collect(Collectors.toSet());
+            routeService.update(pendingUpdate);
+            routeService.withdraw(pendingRemove);
+        }
+
+        /* ipRouteInterfaces */
+        routeInterfaces = config.getRouteInterfaces();
     }
 
-    /* ipRoutes config event handling */
-    private void processRouteConfigAdded(NetworkConfigEvent event) {
-        Set<Route> routes = ((SlsNetConfig) event.config().get()).getRoutes();
-        routeService.update(routes);
+    private Interface getInterfaceByName(String interfaceName) {
+        return interfaceService.getInterfaces().stream()
+                .filter(iface -> iface.name().equals(interfaceName))
+                .findFirst()
+                .orElse(null);
     }
 
-    private void processRouteConfigUpdated(NetworkConfigEvent event) {
-        Set<Route> routes = ((SlsNetConfig) event.config().get()).getRoutes();
-        Set<Route> prevRoutes = ((SlsNetConfig) event.prevConfig().get()).getRoutes();
-        Set<Route> pendingRemove = prevRoutes.stream()
-                .filter(prevRoute -> routes.stream()
-                        .noneMatch(route -> route.prefix().equals(prevRoute.prefix())))
-                .collect(Collectors.toSet());
-        Set<Route> pendingUpdate = routes.stream()
-                .filter(route -> !pendingRemove.contains(route)).collect(Collectors.toSet());
-        routeService.update(pendingUpdate);
-        routeService.withdraw(pendingRemove);
-    }
-
-    private void processRouteConfigRemoved(NetworkConfigEvent event) {
-        Set<Route> prevRoutes = ((SlsNetConfig) event.prevConfig().get()).getRoutes();
-        routeService.withdraw(prevRoutes);
+    @Override
+    public Collection<VplsData> getAllVpls() {
+        return ImmutableSet.copyOf(l2NetworkTable);
     }
 
     @Override
@@ -220,8 +262,8 @@ public class SlsNet implements SlsNetService {
     }
 
     @Override
-    public Set<ConnectPoint> getBgpPeerConnectPoints() {
-        return ImmutableSet.copyOf(bgpPeerConnectPoints);
+    public Set<String> getRouteInterfaces() {
+        return ImmutableSet.copyOf(routeInterfaces);
     }
 
     private class InternalNetworkConfigListener implements NetworkConfigListener {
@@ -230,16 +272,9 @@ public class SlsNet implements SlsNetService {
             if (event.configClass().equals(SlsNetConfig.class)) {
                 switch (event.type()) {
                 case CONFIG_ADDED:
-                    processRouteConfigAdded(event);
-                    setUpConfiguration();
-                    break;
                 case CONFIG_UPDATED:
-                    processRouteConfigUpdated(event);
-                    setUpConfiguration();
-                    break;
                 case CONFIG_REMOVED:
-                    processRouteConfigRemoved(event);
-                    setUpConfiguration();
+                    setUpConfiguration(event);
                     break;
                 default:
                     break;

@@ -61,6 +61,66 @@ import static org.onlab.packet.Ethernet.TYPE_IPV4;
 import static org.onosproject.net.packet.PacketPriority.REACTIVE;
 import static org.slf4j.LoggerFactory.getLogger;
 
+
+/**
+ * Specifies the type of an IP address or an IP prefix location.
+ */
+enum LocationType {
+    /**
+     * The location of an IP address or an IP prefix is in local SDN network.
+     */
+    LOCAL,
+    /**
+     * The location of an IP address or an IP prefix is outside local SDN network.
+     */
+    INTERNET,
+    /**
+     * There is no route for this IP address or IP prefix.
+     */
+    NO_ROUTE
+}
+
+
+/**
+ * Specifies the type of traffic.
+ * <p>
+ * We classify traffic by the first packet of each traffic.
+ * </p>
+ */
+enum TrafficType {
+    /**
+     * Traffic from a host located in local SDN network wants to
+     * communicate with destination host located in Internet (outside
+     * local SDN network).
+     */
+    HOST_TO_INTERNET,
+    /**
+     * Traffic from Internet wants to communicate with a host located
+     * in local SDN network.
+     */
+    INTERNET_TO_HOST,
+    /**
+     * Both the source host and destination host of a traffic are in
+     * local SDN network.
+     */
+    HOST_TO_HOST,
+    /**
+     * Traffic from Internet wants to traverse local SDN network.
+     */
+    INTERNET_TO_INTERNET,
+    /**
+     * Any traffic wants to communicate with a destination which has
+     * no route, or traffic from Internet wants to access a local private
+     * IP address.
+     */
+    DROP,
+    /**
+     * Traffic does not belong to the types above.
+     */
+    UNKNOWN
+}
+
+
 /**
  * This is reactive routing to handle 3 cases:
  * (1) one host wants to talk to another host, both two hosts are in
@@ -302,19 +362,19 @@ public class SlsNetReactiveRouting {
         Optional<Interface> srcInterface =
                 interfaceService.getInterfacesByPort(srcConnectPoint).stream().findFirst();
 
-        Set<ConnectPoint> bgpPeerConnectPoints = config.getBgpPeerConnectPoints();
+        Set<String> routeInterfaces = config.getRouteInterfaces();
 
         switch (dstIpLocationType) {
         case INTERNET:
             if (srcInterface.isPresent() &&
-                    (!bgpPeerConnectPoints.contains(srcConnectPoint))) {
+                    (!routeInterfaces.contains(srcInterface.get().name()))) {
                 return TrafficType.HOST_TO_INTERNET;
             } else {
                 return TrafficType.INTERNET_TO_INTERNET;
             }
         case LOCAL:
             if (srcInterface.isPresent() &&
-                    (!bgpPeerConnectPoints.contains(srcConnectPoint))) {
+                    (!routeInterfaces.contains(srcInterface.get().name()))) {
                 return TrafficType.HOST_TO_HOST;
             } else {
                 // TODO Currently we only consider local public prefixes.
@@ -393,4 +453,5 @@ public class SlsNetReactiveRouting {
         log.trace("sending packet: {}", packet);
     }
 }
+
 
