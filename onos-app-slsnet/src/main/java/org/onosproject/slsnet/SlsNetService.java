@@ -28,7 +28,11 @@ import java.util.Collection;
  */
 public interface SlsNetService {
 
-    String APP_ID = "org.onosproject.slsnet";
+    static final String APP_ID = "org.onosproject.slsnet";
+
+    // priority for routes: ipPrefix * PRIORITY_MULTIPLIER + PRIORITY_OFFSET
+    static final int PRIORITY_OFFSET = 100;
+    static final int PRIORITY_MULTIPLIER = 5;
 
    /**
     * Gets all the  l2Networks.
@@ -62,6 +66,20 @@ public interface SlsNetService {
     boolean isIpPrefixLocal(IpPrefix ipPrefix);
 
     /**
+     * Retrieves the entire set of ip4Subnets configuration.
+     *
+     * @return the set of localIpPrefixEntries for ip4Subnets
+     */
+    Set<LocalIpPrefixEntry> getLocalIp4PrefixEntries();
+
+    /**
+     * Retrieves the entire set of ip6Subnets configuration.
+     *
+     * @return the set of localIpPrefixEntries for ip6Subnets
+     */
+    Set<LocalIpPrefixEntry> getLocalIp6PrefixEntries();
+
+    /**
      * Get Virtual Gateway Mac Address for Local Subnet Virtual Router
      * and also for myself to communicate with bgp Peers.
      *
@@ -70,7 +88,7 @@ public interface SlsNetService {
     MacAddress getVirtualGatewayMacAddress();
 
     /**
-     * Retrieves the entire set of connect points connected to BGP peers in the
+     * Retrieves the entire set of Interface names connected to BGP peers in the
      * network.
      *
      * @return the set of connect points connected to BGP peers

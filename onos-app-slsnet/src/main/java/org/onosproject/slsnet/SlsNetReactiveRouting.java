@@ -186,8 +186,21 @@ public class SlsNetReactiveRouting {
      */
     private void requestIntercepts() {
         //TODO: to support IPv6 later
+
+        // local ipSubnet intercepts
+        for (LocalIpPrefixEntry subnet : config.getLocalIp4PrefixEntries()) {
+            int priority = subnet.ipPrefix().prefixLength() * config.PRIORITY_MULTIPLIER + config.PRIORITY_OFFSET;
+            TrafficSelector.Builder selector = DefaultTrafficSelector.builder();
+            selector.matchEthType(TYPE_IPV4);
+            //selector.matchEthDst(config.getVirtualGatewayMacAddress());
+            selector.matchIPDst(subnet.ipPrefix());
+            packetService.requestPackets(selector.build(), REACTIVE, appId);
+        }
+
+        // default intercepts
         TrafficSelector.Builder selector = DefaultTrafficSelector.builder();
         selector.matchEthType(TYPE_IPV4);
+        //selector.matchEthDst(config.getVirtualGatewayMacAddress());
         packetService.requestPackets(selector.build(), REACTIVE, appId);
         selector.matchEthType(TYPE_ARP);
         packetService.requestPackets(selector.build(), REACTIVE, appId);
@@ -197,8 +210,20 @@ public class SlsNetReactiveRouting {
      * Cancel request for packet in via PacketService.
      */
     private void withdrawIntercepts() {
+        // local ipSubnet intercepts
+        for (LocalIpPrefixEntry subnet : config.getLocalIp4PrefixEntries()) {
+            int priority = subnet.ipPrefix().prefixLength() * config.PRIORITY_MULTIPLIER + config.PRIORITY_OFFSET;
+            TrafficSelector.Builder selector = DefaultTrafficSelector.builder();
+            selector.matchEthType(TYPE_IPV4);
+            //selector.matchEthDst(config.getVirtualGatewayMacAddress());
+            selector.matchIPDst(subnet.ipPrefix());
+            packetService.cencelPackets(selector.build(), REACTIVE, appId);
+        }
+
+        // default intercepts
         TrafficSelector.Builder selector = DefaultTrafficSelector.builder();
         selector.matchEthType(TYPE_IPV4);
+        //selector.matchEthDst(config.getVirtualGatewayMacAddress());
         packetService.cancelPackets(selector.build(), REACTIVE, appId);
         selector = DefaultTrafficSelector.builder();
         selector.matchEthType(TYPE_ARP);
@@ -453,5 +478,4 @@ public class SlsNetReactiveRouting {
         log.trace("sending packet: {}", packet);
     }
 }
-
 

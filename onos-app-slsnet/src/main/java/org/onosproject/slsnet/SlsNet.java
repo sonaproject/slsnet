@@ -110,6 +110,8 @@ public class SlsNet implements SlsNetService {
     private Set<VplsData> l2NetworkTable = new HashSet<>();
 
     // Subnet table
+    private Set<LocalIpPrefixEntry> localIp4PrefixEntries;
+    private Set<LocalIpPrefixEntry> localIp6PrefixEntries;
     private InvertedRadixTree<LocalIpPrefixEntry>
             localPrefixTable4 = new ConcurrentInvertedRadixTree<>(
                     new DefaultByteArrayNodeFactory());
@@ -135,7 +137,7 @@ public class SlsNet implements SlsNetService {
             reactiveRoutingConfigFactory =
             new ConfigFactory<ApplicationId, SlsNetConfig>(
                     SubjectFactories.APP_SUBJECT_FACTORY,
-                    SlsNetConfig.class, "ipNetwork") {
+                    SlsNetConfig.class, "slsnet") {
         @Override
         public SlsNetConfig createConfig() {
             return new SlsNetConfig();
@@ -187,19 +189,26 @@ public class SlsNet implements SlsNetService {
                     return vplsData;
                 }).collect(Collectors.toSet());
 
-        // ipSubnets
-        for (LocalIpPrefixEntry entry : config.localIp4PrefixEntries()) {
+        // ipSubnet
+        localIp4PrefixEntries = config.localIp4PrefixEntries();
+        for (LocalIpPrefixEntry entry : localIp4PrefixEntries) {
             localPrefixTable4.put(createBinaryString(entry.ipPrefix()), entry);
             gatewayIpAddresses.add(entry.getGatewayIpAddress());
         }
-        for (LocalIpPrefixEntry entry : config.localIp6PrefixEntries()) {
+        localIp6PrefixEntries = config.localIp6PrefixEntries();
+        for (LocalIpPrefixEntry entry : localIp6PrefixEntries) {
             localPrefixTable6.put(createBinaryString(entry.ipPrefix()), entry);
             gatewayIpAddresses.add(entry.getGatewayIpAddress());
         }
         virtualGatewayMacAddress = config.virtualGatewayMacAddress();
 
-        /* ipRoutes config handling */
-        if (event != null) {
+        // ipRoutes config handling
+        if (event == null) {
+            // do not handle route info
+        } else if (event.type() == NetworkConfigEvent.Type.CONFIG_ADDED) {
+            Set<Route> routes = ((SlsNetConfig) event.config().get()).getRoutes();
+            routeService.update(routes);
+        } else if (event.type() == NetworkConfigEvent.Type.CONFIG_UPDATED) {
             Set<Route> routes = ((SlsNetConfig) event.config().get()).getRoutes();
             Set<Route> prevRoutes = ((SlsNetConfig) event.prevConfig().get()).getRoutes();
             Set<Route> pendingRemove = prevRoutes.stream()
@@ -210,6 +219,9 @@ public class SlsNet implements SlsNetService {
                     .filter(route -> !pendingRemove.contains(route)).collect(Collectors.toSet());
             routeService.update(pendingUpdate);
             routeService.withdraw(pendingRemove);
+        } else if (event.type() == NetworkConfigEvent.Type.CONFIG_REMOVED) {
+            Set<Route> prevRoutes = ((SlsNetConfig) event.prevConfig().get()).getRoutes();
+            routeService.withdraw(prevRoutes);
         }
 
         /* ipRouteInterfaces */
@@ -254,6 +266,16 @@ public class SlsNet implements SlsNetService {
     @Override
     public boolean isVirtualGatewayIpAddress(IpAddress ipAddress) {
         return gatewayIpAddresses.contains(ipAddress);
+    }
+
+    @Override
+    public Set<LocalIpPrefixEntry> getLocalIp4PrefixEntries() {
+        return ImmutableSet.copyOf(localIp4PrefixEntries);
+    }
+
+    @Override
+    public Set<LocalIpPrefixEntry> getLocalIp6PrefixEntries() {
+        return ImmutableSet.copyOf(localIp6PrefixEntries);
     }
 
     @Override

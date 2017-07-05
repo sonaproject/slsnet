@@ -96,8 +96,6 @@ public class SlsNetRoute {
     private final InternalNetworkConfigListener networkConfigListener =
                 new InternalNetworkConfigListener();
 
-    private static final int PRIORITY_OFFSET = 100;
-    private static final int PRIORITY_MULTIPLIER = 5;
     protected static final ImmutableList<Constraint> CONSTRAINTS
             = ImmutableList.of(new PartialFailureConstraint());
 
@@ -213,7 +211,7 @@ public class SlsNetRoute {
 
         // Set priority
         int priority =
-                prefix.prefixLength() * PRIORITY_MULTIPLIER + PRIORITY_OFFSET;
+                prefix.prefixLength() * config.PRIORITY_MULTIPLIER + config.PRIORITY_OFFSET;
 
         // Set key
         Key key = Key.of(prefix.toString(), appId);
@@ -335,10 +333,10 @@ public class SlsNetRoute {
 
         // TODO: to be merged with reactive routing
 
-
         // Match the destination IP prefix at the first hop
         if (prefix.isIp4()) {
             selector.matchEthType(Ethernet.TYPE_IPV4);
+            selector.matchEthDst(config.getVirtualGatewayMacAddress());
             // if it is default route, then we do not need match destination
             // IP address
             if (prefix.prefixLength() != 0) {
@@ -346,6 +344,7 @@ public class SlsNetRoute {
             }
         } else {
             selector.matchEthType(Ethernet.TYPE_IPV6);
+            selector.matchEthDst(config.getVirtualGatewayMacAddress());
             // if it is default route, then we do not need match destination
             // IP address
             if (prefix.prefixLength() != 0) {
