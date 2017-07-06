@@ -18,6 +18,7 @@ package org.onosproject.slsnet;
 import org.onlab.packet.IpAddress;
 import org.onlab.packet.IpPrefix;
 import org.onlab.packet.MacAddress;
+import org.onosproject.core.ApplicationId;
 //import org.onosproject.net.ConnectPoint;
 
 import java.util.Set;
@@ -27,18 +28,29 @@ import java.util.Collection;
  * Provides information about the routing configuration.
  */
 public interface SlsNetService {
-
     static final String APP_ID = "org.onosproject.slsnet";
 
-    // priority for routes: ipPrefix * PRIORITY_MULTIPLIER + PRIORITY_OFFSET
-    static final int PRIORITY_OFFSET = 100;
-    static final int PRIORITY_MULTIPLIER = 5;
+    // priority for ipReactiveRoutes: REACTIVE
+    // priority for ipPrefixRoutes:   PREFIX_BASE + ipPrefix * PREFIX_STEP + PREFIX_ROUTE
+    // priority for ipPrefixReact:    RREFIX_BASE + ipPrefix * PREFIX_STEP + PREFIX_REACT
+    static final int PRI_REACTIVE     = 400;
+    static final int PRI_PREFIX_BASE  = 100;
+    static final int PRI_PREFIX_STEP  = 2;
+    static final int PRI_PREFIX_ROUTE = 1;
+    static final int PRI_PREFIX_REACT = 0;
 
-   /**
-    * Gets all the  l2Networks.
-    *
-    * @return all the l2Networks
-    */
+    /**
+     * Gets appId.
+     *
+     * @return appId of slsnet app
+     */
+    ApplicationId getAppId();
+
+    /**
+     * Gets all the  l2Networks.
+     *
+     * @return all the l2Networks
+     */
     Collection<VplsData> getAllVpls();
 
     /**

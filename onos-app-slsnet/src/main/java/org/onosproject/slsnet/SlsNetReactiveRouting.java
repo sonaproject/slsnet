@@ -29,8 +29,6 @@ import org.onlab.packet.Ip6Address;
 import org.onlab.packet.IpAddress;
 import org.onlab.packet.IpPrefix;
 import org.onlab.packet.MacAddress;
-import org.onosproject.core.ApplicationId;
-import org.onosproject.core.CoreService;
 import org.onosproject.incubator.net.intf.Interface;
 import org.onosproject.incubator.net.intf.InterfaceService;
 import org.onosproject.incubator.net.routing.Route;
@@ -50,6 +48,7 @@ import org.onosproject.net.packet.PacketProcessor;
 import org.onosproject.net.packet.PacketService;
 import org.onosproject.intentsync.IntentSynchronizationService;
 import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.nio.ByteBuffer;
 import java.util.Optional;
@@ -59,7 +58,6 @@ import static com.google.common.base.Preconditions.checkNotNull;
 import static org.onlab.packet.Ethernet.TYPE_ARP;
 import static org.onlab.packet.Ethernet.TYPE_IPV4;
 import static org.onosproject.net.packet.PacketPriority.REACTIVE;
-import static org.slf4j.LoggerFactory.getLogger;
 
 
 /**
@@ -120,7 +118,6 @@ enum TrafficType {
     UNKNOWN
 }
 
-
 /**
  * This is reactive routing to handle 3 cases:
  * (1) one host wants to talk to another host, both two hosts are in
@@ -131,11 +128,7 @@ enum TrafficType {
 @Component(immediate = true)
 public class SlsNetReactiveRouting {
 
-    private static final String APP_NAME = "org.onosproject.slsnet";
-    private final Logger log = getLogger(getClass());
-
-    @Reference(cardinality = ReferenceCardinality.MANDATORY_UNARY)
-    protected CoreService coreService;
+    private final Logger log = LoggerFactory.getLogger(getClass());
 
     @Reference(cardinality = ReferenceCardinality.MANDATORY_UNARY)
     protected PacketService packetService;
@@ -147,15 +140,13 @@ public class SlsNetReactiveRouting {
     protected IntentSynchronizationService intentSynchronizer;
 
     @Reference(cardinality = ReferenceCardinality.MANDATORY_UNARY)
-    protected SlsNetService config;
+    protected SlsNetService slsnet;
 
     @Reference(cardinality = ReferenceCardinality.MANDATORY_UNARY)
     protected InterfaceService interfaceService;
 
     @Reference(cardinality = ReferenceCardinality.MANDATORY_UNARY)
     protected HostService hostService;
-
-    private ApplicationId appId;
 
     private SlsNetReactiveRoutingFib intentRequestListener;
 
@@ -164,13 +155,11 @@ public class SlsNetReactiveRouting {
 
     @Activate
     public void activate() {
-        appId = coreService.registerApplication(APP_NAME);
-        intentRequestListener = new SlsNetReactiveRoutingFib(appId, hostService,
+        intentRequestListener = new SlsNetReactiveRoutingFib(slsnet.getAppId(), hostService,
                 interfaceService, intentSynchronizer);
-
         packetService.addProcessor(processor, PacketProcessor.director(2));
         requestIntercepts();
-        log.info("SDN-IP Reactive Routing Started");
+        log.info("slsnet reactive routing started");
     }
 
     @Deactivate
@@ -178,7 +167,7 @@ public class SlsNetReactiveRouting {
         withdrawIntercepts();
         packetService.removeProcessor(processor);
         processor = null;
-        log.info("SDN-IP Reactive Routing Stopped");
+        log.info("slsnet reactive routing stopped");
     }
 
     /**
@@ -188,22 +177,27 @@ public class SlsNetReactiveRouting {
         //TODO: to support IPv6 later
 
         // local ipSubnet intercepts
-        for (LocalIpPrefixEntry subnet : config.getLocalIp4PrefixEntries()) {
-            int priority = subnet.ipPrefix().prefixLength() * config.PRIORITY_MULTIPLIER + config.PRIORITY_OFFSET;
+        /*
+        for (LocalIpPrefixEntry subnet : slsnet.getLocalIp4PrefixEntries()) {
+            int p = slsnet.PRI_PREFIX_BASE + slsnet.PRI_PREFIX_REACT
+                    + subnet.ipPrefix().prefixLength() * slsnet.PRI_PREFIX_STEP;
             TrafficSelector.Builder selector = DefaultTrafficSelector.builder();
             selector.matchEthType(TYPE_IPV4);
-            //selector.matchEthDst(config.getVirtualGatewayMacAddress());
+            //selector.matchEthDst(slsnet.getVirtualGatewayMacAddress());
             selector.matchIPDst(subnet.ipPrefix());
-            packetService.requestPackets(selector.build(), REACTIVE, appId);
+            packetService.requestPackets(selector.build(), PacketPriority(p), slsnet.getAppId());
         }
+        */
+
+        log.info("slsnet reactive routing intercepts packet started");
 
         // default intercepts
         TrafficSelector.Builder selector = DefaultTrafficSelector.builder();
         selector.matchEthType(TYPE_IPV4);
-        //selector.matchEthDst(config.getVirtualGatewayMacAddress());
-        packetService.requestPackets(selector.build(), REACTIVE, appId);
+        //selector.matchEthDst(slsnet.getVirtualGatewayMacAddress());
+        packetService.requestPackets(selector.build(), REACTIVE, slsnet.getAppId());
         selector.matchEthType(TYPE_ARP);
-        packetService.requestPackets(selector.build(), REACTIVE, appId);
+        packetService.requestPackets(selector.build(), REACTIVE, slsnet.getAppId());
     }
 
     /**
@@ -211,23 +205,28 @@ public class SlsNetReactiveRouting {
      */
     private void withdrawIntercepts() {
         // local ipSubnet intercepts
-        for (LocalIpPrefixEntry subnet : config.getLocalIp4PrefixEntries()) {
-            int priority = subnet.ipPrefix().prefixLength() * config.PRIORITY_MULTIPLIER + config.PRIORITY_OFFSET;
+        /*
+        for (LocalIpPrefixEntry subnet : slsnet.getLocalIp4PrefixEntries()) {
+            int priority = slsnet.PRI_PREFIX_BASE + slsnet.PRI_PREFIX_REACT
+                           + subnet.ipPrefix().prefixLength() * slsnet.PRI_PREFIX_STEP;
             TrafficSelector.Builder selector = DefaultTrafficSelector.builder();
             selector.matchEthType(TYPE_IPV4);
-            //selector.matchEthDst(config.getVirtualGatewayMacAddress());
+            //selector.matchEthDst(slsnet.getVirtualGatewayMacAddress());
             selector.matchIPDst(subnet.ipPrefix());
-            packetService.cencelPackets(selector.build(), REACTIVE, appId);
+            packetService.cancelPackets(selector.build(), PacketPriority(priority), slsnet.getAppId());
         }
+        */
 
         // default intercepts
         TrafficSelector.Builder selector = DefaultTrafficSelector.builder();
         selector.matchEthType(TYPE_IPV4);
-        //selector.matchEthDst(config.getVirtualGatewayMacAddress());
-        packetService.cancelPackets(selector.build(), REACTIVE, appId);
+        //selector.matchEthDst(slsnet.getVirtualGatewayMacAddress());
+        packetService.cancelPackets(selector.build(), REACTIVE, slsnet.getAppId());
         selector = DefaultTrafficSelector.builder();
         selector.matchEthType(TYPE_ARP);
-        packetService.cancelPackets(selector.build(), REACTIVE, appId);
+        packetService.cancelPackets(selector.build(), REACTIVE, slsnet.getAppId());
+
+        log.info("slsnet reactive routing intercepts packet stopped");
     }
 
     private class ReactiveRoutingProcessor implements PacketProcessor {
@@ -250,9 +249,9 @@ public class SlsNetReactiveRouting {
                 // address is a virtual gateway IP address, then it will be
                 // processed.
                 if (arpPacket.getOpCode() == ARP.OP_REQUEST
-                        && config.isVirtualGatewayIpAddress(targetIpAddress)) {
+                        && slsnet.isVirtualGatewayIpAddress(targetIpAddress)) {
                     MacAddress gatewayMacAddress =
-                            config.getVirtualGatewayMacAddress();
+                            slsnet.getVirtualGatewayMacAddress();
                     if (gatewayMacAddress == null) {
                         break;
                     }
@@ -314,7 +313,7 @@ public class SlsNetReactiveRouting {
         //
         IpPrefix ipPrefix = null;
         Route route = null;
-        if (config.isIpAddressLocal(dstIpAddress)) {
+        if (slsnet.isIpAddressLocal(dstIpAddress)) {
             if (dstIpAddress.isIp4()) {
                 ipPrefix = IpPrefix.valueOf(dstIpAddress,
                         Ip4Address.BIT_LENGTH);
@@ -323,7 +322,8 @@ public class SlsNetReactiveRouting {
                         Ip6Address.BIT_LENGTH);
             }
         } else {
-            // Get IP prefix from BGP route table
+            // This Should not happen for SlsNetRoute should already register intents for this case.
+            // Get IP prefix from route table
             route = routeService.longestPrefixMatch(dstIpAddress);
             if (route != null) {
                 ipPrefix = route.prefix();
@@ -387,7 +387,7 @@ public class SlsNetReactiveRouting {
         Optional<Interface> srcInterface =
                 interfaceService.getInterfacesByPort(srcConnectPoint).stream().findFirst();
 
-        Set<String> routeInterfaces = config.getRouteInterfaces();
+        Set<String> routeInterfaces = slsnet.getRouteInterfaces();
 
         switch (dstIpLocationType) {
         case INTERNET:
@@ -422,7 +422,7 @@ public class SlsNetReactiveRouting {
      * @return the IP address location type
      */
     private LocationType getLocationType(IpAddress ipAddress) {
-        if (config.isIpAddressLocal(ipAddress)) {
+        if (slsnet.isIpAddressLocal(ipAddress)) {
             return LocationType.LOCAL;
         } else if (routeService.longestPrefixMatch(ipAddress) != null) {
             return LocationType.INTERNET;

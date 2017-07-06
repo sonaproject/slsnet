@@ -28,7 +28,6 @@ import org.onlab.packet.IpAddress;
 import org.onlab.packet.IpPrefix;
 import org.onlab.packet.MacAddress;
 import org.onlab.packet.VlanId;
-import org.onosproject.core.ApplicationId;
 import org.onosproject.core.CoreService;
 import org.onosproject.incubator.net.intf.Interface;
 import org.onosproject.incubator.net.intf.InterfaceEvent;
@@ -54,6 +53,7 @@ import org.onosproject.net.intent.Key;
 import org.onosproject.net.intent.MultiPointToSinglePointIntent;
 import org.onosproject.net.intent.constraint.EncapsulationConstraint;
 import org.onosproject.net.intent.constraint.PartialFailureConstraint;
+import org.onosproject.net.intent.constraint.HashedPathSelectionConstraint;
 import org.onosproject.intentsync.IntentSynchronizationService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -69,8 +69,9 @@ import static org.onosproject.net.EncapsulationType.NONE;
 /**
  * FIB component of SDN-IP.
  */
-@Component(immediate = true, enabled = false)
+@Component(immediate = true)
 public class SlsNetRoute {
+
     private Logger log = LoggerFactory.getLogger(getClass());
 
     @Reference(cardinality = ReferenceCardinality.MANDATORY_UNARY)
@@ -89,7 +90,7 @@ public class SlsNetRoute {
     protected RouteService routeService;
 
     @Reference(cardinality = ReferenceCardinality.MANDATORY_UNARY)
-    protected SlsNetService config;
+    protected SlsNetService slsnet;
 
     private final InternalRouteListener routeListener = new InternalRouteListener();
     private final InternalInterfaceListener interfaceListener = new InternalInterfaceListener();
@@ -97,19 +98,18 @@ public class SlsNetRoute {
                 new InternalNetworkConfigListener();
 
     protected static final ImmutableList<Constraint> CONSTRAINTS
-            = ImmutableList.of(new PartialFailureConstraint());
+            = ImmutableList.of(new PartialFailureConstraint(),
+                               new HashedPathSelectionConstraint());
 
     private final Map<IpPrefix, MultiPointToSinglePointIntent> routeIntents
             = new ConcurrentHashMap<>();
 
-    private ApplicationId appId;
-
     @Activate
     public void activate() {
-        appId = coreService.getAppId(SlsNet.APP_ID);
         interfaceService.addListener(interfaceListener);
         networkConfigService.addListener(networkConfigListener);
         routeService.addListener(routeListener);
+        log.info("slsnet route started");
     }
 
     @Deactivate
@@ -117,6 +117,7 @@ public class SlsNetRoute {
         interfaceService.removeListener(interfaceListener);
         networkConfigService.removeListener(networkConfigListener);
         routeService.removeListener(routeListener);
+        log.info("slsnet route stopped");
     }
 
     private void update(ResolvedRoute route) {
@@ -210,15 +211,15 @@ public class SlsNetRoute {
                 new FilteredConnectPoint(egressPort, selector.build());
 
         // Set priority
-        int priority =
-                prefix.prefixLength() * config.PRIORITY_MULTIPLIER + config.PRIORITY_OFFSET;
+        int priority = slsnet.PRI_PREFIX_BASE + slsnet.PRI_PREFIX_ROUTE
+                       + prefix.prefixLength() * slsnet.PRI_PREFIX_STEP;
 
         // Set key
-        Key key = Key.of(prefix.toString(), appId);
+        Key key = Key.of(prefix.toString(), slsnet.getAppId());
 
         MultiPointToSinglePointIntent.Builder intentBuilder =
                 MultiPointToSinglePointIntent.builder()
-                                             .appId(appId)
+                                             .appId(slsnet.getAppId())
                                              .key(key)
                                              .filteredIngressPoints(ingressFilteredCPs)
                                              .filteredEgressPoint(egressFilteredCP)
@@ -336,20 +337,18 @@ public class SlsNetRoute {
         // Match the destination IP prefix at the first hop
         if (prefix.isIp4()) {
             selector.matchEthType(Ethernet.TYPE_IPV4);
-            selector.matchEthDst(config.getVirtualGatewayMacAddress());
-            // if it is default route, then we do not need match destination
-            // IP address
-            if (prefix.prefixLength() != 0) {
+            selector.matchEthDst(slsnet.getVirtualGatewayMacAddress());
+            // if it is default route, then we do not need match destination IP address
+            //if (prefix.prefixLength() != 0) {
                 selector.matchIPDst(prefix);
-            }
+            //}
         } else {
             selector.matchEthType(Ethernet.TYPE_IPV6);
-            selector.matchEthDst(config.getVirtualGatewayMacAddress());
-            // if it is default route, then we do not need match destination
-            // IP address
-            if (prefix.prefixLength() != 0) {
+            selector.matchEthDst(slsnet.getVirtualGatewayMacAddress());
+            // if it is default route, then we do not need match destination IP address
+            //if (prefix.prefixLength() != 0) {
                 selector.matchIPv6Dst(prefix);
-            }
+            //}
         }
         return selector;
     }
@@ -368,7 +367,7 @@ public class SlsNetRoute {
         }
 
         // Assume EthDst = Virtual Gateway MAC
-        MacAddress dstMac = config.getVirtualGatewayMacAddress();
+        MacAddress dstMac = slsnet.getVirtualGatewayMacAddress();
         if (dstMac != null) {
           selector.matchEthDst(dstMac);
         }
@@ -392,9 +391,12 @@ public class SlsNetRoute {
             // Get the encapsulation type just set from the configuration
             EncapsulationType encap = encap();
 
+            log.info("slsnet route refresh");
+
             for (Map.Entry<IpPrefix, MultiPointToSinglePointIntent> entry : routeIntents.entrySet()) {
                  // Get each intent currently registered by SDN-IP
                  MultiPointToSinglePointIntent intent = entry.getValue();
+
 
                  // intent constraints
                  List<Constraint> constraints = intent.constraints();

@@ -74,10 +74,6 @@ import static org.onosproject.incubator.net.routing.RouteTools.createBinaryStrin
 @Service
 public class SlsNet implements SlsNetService {
 
-    private ApplicationId appId;
-
-    public static final String APP_ID = "org.onosproject.slsnet";
-
     private final Logger log = LoggerFactory.getLogger(getClass());
 
     @Reference(cardinality = ReferenceCardinality.MANDATORY_UNARY)
@@ -104,6 +100,8 @@ public class SlsNet implements SlsNetService {
     private static final int INITIAL_RELOAD_CONFIG_PERIOD = 1000
     private static final int NUM_THREADS = 1;
     */
+
+    private ApplicationId appId;
 
     // l2 broadcast networks
     private Set<VplsConfig> l2NetworkConfig = new HashSet<>();
@@ -150,18 +148,14 @@ public class SlsNet implements SlsNetService {
         configService.addListener(configListener);
         registry.registerConfigFactory(reactiveRoutingConfigFactory);
         setUpConfiguration(null);
-        log.info("SlsNet started");
+        log.info("slsnet started");
     }
 
     @Deactivate
     public void deactivate() {
         registry.unregisterConfigFactory(reactiveRoutingConfigFactory);
         configService.removeListener(configListener);
-        log.info("SlsNet stopped");
-    }
-
-    public ApplicationId getAppId() {
-        return appId;
+        log.info("slsnet stopped");
     }
 
     /**
@@ -236,23 +230,31 @@ public class SlsNet implements SlsNetService {
     }
 
     @Override
+    public ApplicationId getAppId() {
+        return appId;
+    }
+
+    @Override
     public Collection<VplsData> getAllVpls() {
         return ImmutableSet.copyOf(l2NetworkTable);
     }
 
     @Override
     public boolean isIpAddressLocal(IpAddress ipAddress) {
+        boolean result;
         if (ipAddress.isIp4()) {
-            return localPrefixTable4.getValuesForKeysPrefixing(
-                    createBinaryString(
-                    IpPrefix.valueOf(ipAddress, Ip4Address.BIT_LENGTH)))
-                    .iterator().hasNext();
+            result = localPrefixTable4.getValuesForKeysPrefixing(
+                     createBinaryString(
+                     IpPrefix.valueOf(ipAddress, Ip4Address.BIT_LENGTH)))
+                     .iterator().hasNext();
         } else {
-            return localPrefixTable6.getValuesForKeysPrefixing(
-                    createBinaryString(
-                    IpPrefix.valueOf(ipAddress, Ip6Address.BIT_LENGTH)))
-                    .iterator().hasNext();
+            result = localPrefixTable6.getValuesForKeysPrefixing(
+                     createBinaryString(
+                     IpPrefix.valueOf(ipAddress, Ip6Address.BIT_LENGTH)))
+                     .iterator().hasNext();
         }
+        //log.info("slsnet local address match for " + ipAddress.toString() + " --> " + result);
+        return result;
     }
 
     @Override
