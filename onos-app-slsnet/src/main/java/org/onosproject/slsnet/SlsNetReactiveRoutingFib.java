@@ -16,6 +16,8 @@
 
 package org.onosproject.slsnet;
 
+import org.apache.felix.scr.annotations.Reference;
+import org.apache.felix.scr.annotations.ReferenceCardinality;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Maps;
 import org.onlab.packet.Ethernet;
@@ -55,8 +57,9 @@ import static com.google.common.base.Preconditions.checkNotNull;
  */
 public class SlsNetReactiveRoutingFib {
 
-    private static final int PRIORITY_OFFSET = 100;
-    private static final int PRIORITY_MULTIPLIER = 5;
+    @Reference(cardinality = ReferenceCardinality.MANDATORY_UNARY)
+    protected SlsNetService slsnet;
+
     protected static final ImmutableList<Constraint> CONSTRAINTS
             = ImmutableList.of(new PartialFailureConstraint(),
                                new HashedPathSelectionConstraint());
@@ -123,8 +126,8 @@ public class SlsNetReactiveRoutingFib {
         TrafficTreatment.Builder treatment =
                 DefaultTrafficTreatment.builder().setEthDst(hostMac);
         Key key = Key.of(ipPrefix.toString(), appId);
-        int priority = ipPrefix.prefixLength() * PRIORITY_MULTIPLIER
-                + PRIORITY_OFFSET;
+        int priority = slsnet.PRI_REACTIVE_ROUTE_BASE +
+                       ipPrefix.prefixLength() * slsnet.PRI_REACTIVE_ROUTE_STEP;
 
         Set<ConnectPoint> interfaceConnectPoints =
                 interfaceService.getInterfaces().stream()
@@ -215,8 +218,9 @@ public class SlsNetReactiveRoutingFib {
             selector.matchVlanId(VlanId.ANY);
         }
 
-        int priority = prefix.prefixLength() * PRIORITY_MULTIPLIER + PRIORITY_OFFSET;
         Key key = Key.of(prefix.toString() + "-reactive", appId);
+        int priority = slsnet.PRI_REACTIVE_ROUTE_BASE +
+                       prefix.prefixLength() * slsnet.PRI_REACTIVE_ROUTE_STEP;
         MultiPointToSinglePointIntent intent = MultiPointToSinglePointIntent.builder()
                 .appId(appId)
                 .key(key)
@@ -323,8 +327,8 @@ public class SlsNetReactiveRoutingFib {
                 DefaultTrafficTreatment.builder().setEthDst(dstMacAddress);
 
         Key key = Key.of(dstIpPrefix.toString(), appId);
-        int priority = dstIpPrefix.prefixLength() * PRIORITY_MULTIPLIER
-                + PRIORITY_OFFSET;
+        int priority = slsnet.PRI_REACTIVE_ROUTE_BASE +
+                       dstIpPrefix.prefixLength() * slsnet.PRI_REACTIVE_ROUTE_STEP;
         MultiPointToSinglePointIntent intent =
                 MultiPointToSinglePointIntent.builder()
                         .appId(appId)

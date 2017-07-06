@@ -30,10 +30,11 @@ import java.util.Collection;
 public interface SlsNetService {
     static final String APP_ID = "org.onosproject.slsnet";
 
-    // priority for ipReactiveRoutes: REACTIVE
+    // priority for ipReactiveRoutes: REACTIVE_ROUTE_BASE + ipPrefix * REACTIVE_ROUTE_STEP
     // priority for ipPrefixRoutes:   PREFIX_BASE + ipPrefix * PREFIX_STEP + PREFIX_ROUTE
     // priority for ipPrefixReact:    RREFIX_BASE + ipPrefix * PREFIX_STEP + PREFIX_REACT
-    static final int PRI_REACTIVE     = 400;
+    static final int PRI_REACTIVE_ROUTE_BASE = 400;
+    static final int PRI_REACTIVE_ROUTE_STEP = 1;
     static final int PRI_PREFIX_BASE  = 100;
     static final int PRI_PREFIX_STEP  = 2;
     static final int PRI_PREFIX_ROUTE = 1;
