@@ -94,26 +94,19 @@ public class SlsNet implements SlsNetService {
     @Reference(cardinality = ReferenceCardinality.MANDATORY_UNARY)
     protected IntentSynchronizationService intentSynchronizer;
 
-    // from VPLS
-    /*
-    private static final int INITIAL_RELOAD_CONFIG_DELAY = 0;
-    private static final int INITIAL_RELOAD_CONFIG_PERIOD = 1000
-    private static final int NUM_THREADS = 1;
-    */
-
     private ApplicationId appId;
 
     // l2 broadcast networks
-    private Set<VplsConfig> l2NetworkConfig = new HashSet<>();
-    private Set<VplsData> l2NetworkTable = new HashSet<>();
+    private Set<L2NetworkConfig> l2NetworkConfig = new HashSet<>();
+    private Set<L2Network> l2NetworkTable = new HashSet<>();
 
     // Subnet table
-    private Set<LocalIpPrefixEntry> localIp4PrefixEntries;
-    private Set<LocalIpPrefixEntry> localIp6PrefixEntries;
-    private InvertedRadixTree<LocalIpPrefixEntry>
+    private Set<IpSubnet> ip4Subnets;
+    private Set<IpSubnet> ip6Subnets;
+    private InvertedRadixTree<IpSubnet>
             localPrefixTable4 = new ConcurrentInvertedRadixTree<>(
                     new DefaultByteArrayNodeFactory());
-    private InvertedRadixTree<LocalIpPrefixEntry>
+    private InvertedRadixTree<IpSubnet>
             localPrefixTable6 = new ConcurrentInvertedRadixTree<>(
                     new DefaultByteArrayNodeFactory());
 
@@ -173,24 +166,24 @@ public class SlsNet implements SlsNetService {
         // l2Networks
         l2NetworkConfig = config.getL2Networks();
         l2NetworkTable = l2NetworkConfig.stream()
-                .map(vplsConfig -> {
-                    Set<Interface> interfaces = vplsConfig.ifaces().stream()
+                .map(l2NetworkConfig -> {
+                    Set<Interface> interfaces = l2NetworkConfig.ifaces().stream()
                             .map(this::getInterfaceByName)
                             .filter(Objects::nonNull)
                             .collect(Collectors.toSet());
-                    VplsData vplsData = VplsData.of(vplsConfig.name(), vplsConfig.encap());
-                    vplsData.addInterfaces(interfaces);
-                    return vplsData;
+                    L2Network l2Network = L2Network.of(l2NetworkConfig.name(), l2NetworkConfig.encap());
+                    l2Network.addInterfaces(interfaces);
+                    return l2Network;
                 }).collect(Collectors.toSet());
 
         // ipSubnet
-        localIp4PrefixEntries = config.localIp4PrefixEntries();
-        for (LocalIpPrefixEntry entry : localIp4PrefixEntries) {
+        ip4Subnets = config.ip4Subnets();
+        for (IpSubnet entry : ip4Subnets) {
             localPrefixTable4.put(createBinaryString(entry.ipPrefix()), entry);
             gatewayIpAddresses.add(entry.getGatewayIpAddress());
         }
-        localIp6PrefixEntries = config.localIp6PrefixEntries();
-        for (LocalIpPrefixEntry entry : localIp6PrefixEntries) {
+        ip6Subnets = config.ip6Subnets();
+        for (IpSubnet entry : ip6Subnets) {
             localPrefixTable6.put(createBinaryString(entry.ipPrefix()), entry);
             gatewayIpAddresses.add(entry.getGatewayIpAddress());
         }
@@ -235,7 +228,7 @@ public class SlsNet implements SlsNetService {
     }
 
     @Override
-    public Collection<VplsData> getAllVpls() {
+    public Collection<L2Network> getL2Networks() {
         return ImmutableSet.copyOf(l2NetworkTable);
     }
 
@@ -271,13 +264,13 @@ public class SlsNet implements SlsNetService {
     }
 
     @Override
-    public Set<LocalIpPrefixEntry> getLocalIp4PrefixEntries() {
-        return ImmutableSet.copyOf(localIp4PrefixEntries);
+    public Set<IpSubnet> getIp4Subnets() {
+        return ImmutableSet.copyOf(ip4Subnets);
     }
 
     @Override
-    public Set<LocalIpPrefixEntry> getLocalIp6PrefixEntries() {
-        return ImmutableSet.copyOf(localIp6PrefixEntries);
+    public Set<IpSubnet> getIp6Subnets() {
+        return ImmutableSet.copyOf(ip6Subnets);
     }
 
     @Override

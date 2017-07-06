@@ -51,7 +51,7 @@ public interface SlsNetService {
      *
      * @return all the l2Networks
      */
-    Collection<VplsData> getAllVpls();
+    Collection<L2Network> getL2Networks();
 
     /**
      * Evaluates whether an IP address is a virtual gateway IP address.
@@ -80,16 +80,16 @@ public interface SlsNetService {
     /**
      * Retrieves the entire set of ip4Subnets configuration.
      *
-     * @return the set of localIpPrefixEntries for ip4Subnets
+     * @return the set of IpSubnet for ip4Subnets
      */
-    Set<LocalIpPrefixEntry> getLocalIp4PrefixEntries();
+    Set<IpSubnet> getIp4Subnets();
 
     /**
      * Retrieves the entire set of ip6Subnets configuration.
      *
-     * @return the set of localIpPrefixEntries for ip6Subnets
+     * @return the set of IpSubnet for ip6Subnets
      */
-    Set<LocalIpPrefixEntry> getLocalIp6PrefixEntries();
+    Set<IpSubnet> getIp6Subnets();
 
     /**
      * Get Virtual Gateway Mac Address for Local Subnet Virtual Router

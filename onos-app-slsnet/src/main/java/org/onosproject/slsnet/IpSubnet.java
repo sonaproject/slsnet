@@ -24,7 +24,7 @@ import java.util.Objects;
 /**
  * Configuration details for an IP prefix entry.
  */
-public class LocalIpPrefixEntry {
+public class IpSubnet {
     private final IpPrefix ipPrefix;
     private final IpPrefixType type;
     private final IpAddress gatewayIpAddress;
@@ -55,7 +55,7 @@ public class LocalIpPrefixEntry {
      * @param type             an IP prefix type as an IpPrefixType
      * @param gatewayIpAddress IP of the gateway
      */
-    public LocalIpPrefixEntry(IpPrefix ipPrefix,
+    public IpSubnet(IpPrefix ipPrefix,
                               IpPrefixType type,
                               IpAddress gatewayIpAddress) {
         this.ipPrefix = ipPrefix;
@@ -119,11 +119,11 @@ public class LocalIpPrefixEntry {
             return true;
         }
 
-        if (!(obj instanceof LocalIpPrefixEntry)) {
+        if (!(obj instanceof IpSubnet)) {
             return false;
         }
 
-        LocalIpPrefixEntry that = (LocalIpPrefixEntry) obj;
+        IpSubnet that = (IpSubnet) obj;
         return Objects.equals(this.ipPrefix, that.ipPrefix)
                 && Objects.equals(this.type, that.type);
     }

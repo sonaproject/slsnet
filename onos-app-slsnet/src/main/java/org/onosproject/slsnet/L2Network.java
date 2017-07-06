@@ -29,13 +29,13 @@ import java.util.Set;
 import static java.util.Objects.*;
 
 /**
- * Class stores a VPLS information.
+ * Class stores a L2Network information.
  */
-public final class VplsData {
+public final class L2Network {
     /**
      * States of a Entry.
      */
-    public enum VplsState {
+    public enum State {
         UPDATING,
         ADDING,
         REMOVING,
@@ -47,67 +47,67 @@ public final class VplsData {
     private String name;
     private Set<Interface> interfaces;
     private EncapsulationType encapsulationType;
-    private VplsState state;
+    private State state;
 
     /**
-     * Constructs a VPLS data by given name and encapsulation type.
+     * Constructs a L2Network data by given name and encapsulation type.
      *
      * @param name the given name
      * @param encapType the encapsulation type
      */
-    private VplsData(String name, EncapsulationType encapType) {
+    private L2Network(String name, EncapsulationType encapType) {
         this.name = name;
         this.encapsulationType = encapType;
         this.interfaces = Sets.newHashSet();
-        this.state = VplsState.ADDING;
+        this.state = State.ADDING;
     }
 
     /**
-     * Creates a VPLS data by given name.
-     * The encapsulation type of the VPLS will be NONE.
+     * Creates a L2Network data by given name.
+     * The encapsulation type of the L2Network will be NONE.
      *
      * @param name the given name
-     * @return the VPLS data
+     * @return the L2Network data
      */
-    public static VplsData of(String name) {
+    public static L2Network of(String name) {
         requireNonNull(name);
-        return new VplsData(name, EncapsulationType.NONE);
+        return new L2Network(name, EncapsulationType.NONE);
     }
 
     /**
-     * Creates a VPLS data by given name and encapsulation type.
+     * Creates a L2Network data by given name and encapsulation type.
      *
      * @param name the given name
      * @param encapType the encapsulation type
-     * @return the VPLS data
+     * @return the L2Network data
      */
-    public static VplsData of(String name, EncapsulationType encapType) {
+    public static L2Network of(String name, EncapsulationType encapType) {
         requireNonNull(name);
         if (encapType == null) {
-            return new VplsData(name, EncapsulationType.NONE);
+            return new L2Network(name, EncapsulationType.NONE);
         } else {
-            return new VplsData(name, encapType);
+            return new L2Network(name, encapType);
         }
     }
 
     /**
-     * Creates a copy of VPLS data.
+     * Creates a copy of L2Network data.
      *
-     * @param vplsData the VPLS data
-     * @return the copy of the VPLS data
+     * @param l2Network the L2Network data
+     * @return the copy of the L2Network data
      */
-    public static VplsData of(VplsData vplsData) {
-        requireNonNull(vplsData);
-        VplsData vplsDataCopy = new VplsData(vplsData.name(), vplsData.encapsulationType());
-        vplsDataCopy.state(vplsData.state());
-        vplsDataCopy.addInterfaces(vplsData.interfaces());
-        return vplsData;
+    public static L2Network of(L2Network l2Network) {
+        requireNonNull(l2Network);
+        L2Network l2NetworkCopy = new L2Network(l2Network.name(), l2Network.encapsulationType());
+        l2NetworkCopy.state(l2Network.state());
+        l2NetworkCopy.addInterfaces(l2Network.interfaces());
+        return l2Network;
     }
 
     /**
-     * Gets name of the VPLS.
+     * Gets name of the L2Network.
      *
-     * @return the name of the VPLS
+     * @return the name of the L2Network
      */
     public String name() {
         return name;
@@ -145,11 +145,11 @@ public final class VplsData {
         this.encapsulationType = encapType;
     }
 
-    public VplsState state() {
+    public State state() {
         return state;
     }
 
-    public void state(VplsState state) {
+    public void state(State state) {
         this.state = state;
     }
 
@@ -168,10 +168,10 @@ public final class VplsData {
         if (obj == this) {
             return true;
         }
-        if (!(obj instanceof VplsData)) {
+        if (!(obj instanceof L2Network)) {
             return false;
         }
-        VplsData other = (VplsData) obj;
+        L2Network other = (L2Network) obj;
         return Objects.equals(other.name, this.name) &&
                 Objects.equals(other.interfaces, this.interfaces) &&
                 Objects.equals(other.encapsulationType, this.encapsulationType);

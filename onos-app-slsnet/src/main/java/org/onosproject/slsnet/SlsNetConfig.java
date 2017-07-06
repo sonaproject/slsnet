@@ -51,27 +51,27 @@ public class SlsNetConfig extends Config<ApplicationId> {
                                "virtualGatewayMacAddress";
 
     /**
-     * Returns all vpls in this configuration.
+     * Returns all l2Networks in this configuration.
      *
-     * @return A set of VPLS.
+     * @return A set of L2Network.
      */
-    public Set<VplsConfig> getL2Networks() {
-        Set<VplsConfig> l2Networks = Sets.newHashSet();
-        JsonNode vplsNode = object.get(L2NETWORKS);
-        if (vplsNode == null) {
+    public Set<L2NetworkConfig> getL2Networks() {
+        Set<L2NetworkConfig> l2Networks = Sets.newHashSet();
+        JsonNode l2NetworkNode = object.get(L2NETWORKS);
+        if (l2NetworkNode == null) {
             return l2Networks;
         }
 
-        vplsNode.forEach(jsonNode -> {
+        l2NetworkNode.forEach(jsonNode -> {
             String name = jsonNode.get(NAME).asText();
 
             Set<String> ifaces = Sets.newHashSet();
-            JsonNode vplsIfaces = jsonNode.path(INTERFACES);
-            if (!vplsIfaces.toString().isEmpty()) {
-                vplsIfaces.forEach(ifacesNode -> ifaces.add(new String(ifacesNode.asText())));
+            JsonNode l2NetworkIfaces = jsonNode.path(INTERFACES);
+            if (!l2NetworkIfaces.toString().isEmpty()) {
+                l2NetworkIfaces.forEach(ifacesNode -> ifaces.add(new String(ifacesNode.asText())));
             }
 
-            l2Networks.add(new VplsConfig(name, ifaces, EncapsulationType.NONE));
+            l2Networks.add(new L2NetworkConfig(name, ifaces, EncapsulationType.NONE));
         });
         return l2Networks;
     }
@@ -81,8 +81,8 @@ public class SlsNetConfig extends Config<ApplicationId> {
      *
      * @return IPv4 prefixes
      */
-    public Set<LocalIpPrefixEntry> localIp4PrefixEntries() {
-        Set<LocalIpPrefixEntry> prefixes = Sets.newHashSet();
+    public Set<IpSubnet> ip4Subnets() {
+        Set<IpSubnet> prefixes = Sets.newHashSet();
 
         JsonNode prefixesNode = object.get(IP4SUBNETS);
         if (prefixesNode == null) {
@@ -91,9 +91,9 @@ public class SlsNetConfig extends Config<ApplicationId> {
         }
 
         prefixesNode.forEach(jsonNode -> {
-            prefixes.add(new LocalIpPrefixEntry(
+            prefixes.add(new IpSubnet(
                     IpPrefix.valueOf(jsonNode.get(IPPREFIX).asText()),
-                    LocalIpPrefixEntry.IpPrefixType.valueOf("PRIVATE"),
+                    IpSubnet.IpPrefixType.valueOf("PRIVATE"),
                     IpAddress.valueOf(jsonNode.get(GATEWAYIP).asText())));
         });
 
@@ -105,8 +105,8 @@ public class SlsNetConfig extends Config<ApplicationId> {
      *
      * @return IPv6 prefixes
      */
-    public Set<LocalIpPrefixEntry> localIp6PrefixEntries() {
-        Set<LocalIpPrefixEntry> prefixes = Sets.newHashSet();
+    public Set<IpSubnet> ip6Subnets() {
+        Set<IpSubnet> prefixes = Sets.newHashSet();
 
         JsonNode prefixesNode = object.get(IP6SUBNETS);
         if (prefixesNode == null) {
@@ -116,9 +116,9 @@ public class SlsNetConfig extends Config<ApplicationId> {
         }
 
         prefixesNode.forEach(jsonNode -> {
-            prefixes.add(new LocalIpPrefixEntry(
+            prefixes.add(new IpSubnet(
                     IpPrefix.valueOf(jsonNode.get(IPPREFIX).asText()),
-                    LocalIpPrefixEntry.IpPrefixType.valueOf("PRIVATE"),
+                    IpSubnet.IpPrefixType.valueOf("PRIVATE"),
                     IpAddress.valueOf(jsonNode.get(GATEWAYIP).asText())));
         });
 

@@ -178,7 +178,7 @@ public class SlsNetReactiveRouting {
 
         // local ipSubnet intercepts
         /*
-        for (LocalIpPrefixEntry subnet : slsnet.getLocalIp4PrefixEntries()) {
+        for (IpSubnet subnet : slsnet.getIpSubnets()) {
             int p = slsnet.PRI_PREFIX_BASE + slsnet.PRI_PREFIX_REACT
                     + subnet.ipPrefix().prefixLength() * slsnet.PRI_PREFIX_STEP;
             TrafficSelector.Builder selector = DefaultTrafficSelector.builder();
@@ -206,7 +206,7 @@ public class SlsNetReactiveRouting {
     private void withdrawIntercepts() {
         // local ipSubnet intercepts
         /*
-        for (LocalIpPrefixEntry subnet : slsnet.getLocalIp4PrefixEntries()) {
+        for (IpSubnet subnet : slsnet.getIp4Subnets()) {
             int priority = slsnet.PRI_PREFIX_BASE + slsnet.PRI_PREFIX_REACT
                            + subnet.ipPrefix().prefixLength() * slsnet.PRI_PREFIX_STEP;
             TrafficSelector.Builder selector = DefaultTrafficSelector.builder();

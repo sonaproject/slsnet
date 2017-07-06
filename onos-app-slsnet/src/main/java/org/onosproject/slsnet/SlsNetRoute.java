@@ -188,7 +188,7 @@ public class SlsNetRoute {
 
         Set<FilteredConnectPoint> ingressFilteredCPs = Sets.newHashSet();
 
-        // TODO: To be checked with VPLS interfaces
+        // TODO: To be checked with L2Network interfaces
         interfaceService.getInterfaces().forEach(intf -> {
             // Get ony ingress interfaces with IPs configured
             if (validIngressIntf(intf, egressInterface)) {

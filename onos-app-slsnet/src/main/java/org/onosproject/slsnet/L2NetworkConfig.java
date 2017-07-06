@@ -24,39 +24,39 @@ import java.util.Set;
 import static com.google.common.base.Preconditions.checkNotNull;
 
 /**
- * Configuration of a VPLS.
+ * Configuration of a L2Network.
  */
-public class VplsConfig {
+public class L2NetworkConfig {
     private final String name;
     private final Set<String> ifaces;
     private final EncapsulationType encap;
 
     /**
-     * Creates a new VPLS configuration.
+     * Creates a new L2Network configuration.
      *
-     * @param name the VPLS name
-     * @param ifaces the interfaces associated with the VPLS
+     * @param name the L2Network name
+     * @param ifaces the interfaces associated with the L2Network
      * @param encap the encapsulation type if set
      */
-    public VplsConfig(String name, Set<String> ifaces, EncapsulationType encap) {
+    public L2NetworkConfig(String name, Set<String> ifaces, EncapsulationType encap) {
         this.name = checkNotNull(name);
         this.ifaces = checkNotNull(ImmutableSet.copyOf(ifaces));
         this.encap = checkNotNull(encap);
     }
 
     /**
-     * The name of the VPLS.
+     * The name of the L2Network.
      *
-     * @return the name of the VPLS
+     * @return the name of the L2Network
      */
     public String name() {
         return name;
     }
 
     /**
-     * The name of the interfaces associated with the VPLS.
+     * The name of the interfaces associated with the L2Network.
      *
-     * @return a set of interface names associated with the VPLS
+     * @return a set of interface names associated with the L2Network
      */
     public Set<String> ifaces() {
         return ImmutableSet.copyOf(ifaces);
@@ -72,9 +72,9 @@ public class VplsConfig {
     }
 
     /**
-     * States if a given interface is part of a VPLS.
-     * @param iface the interface attached to a VPLS
-     * @return true if the interface is associated to the VPLS; false otherwise
+     * States if a given interface is part of a L2Network.
+     * @param iface the interface attached to a L2Network
+     * @return true if the interface is associated to the L2Network; false otherwise
      */
     protected boolean isAttached(String iface) {
         return ifaces.stream().anyMatch(iface::equals);
@@ -85,8 +85,8 @@ public class VplsConfig {
         if (this == obj) {
             return true;
         }
-        if (obj instanceof VplsConfig) {
-            VplsConfig that = (VplsConfig) obj;
+        if (obj instanceof L2NetworkConfig) {
+            L2NetworkConfig that = (L2NetworkConfig) obj;
             return Objects.equals(name, that.name) &&
                     Objects.equals(ifaces, that.ifaces) &&
                     Objects.equals(encap, that.encap);
