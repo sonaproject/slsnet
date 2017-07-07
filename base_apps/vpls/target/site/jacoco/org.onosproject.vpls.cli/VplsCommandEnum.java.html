@@ -1,0 +1,82 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="ko"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>VplsCommandEnum.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">onos-app-slsnet-vpls</a> &gt; <a href="index.source.html" class="el_package">org.onosproject.vpls.cli</a> &gt; <span class="el_source">VplsCommandEnum.java</span></div><h1>VplsCommandEnum.java</h1><pre class="source lang-java linenums">/*
+ * Copyright 2015-present Open Networking Laboratory
+ *
+ * Licensed under the Apache License, Version 2.0 (the &quot;License&quot;);
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package org.onosproject.vpls.cli;
+
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.stream.Collectors;
+
+/**
+ * Enum representing the VPLS command type.
+ */
+<span class="pc" id="L26">public enum VplsCommandEnum {</span>
+<span class="fc" id="L27">    ADD_IFACE(&quot;add-if&quot;),</span>
+<span class="fc" id="L28">    CREATE(&quot;create&quot;),</span>
+<span class="fc" id="L29">    DELETE(&quot;delete&quot;),</span>
+<span class="fc" id="L30">    LIST(&quot;list&quot;),</span>
+<span class="fc" id="L31">    REMOVE_IFACE(&quot;rem-if&quot;),</span>
+<span class="fc" id="L32">    SET_ENCAP(&quot;set-encap&quot;),</span>
+<span class="fc" id="L33">    SHOW(&quot;show&quot;),</span>
+<span class="fc" id="L34">    CLEAN(&quot;clean&quot;);</span>
+
+    private final String command;
+
+    /**
+     * Creates the enum from a string representing the command.
+     *
+     * @param command the text representing the command
+     */
+<span class="fc" id="L43">    VplsCommandEnum(final String command) {</span>
+<span class="fc" id="L44">        this.command = command;</span>
+<span class="fc" id="L45">    }</span>
+
+    @Override
+    public String toString() {
+<span class="fc" id="L49">        return command;</span>
+    }
+
+    /**
+     * Returns a list of command string values.
+     *
+     * @return the list of string values corresponding to the enums
+     */
+    public static List&lt;String&gt; toStringList() {
+<span class="fc" id="L58">        return Arrays.stream(values())</span>
+<span class="fc" id="L59">                .map(VplsCommandEnum::toString)</span>
+<span class="fc" id="L60">                .collect(Collectors.toCollection(ArrayList::new));</span>
+    }
+
+    /**
+     * Alternative method to valueOf. It returns the command type
+     * corresponding to the given string. If the parameter does not match a
+     * constant name, or is null, null is returned.
+     *
+     * @param command the string representing the encapsulation type
+     * @return the EncapsulationType constant corresponding to the string given
+     */
+    public static VplsCommandEnum enumFromString(String command) {
+<span class="pc bpc" id="L72" title="1 of 4 branches missed.">        if (command != null &amp;&amp; !command.isEmpty()) {</span>
+<span class="pc bpc" id="L73" title="1 of 2 branches missed.">            for (VplsCommandEnum c : values()) {</span>
+<span class="fc bfc" id="L74" title="All 2 branches covered.">                if (command.equalsIgnoreCase(c.toString())) {</span>
+<span class="fc" id="L75">                    return c;</span>
+                }
+            }
+        }
+<span class="fc" id="L79">        return null;</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span></div></body></html>

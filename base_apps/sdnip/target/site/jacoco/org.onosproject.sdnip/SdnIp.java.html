@@ -1,0 +1,123 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="ko"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>SdnIp.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">onos-app-slsnet-sdnip</a> &gt; <a href="index.source.html" class="el_package">org.onosproject.sdnip</a> &gt; <span class="el_source">SdnIp.java</span></div><h1>SdnIp.java</h1><pre class="source lang-java linenums">/*
+ * Copyright 2014-present Open Networking Laboratory
+ *
+ * Licensed under the Apache License, Version 2.0 (the &quot;License&quot;);
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package org.onosproject.sdnip;
+
+import com.google.common.collect.ImmutableList;
+import org.apache.felix.scr.annotations.Activate;
+import org.apache.felix.scr.annotations.Component;
+import org.apache.felix.scr.annotations.Deactivate;
+import org.apache.felix.scr.annotations.Reference;
+import org.apache.felix.scr.annotations.ReferenceCardinality;
+import org.onosproject.app.ApplicationService;
+import org.onosproject.core.ApplicationId;
+import org.onosproject.core.CoreService;
+import org.onosproject.incubator.component.ComponentService;
+import org.onosproject.incubator.net.intf.InterfaceService;
+import org.onosproject.net.config.ConfigFactory;
+import org.onosproject.net.config.NetworkConfigRegistry;
+import org.onosproject.net.config.NetworkConfigService;
+import org.onosproject.net.config.basics.SubjectFactories;
+import org.onosproject.intentsync.IntentSynchronizationService;
+import org.onosproject.routing.RoutingService;
+import org.onosproject.sdnip.config.SdnIpConfig;
+import org.slf4j.Logger;
+
+import java.util.List;
+
+import static org.slf4j.LoggerFactory.getLogger;
+
+/**
+ * Component for the SDN-IP peering application.
+ */
+@Component(immediate = true)
+<span class="nc" id="L46">public class SdnIp {</span>
+
+    public static final String SDN_IP_APP = &quot;org.onosproject.sdnip&quot;;
+<span class="nc" id="L49">    private final Logger log = getLogger(getClass());</span>
+
+    @Reference(cardinality = ReferenceCardinality.MANDATORY_UNARY)
+    protected CoreService coreService;
+
+    @Reference(cardinality = ReferenceCardinality.MANDATORY_UNARY)
+    protected ApplicationService applicationService;
+
+    @Reference(cardinality = ReferenceCardinality.MANDATORY_UNARY)
+    protected NetworkConfigService networkConfigService;
+
+    @Reference(cardinality = ReferenceCardinality.MANDATORY_UNARY)
+    protected InterfaceService interfaceService;
+
+    @Reference(cardinality = ReferenceCardinality.MANDATORY_UNARY)
+    protected IntentSynchronizationService intentSynchronizer;
+
+    @Reference(cardinality = ReferenceCardinality.MANDATORY_UNARY)
+    protected NetworkConfigRegistry cfgRegistry;
+
+    @Reference(cardinality = ReferenceCardinality.MANDATORY_UNARY)
+    protected ComponentService componentService;
+
+    private PeerConnectivityManager peerConnectivity;
+
+    private ApplicationId appId;
+
+<span class="nc" id="L76">    private final List&lt;String&gt; components = ImmutableList.of(</span>
+            &quot;org.onosproject.routing.bgp.BgpSessionManager&quot;,
+            &quot;org.onosproject.routing.impl.BgpSpeakerNeighbourHandler&quot;,
+<span class="nc" id="L79">            org.onosproject.sdnip.SdnIpFib.class.getName()</span>
+    );
+
+<span class="nc" id="L82">    private final List&lt;ConfigFactory&lt;?, ?&gt;&gt; factories = ImmutableList.of(</span>
+            new ConfigFactory&lt;ApplicationId, SdnIpConfig&gt;(SubjectFactories.APP_SUBJECT_FACTORY,
+<span class="nc" id="L84">                                                          SdnIpConfig.class, SdnIpConfig.CONFIG_KEY) {</span>
+                @Override
+                public SdnIpConfig createConfig() {
+<span class="nc" id="L87">                    return new SdnIpConfig();</span>
+                }
+            });
+
+    @Activate
+    protected void activate() {
+<span class="nc" id="L93">        appId = coreService.registerApplication(SDN_IP_APP);</span>
+
+<span class="nc" id="L95">        factories.forEach(cfgRegistry::registerConfigFactory);</span>
+
+<span class="nc" id="L97">        components.forEach(name -&gt; componentService.activate(appId, name));</span>
+
+<span class="nc" id="L99">        peerConnectivity = new PeerConnectivityManager(appId,</span>
+                                                       intentSynchronizer,
+                                                       networkConfigService,
+<span class="nc" id="L102">                coreService.registerApplication(RoutingService.ROUTER_APP_ID),</span>
+                                                       interfaceService);
+<span class="nc" id="L104">        peerConnectivity.start();</span>
+
+<span class="nc" id="L106">        applicationService.registerDeactivateHook(appId,</span>
+<span class="nc" id="L107">                () -&gt; intentSynchronizer.removeIntentsByAppId(appId));</span>
+
+<span class="nc" id="L109">        log.info(&quot;Started&quot;);</span>
+<span class="nc" id="L110">    }</span>
+
+    @Deactivate
+    protected void deactivate() {
+<span class="nc" id="L114">        components.forEach(name -&gt; componentService.deactivate(appId, name));</span>
+
+<span class="nc" id="L116">        factories.forEach(cfgRegistry::unregisterConfigFactory);</span>
+
+<span class="nc" id="L118">        peerConnectivity.stop();</span>
+
+<span class="nc" id="L120">        log.info(&quot;Stopped&quot;);</span>
+<span class="nc" id="L121">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span></div></body></html>

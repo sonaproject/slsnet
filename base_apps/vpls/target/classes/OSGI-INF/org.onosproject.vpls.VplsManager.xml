@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<scr:component xmlns:scr="http://www.osgi.org/xmlns/scr/v1.1.0" immediate="true" name="org.onosproject.vpls.VplsManager" activate="activate" deactivate="deactivate">
+    <service servicefactory="false">
+        <provide interface="org.onosproject.vpls.api.Vpls"/>
+    </service>
+    <reference name="hostService" interface="org.onosproject.net.host.HostService" cardinality="1..1" policy="static" bind="bindHostService" unbind="unbindHostService"/>
+    <reference name="interfaceService" interface="org.onosproject.incubator.net.intf.InterfaceService" cardinality="1..1" policy="static" bind="bindInterfaceService" unbind="unbindInterfaceService"/>
+    <reference name="vplsStore" interface="org.onosproject.vpls.api.VplsStore" cardinality="1..1" policy="static" bind="bindVplsStore" unbind="unbindVplsStore"/>
+    <reference name="operationService" interface="org.onosproject.vpls.api.VplsOperationService" cardinality="1..1" policy="static" bind="bindOperationService" unbind="unbindOperationService"/>
+    <implementation class="org.onosproject.vpls.VplsManager"/>
+</scr:component>

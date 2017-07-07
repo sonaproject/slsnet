@@ -1,0 +1,252 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="ko"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>VplsAppConfig.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">onos-app-slsnet-vpls</a> &gt; <a href="index.source.html" class="el_package">org.onosproject.vpls.config</a> &gt; <span class="el_source">VplsAppConfig.java</span></div><h1>VplsAppConfig.java</h1><pre class="source lang-java linenums">/*
+ * Copyright 2016-present Open Networking Laboratory
+ *
+ * Licensed under the Apache License, Version 2.0 (the &quot;License&quot;);
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package org.onosproject.vpls.config;
+
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.fasterxml.jackson.databind.node.JsonNodeFactory;
+import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.google.common.collect.Sets;
+import org.onosproject.core.ApplicationId;
+import org.onosproject.net.EncapsulationType;
+import org.onosproject.net.config.Config;
+
+import java.util.Set;
+
+/**
+ * Represents the VPLS application configuration.
+ */
+<span class="fc" id="L32">public class VplsAppConfig extends Config&lt;ApplicationId&gt; {</span>
+    private static final String VPLS = &quot;vplsList&quot;;
+    private static final String NAME = &quot;name&quot;;
+    private static final String INTERFACE = &quot;interfaces&quot;;
+    private static final String ENCAPSULATION = &quot;encapsulation&quot;;
+
+    // Record update time when VPLS distribute store update it
+    private static final String UPDATE_TIME = &quot;lastUpdateTime&quot;;
+
+    /**
+     * Returns a set of configured VPLSs.
+     *
+     * @return set of VPLSs
+     */
+    public Set&lt;VplsConfig&gt; vplss() {
+<span class="fc" id="L47">        Set&lt;VplsConfig&gt; vplss = Sets.newHashSet();</span>
+<span class="fc" id="L48">        JsonNode vplsNode = object.get(VPLS);</span>
+<span class="fc bfc" id="L49" title="All 2 branches covered.">        if (vplsNode == null) {</span>
+<span class="fc" id="L50">            return vplss;</span>
+        }
+
+<span class="fc" id="L53">        vplsNode.forEach(jsonNode -&gt; {</span>
+<span class="fc" id="L54">            String name = jsonNode.get(NAME).asText();</span>
+
+<span class="fc" id="L56">            Set&lt;String&gt; ifaces = Sets.newHashSet();</span>
+<span class="fc" id="L57">            JsonNode vplsIfaces = jsonNode.path(INTERFACE);</span>
+<span class="pc bpc" id="L58" title="1 of 2 branches missed.">            if (vplsIfaces.toString().isEmpty()) {</span>
+<span class="nc" id="L59">                vplsIfaces = ((ObjectNode) jsonNode).putArray(INTERFACE);</span>
+            }
+<span class="fc" id="L61">            vplsIfaces.forEach(ifacesNode -&gt; ifaces.add(ifacesNode.asText()));</span>
+
+<span class="fc" id="L63">            String encap = null;</span>
+<span class="pc bpc" id="L64" title="1 of 2 branches missed.">            if (jsonNode.hasNonNull(ENCAPSULATION)) {</span>
+<span class="fc" id="L65">                encap = jsonNode.get(ENCAPSULATION).asText();</span>
+            }
+<span class="fc" id="L67">            vplss.add(new VplsConfig(name,</span>
+                                     ifaces,
+<span class="fc" id="L69">                                     EncapsulationType.enumFromString(encap)));</span>
+<span class="fc" id="L70">        });</span>
+<span class="fc" id="L71">        return vplss;</span>
+    }
+
+    /**
+     * Returns the VPLS configuration given a VPLS name.
+     *
+     * @param name the name of the VPLS
+     * @return the VPLS configuration if it exists; null otherwise
+     */
+    public VplsConfig getVplsWithName(String name) {
+<span class="fc" id="L81">        return vplss().stream()</span>
+<span class="fc" id="L82">                      .filter(vpls -&gt; vpls.name().equals(name))</span>
+<span class="fc" id="L83">                      .findFirst()</span>
+<span class="fc" id="L84">                      .orElse(null);</span>
+    }
+
+    /**
+     * Adds a VPLS to the configuration.
+     *
+     * @param vpls the name of the VPLS
+     */
+    public void addVpls(VplsConfig vpls) {
+<span class="fc" id="L93">        ObjectNode vplsNode = JsonNodeFactory.instance.objectNode();</span>
+
+<span class="fc" id="L95">        vplsNode.put(NAME, vpls.name());</span>
+
+<span class="fc" id="L97">        ArrayNode ifacesNode = vplsNode.putArray(INTERFACE);</span>
+<span class="fc" id="L98">        vpls.ifaces().forEach(ifacesNode::add);</span>
+
+<span class="fc" id="L100">        vplsNode.put(ENCAPSULATION, vpls.encap().toString());</span>
+
+<span class="fc bfc" id="L102" title="All 2 branches covered.">        ArrayNode vplsArray = vplss().isEmpty() ?</span>
+<span class="fc" id="L103">                initVplsConfiguration() : (ArrayNode) object.get(VPLS);</span>
+<span class="fc" id="L104">        vplsArray.add(vplsNode);</span>
+<span class="fc" id="L105">    }</span>
+
+    /**
+     * Removes a VPLS from the configuration.
+     *
+     * @param vplsName the vplsName of the VPLS to be removed
+     */
+    public void removeVpls(String vplsName) {
+<span class="fc" id="L113">        ArrayNode configuredVpls = (ArrayNode) object.get(VPLS);</span>
+
+<span class="fc bfc" id="L115" title="All 2 branches covered.">        for (int i = 0; i &lt; configuredVpls.size(); i++) {</span>
+<span class="pc bpc" id="L116" title="1 of 2 branches missed.">            if (configuredVpls.get(i).hasNonNull(NAME) &amp;&amp;</span>
+<span class="fc bfc" id="L117" title="All 2 branches covered.">                    configuredVpls.get(i).get(NAME).asText().equals(vplsName)) {</span>
+<span class="fc" id="L118">                configuredVpls.remove(i);</span>
+<span class="fc" id="L119">                return;</span>
+            }
+        }
+<span class="fc" id="L122">    }</span>
+
+    /**
+     * Finds a VPLS with a given network interface.
+     *
+     * @param iface the network interface
+     * @return the VPLS if found; null otherwise
+     */
+    public VplsConfig vplsFromIface(String iface) {
+<span class="fc bfc" id="L131" title="All 2 branches covered.">        for (VplsConfig vpls : vplss()) {</span>
+<span class="fc bfc" id="L132" title="All 2 branches covered.">            if (vpls.isAttached(iface)) {</span>
+<span class="fc" id="L133">                return vpls;</span>
+            }
+<span class="fc" id="L135">        }</span>
+<span class="fc" id="L136">        return null;</span>
+    }
+
+    /**
+     * Adds a network interface to a VPLS.
+     *
+     * @param vplsName the vplsName of the VPLS
+     * @param iface the network interface to be added
+     */
+    public void addIface(String vplsName, String iface) {
+<span class="fc" id="L146">        JsonNode vplsNodes = object.get(VPLS);</span>
+<span class="fc" id="L147">        vplsNodes.forEach(vplsNode -&gt; {</span>
+<span class="pc bpc" id="L148" title="1 of 2 branches missed.">            if (hasNamedNode(vplsNode, vplsName)) {</span>
+<span class="fc" id="L149">                ArrayNode ifacesNode = (ArrayNode) vplsNode.get(INTERFACE);</span>
+<span class="fc bfc" id="L150" title="All 2 branches covered.">                for (int i = 0; i &lt; ifacesNode.size(); i++) {</span>
+<span class="fc bfc" id="L151" title="All 2 branches covered.">                    if (ifacesNode.get(i).asText().equals(iface)) {</span>
+<span class="fc" id="L152">                        return; // Interface already exists.</span>
+                    }
+                }
+<span class="fc" id="L155">                ifacesNode.add(iface);</span>
+            }
+<span class="fc" id="L157">        });</span>
+<span class="fc" id="L158">    }</span>
+
+    /**
+     * Removes a network interface from a VPLS.
+     *
+     * @param name the name of the VPLS
+     * @param iface the network interface to be removed
+     */
+    public void removeIface(VplsConfig name, String iface) {
+<span class="fc" id="L167">        JsonNode vplsNodes = object.get(VPLS);</span>
+<span class="fc" id="L168">        vplsNodes.forEach(vplsNode -&gt; {</span>
+<span class="pc bpc" id="L169" title="1 of 2 branches missed.">            if (hasNamedNode(vplsNode, name.name())) {</span>
+<span class="fc" id="L170">                ArrayNode ifacesNode = (ArrayNode) vplsNode.get(INTERFACE);</span>
+<span class="fc bfc" id="L171" title="All 2 branches covered.">                for (int i = 0; i &lt; ifacesNode.size(); i++) {</span>
+<span class="fc bfc" id="L172" title="All 2 branches covered.">                    if (ifacesNode.get(i).asText().equals(iface)) {</span>
+<span class="fc" id="L173">                        ifacesNode.remove(i);</span>
+<span class="fc" id="L174">                        return;</span>
+                    }
+                }
+            }
+<span class="fc" id="L178">        });</span>
+<span class="fc" id="L179">    }</span>
+
+    /**
+     * Activate, deactivates, sets the encapsulation type for a given VPLS.
+     *
+     * @param vplsName the vplsName of the VPLS
+     * @param encap the encapsulation type, if set
+     */
+    public void setEncap(String vplsName, EncapsulationType encap) {
+<span class="fc" id="L188">        JsonNode vplsNodes = object.get(VPLS);</span>
+<span class="fc" id="L189">        vplsNodes.forEach(vplsNode -&gt; {</span>
+<span class="pc bpc" id="L190" title="1 of 2 branches missed.">            if (hasNamedNode(vplsNode, vplsName)) {</span>
+<span class="fc" id="L191">                ((ObjectNode) vplsNode).put(ENCAPSULATION, encap.toString());</span>
+            }
+<span class="fc" id="L193">        });</span>
+<span class="fc" id="L194">    }</span>
+
+    /**
+     * States if a JSON node has a &quot;name&quot; attribute and if the value is equal to
+     * the name given.
+     *
+     * @param jsonNode the JSON node
+     * @param name the node name
+     * @return true if the JSON node has a &quot;name&quot; attribute with value equal to
+     * the name given; false otherwise
+     */
+    private boolean hasNamedNode(JsonNode jsonNode, String name) {
+<span class="pc bpc" id="L206" title="1 of 2 branches missed.">        return jsonNode.hasNonNull(NAME) &amp;&amp;</span>
+<span class="pc bpc" id="L207" title="1 of 2 branches missed.">                jsonNode.get(NAME).asText().equals(name);</span>
+    }
+
+    /**
+     * Creates an empty VPLS configuration.
+     *
+     * @return empty ArrayNode to store the VPLS configuration
+     */
+    private ArrayNode initVplsConfiguration() {
+<span class="fc" id="L216">        return object.putArray(VPLS);</span>
+    }
+
+    /**
+     * Sets the last time of update for the VPLS information in the store.
+     *
+     * @param timestamp the update time
+     */
+    public void updateTime(long timestamp) {
+<span class="fc" id="L225">        object.put(UPDATE_TIME, timestamp);</span>
+<span class="fc" id="L226">    }</span>
+
+    /**
+     * Retrieves the last time of update for the VPLS information in the store.
+     *
+     * @return update time, -1 if there is no update time in the config
+     */
+    public long updateTime() {
+<span class="fc bfc" id="L234" title="All 2 branches covered.">        if (object.get(UPDATE_TIME) != null) {</span>
+<span class="fc" id="L235">            return object.get(UPDATE_TIME).asLong();</span>
+        } else {
+            // No update time
+<span class="fc" id="L238">            return -1L;</span>
+        }
+    }
+
+    /**
+     * Clears all VPLS configurations.
+     */
+    public void clearVplsConfig() {
+<span class="pc bpc" id="L246" title="1 of 2 branches missed.">        if (object.get(VPLS) != null) {</span>
+<span class="fc" id="L247">            object.remove(VPLS);</span>
+        }
+<span class="fc" id="L249">        initVplsConfiguration();</span>
+<span class="fc" id="L250">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span></div></body></html>

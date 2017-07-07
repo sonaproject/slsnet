@@ -1,0 +1,5 @@
+Jun 30, 2017 11:19:55 AM org.onosproject.vpls.config.VplsConfigManager reloadConfiguration
+WARNING: VPLS configuration not defined
+Jun 30, 2017 11:19:55 AM org.onosproject.vpls.config.VplsConfigManager reloadConfiguration
+WARNING: VPLS configuration not defined
+[VplsData{name=vpls2, interfaces=[Interface{name=v200h1, connectPoint=3/1, ipAddresses=[], macAddress=A4:23:05:00:00:00, vlan=200, vlanUntagged=None, vlanTagged=[], vlanNative=None}, Interface{name=v200h2, connectPoint=4/1, ipAddresses=[], macAddress=A4:23:05:00:00:00, vlan=200, vlanUntagged=None, vlanTagged=[], vlanNative=None}], encap type=VLAN, state=ADDING}, VplsData{name=vpls1, interfaces=[Interface{name=v100h1, connectPoint=1/1, ipAddresses=[], macAddress=A4:23:05:00:00:00, vlan=100, vlanUntagged=None, vlanTagged=[], vlanNative=None}, Interface{name=v100h2, connectPoint=2/1, ipAddresses=[], macAddress=A4:23:05:00:00:00, vlan=100, vlanUntagged=None, vlanTagged=[], vlanNative=None}], encap type=NONE, state=ADDING}]

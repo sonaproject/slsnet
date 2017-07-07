@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<scr:component xmlns:scr="http://www.osgi.org/xmlns/scr/v1.1.0" immediate="true" name="org.onosproject.reactive.routing.SdnIpReactiveRouting" activate="activate" deactivate="deactivate">
+    <reference name="coreService" interface="org.onosproject.core.CoreService" cardinality="1..1" policy="static" bind="bindCoreService" unbind="unbindCoreService"/>
+    <reference name="packetService" interface="org.onosproject.net.packet.PacketService" cardinality="1..1" policy="static" bind="bindPacketService" unbind="unbindPacketService"/>
+    <reference name="routeService" interface="org.onosproject.incubator.net.routing.RouteService" cardinality="1..1" policy="static" bind="bindRouteService" unbind="unbindRouteService"/>
+    <reference name="intentSynchronizer" interface="org.onosproject.intentsync.IntentSynchronizationService" cardinality="1..1" policy="static" bind="bindIntentSynchronizer" unbind="unbindIntentSynchronizer"/>
+    <reference name="config" interface="org.onosproject.reactive.routing.ReactiveRoutingConfigurationService" cardinality="1..1" policy="static" bind="bindConfig" unbind="unbindConfig"/>
+    <reference name="interfaceService" interface="org.onosproject.incubator.net.intf.InterfaceService" cardinality="1..1" policy="static" bind="bindInterfaceService" unbind="unbindInterfaceService"/>
+    <reference name="hostService" interface="org.onosproject.net.host.HostService" cardinality="1..1" policy="static" bind="bindHostService" unbind="unbindHostService"/>
+    <implementation class="org.onosproject.reactive.routing.SdnIpReactiveRouting"/>
+</scr:component>

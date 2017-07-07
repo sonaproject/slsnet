@@ -1,0 +1,235 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="ko"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>DistributedVplsStore.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">onos-app-slsnet-vpls</a> &gt; <a href="index.source.html" class="el_package">org.onosproject.vpls.store</a> &gt; <span class="el_source">DistributedVplsStore.java</span></div><h1>DistributedVplsStore.java</h1><pre class="source lang-java linenums">/*
+ * Copyright 2017-present Open Networking Laboratory
+ *
+ * Licensed under the Apache License, Version 2.0 (the &quot;License&quot;);
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package org.onosproject.vpls.store;
+
+import org.apache.felix.scr.annotations.Activate;
+import org.apache.felix.scr.annotations.Component;
+import org.apache.felix.scr.annotations.Deactivate;
+import org.apache.felix.scr.annotations.Reference;
+import org.apache.felix.scr.annotations.ReferenceCardinality;
+import org.apache.felix.scr.annotations.Service;
+import org.onlab.util.KryoNamespace;
+import org.onosproject.core.ApplicationId;
+import org.onosproject.core.CoreService;
+import org.onosproject.incubator.net.intf.Interface;
+import org.onosproject.net.config.NetworkConfigService;
+import org.onosproject.store.AbstractStore;
+import org.onosproject.store.StoreDelegate;
+import org.onosproject.store.serializers.KryoNamespaces;
+import org.onosproject.store.service.EventuallyConsistentMap;
+import org.onosproject.store.service.EventuallyConsistentMapEvent;
+import org.onosproject.store.service.EventuallyConsistentMapListener;
+import org.onosproject.store.service.StorageService;
+import org.onosproject.store.service.WallClockTimestamp;
+import org.onosproject.vpls.VplsManager;
+import org.onosproject.vpls.api.VplsData;
+import org.onosproject.vpls.api.VplsOperation;
+import org.onosproject.vpls.config.VplsAppConfig;
+import org.onosproject.vpls.api.VplsStore;
+import org.onosproject.vpls.config.VplsConfig;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.util.Collection;
+import java.util.Set;
+import java.util.concurrent.CompletableFuture;
+import java.util.stream.Collectors;
+
+import static java.util.Objects.*;
+
+/**
+ * Implementation of VPLSConfigurationService which reads VPLS configuration
+ * from the network configuration service.
+ */
+@Component(immediate = true)
+@Service
+<span class="fc" id="L59">public class DistributedVplsStore</span>
+        extends AbstractStore&lt;VplsStoreEvent, StoreDelegate&lt;VplsStoreEvent&gt;&gt;
+        implements VplsStore {
+
+<span class="fc" id="L63">    private static final KryoNamespace APP_KRYO = KryoNamespace.newBuilder()</span>
+<span class="fc" id="L64">            .register(KryoNamespaces.API)</span>
+<span class="fc" id="L65">            .register(Interface.class)</span>
+<span class="fc" id="L66">            .register(VplsData.class)</span>
+<span class="fc" id="L67">            .register(VplsData.VplsState.class)</span>
+<span class="fc" id="L68">            .register(VplsOperation.class)</span>
+<span class="fc" id="L69">            .build();</span>
+
+<span class="fc" id="L71">    private final Logger log = LoggerFactory.getLogger(getClass());</span>
+
+    @Reference(cardinality = ReferenceCardinality.MANDATORY_UNARY)
+    protected CoreService coreService;
+
+    @Reference(cardinality = ReferenceCardinality.MANDATORY_UNARY)
+    protected StorageService storageService;
+
+    @Reference(cardinality = ReferenceCardinality.MANDATORY_UNARY)
+    protected NetworkConfigService networkConfigService;
+
+    private EventuallyConsistentMap&lt;String, VplsData&gt; vplsDataStore;
+    private EventuallyConsistentMapListener&lt;String, VplsData&gt; vplsDataListener;
+    private ApplicationId appId;
+
+    @Activate
+    protected void active() {
+<span class="fc" id="L88">        appId = coreService.registerApplication(VplsManager.VPLS_APP);</span>
+
+<span class="fc" id="L90">        vplsDataStore = storageService.&lt;String, VplsData&gt;eventuallyConsistentMapBuilder()</span>
+<span class="fc" id="L91">                .withName(&quot;VPLS-Data&quot;)</span>
+<span class="pc" id="L92">                .withTimestampProvider((name, vpls) -&gt; new WallClockTimestamp())</span>
+<span class="fc" id="L93">                .withSerializer(APP_KRYO)</span>
+<span class="fc" id="L94">                .build();</span>
+<span class="fc" id="L95">        vplsDataListener = new InternalVplsDataListener();</span>
+<span class="fc" id="L96">        vplsDataStore.addListener(vplsDataListener);</span>
+<span class="fc" id="L97">        log.info(&quot;Started&quot;);</span>
+<span class="fc" id="L98">    }</span>
+
+    @Deactivate
+    protected  void deactive() {
+<span class="fc" id="L102">        vplsDataStore.removeListener(vplsDataListener);</span>
+<span class="fc" id="L103">        networkConfigService.removeConfig(appId);</span>
+<span class="fc" id="L104">        log.info(&quot;Stopped&quot;);</span>
+<span class="fc" id="L105">    }</span>
+
+    @Override
+    public void addVpls(VplsData vplsData) {
+<span class="fc" id="L109">        requireNonNull(vplsData);</span>
+<span class="pc bpc" id="L110" title="1 of 2 branches missed.">        if (vplsData.name().isEmpty()) {</span>
+<span class="nc" id="L111">            throw new IllegalArgumentException(&quot;VPLS name is empty.&quot;);</span>
+        }
+<span class="fc" id="L113">        vplsData.state(VplsData.VplsState.ADDING);</span>
+<span class="fc" id="L114">        this.vplsDataStore.put(vplsData.name(), vplsData);</span>
+<span class="fc" id="L115">    }</span>
+
+    @Override
+    public void removeVpls(VplsData vplsData) {
+<span class="fc" id="L119">        requireNonNull(vplsData);</span>
+<span class="pc bpc" id="L120" title="1 of 2 branches missed.">        if (vplsData.name().isEmpty()) {</span>
+<span class="nc" id="L121">            throw new IllegalArgumentException(&quot;VPLS name is empty.&quot;);</span>
+        }
+<span class="fc" id="L123">        vplsData.state(VplsData.VplsState.REMOVING);</span>
+<span class="pc bpc" id="L124" title="1 of 2 branches missed.">        if (!this.vplsDataStore.containsKey(vplsData.name())) {</span>
+            // notify the delegate asynchronously if VPLS does not exists
+<span class="nc" id="L126">            CompletableFuture.runAsync(() -&gt; {</span>
+<span class="nc" id="L127">                VplsStoreEvent event = new VplsStoreEvent(VplsStoreEvent.Type.REMOVE,</span>
+                                                          vplsData);
+<span class="nc" id="L129">                notifyDelegate(event);</span>
+<span class="nc" id="L130">            });</span>
+<span class="nc" id="L131">            return;</span>
+        }
+<span class="fc" id="L133">        this.vplsDataStore.remove(vplsData.name());</span>
+<span class="fc" id="L134">    }</span>
+
+    @Override
+    public void updateVpls(VplsData vplsData) {
+<span class="pc bpc" id="L138" title="1 of 2 branches missed.">        switch (vplsData.state()) {</span>
+            case ADDED:
+            case REMOVED:
+            case FAILED:
+                // state update only
+<span class="nc" id="L143">                this.vplsDataStore.put(vplsData.name(), vplsData);</span>
+<span class="nc" id="L144">                break;</span>
+            default:
+<span class="fc" id="L146">                vplsData.state(VplsData.VplsState.UPDATING);</span>
+<span class="fc" id="L147">                this.vplsDataStore.put(vplsData.name(), vplsData);</span>
+                break;
+        }
+<span class="fc" id="L150">    }</span>
+
+    @Override
+    public VplsData getVpls(String vplsName) {
+<span class="nc" id="L154">        return vplsDataStore.get(vplsName);</span>
+    }
+
+    @Override
+    public Collection&lt;VplsData&gt; getAllVpls() {
+<span class="fc" id="L159">        return vplsDataStore.values();</span>
+    }
+
+    /**
+     * Writes all VPLS data to the network configuration store.
+     *
+     * @param vplsDataCollection the VPLSs data
+     */
+    public void writeVplsToNetConfig(Collection&lt;VplsData&gt; vplsDataCollection) {
+<span class="fc" id="L168">        VplsAppConfig config = networkConfigService.addConfig(appId, VplsAppConfig.class);</span>
+<span class="pc bpc" id="L169" title="1 of 2 branches missed.">        if (config == null) {</span>
+<span class="nc" id="L170">            log.debug(&quot;VPLS config is not available now&quot;);</span>
+<span class="nc" id="L171">            return;</span>
+        }
+<span class="fc" id="L173">        config.clearVplsConfig();</span>
+
+        // Setup update time for this VPLS application configuration
+<span class="fc" id="L176">        WallClockTimestamp ts = new WallClockTimestamp();</span>
+<span class="fc" id="L177">        config.updateTime(ts.unixTimestamp());</span>
+
+<span class="fc" id="L179">        vplsDataCollection.forEach(vplsData -&gt; {</span>
+<span class="fc" id="L180">            Set&lt;String&gt; interfaceNames = vplsData.interfaces()</span>
+<span class="fc" id="L181">                    .stream()</span>
+<span class="fc" id="L182">                    .map(Interface::name)</span>
+<span class="fc" id="L183">                    .collect(Collectors.toSet());</span>
+<span class="fc" id="L184">            VplsConfig vplsConfig = new VplsConfig(vplsData.name(), interfaceNames,</span>
+<span class="fc" id="L185">                                                   vplsData.encapsulationType());</span>
+<span class="fc" id="L186">            config.addVpls(vplsConfig);</span>
+<span class="fc" id="L187">        });</span>
+
+<span class="fc" id="L189">        networkConfigService.applyConfig(appId, VplsAppConfig.class, config.node());</span>
+<span class="fc" id="L190">    }</span>
+
+    /**
+     * Listener for VPLS data store.
+     */
+<span class="fc" id="L195">    private class InternalVplsDataListener implements EventuallyConsistentMapListener&lt;String, VplsData&gt; {</span>
+        private static final String STATE_UPDATE = &quot;VPLS state updated, new VPLS: {}&quot;;
+
+        @Override
+        public void event(EventuallyConsistentMapEvent&lt;String, VplsData&gt; event) {
+<span class="fc" id="L200">            VplsData vplsData = event.value();</span>
+            // Update network config
+<span class="fc" id="L202">            writeVplsToNetConfig(getAllVpls());</span>
+<span class="pc bpc" id="L203" title="1 of 3 branches missed.">            switch (event.type()) {</span>
+                case PUT:
+                    // Add or Update
+<span class="fc bfc" id="L206" title="All 2 branches covered.">                    if (vplsData.state() == VplsData.VplsState.ADDING) {</span>
+<span class="fc" id="L207">                        VplsStoreEvent vplsStoreEvent =</span>
+                                new VplsStoreEvent(VplsStoreEvent.Type.ADD, vplsData);
+<span class="fc" id="L209">                        notifyDelegate(vplsStoreEvent);</span>
+<span class="pc bpc" id="L210" title="1 of 2 branches missed.">                    } else if (vplsData.state() == VplsData.VplsState.UPDATING) {</span>
+<span class="fc" id="L211">                        VplsStoreEvent vplsStoreEvent =</span>
+                                new VplsStoreEvent(VplsStoreEvent.Type.UPDATE, vplsData);
+<span class="fc" id="L213">                        notifyDelegate(vplsStoreEvent);</span>
+<span class="fc" id="L214">                    } else {</span>
+                        // Do nothing here, just update state from operation service
+<span class="nc" id="L216">                        log.debug(STATE_UPDATE, vplsData);</span>
+                    }
+<span class="nc" id="L218">                    break;</span>
+                case REMOVE:
+<span class="pc bpc" id="L220" title="1 of 2 branches missed.">                    if (vplsData == null) {</span>
+<span class="fc" id="L221">                        vplsData = VplsData.of(event.key());</span>
+                    }
+<span class="fc" id="L223">                    vplsData.state(VplsData.VplsState.REMOVING);</span>
+<span class="fc" id="L224">                    VplsStoreEvent vplsStoreEvent =</span>
+                            new VplsStoreEvent(VplsStoreEvent.Type.REMOVE, vplsData);
+<span class="fc" id="L226">                    notifyDelegate(vplsStoreEvent);</span>
+<span class="fc" id="L227">                    break;</span>
+                default:
+                    break;
+            }
+
+<span class="fc" id="L232">        }</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.9.201702052155</span></div></body></html>
