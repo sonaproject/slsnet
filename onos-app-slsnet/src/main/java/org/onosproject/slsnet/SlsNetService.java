@@ -18,8 +18,10 @@ package org.onosproject.slsnet;
 import org.onlab.packet.IpAddress;
 import org.onlab.packet.IpPrefix;
 import org.onlab.packet.MacAddress;
+import org.onlab.packet.VlanId;
 import org.onosproject.core.ApplicationId;
 import org.onosproject.incubator.net.intf.Interface;
+import org.onosproject.net.ConnectPoint;
 
 import java.util.Set;
 import java.util.Collection;
@@ -94,6 +96,15 @@ public interface SlsNetService {
      * @return true if the inteface belongs to l2Networks configed, otherwise false
      */
     boolean isL2NetworkInterface(Interface intf);
+
+    /**
+     * Finds the L2 Network with given port and vlanId.
+     *
+     * @param port the port to be matched
+     * @param vlanId the vlanId to be matched
+     * @return the L2 Network for specific port and vlanId or null
+     */
+    L2Network findL2Network(ConnectPoint port, VlanId vlanId);
 
     /**
      * Evaluates whether an IP address is a virtual gateway IP address.

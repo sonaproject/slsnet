@@ -21,7 +21,6 @@ import org.apache.felix.scr.annotations.Deactivate;
 import org.apache.felix.scr.annotations.Reference;
 import org.apache.felix.scr.annotations.ReferenceCardinality;
 import org.onlab.packet.MacAddress;
-import org.onlab.packet.VlanId;
 import org.onosproject.core.CoreService;
 import org.onosproject.incubator.net.intf.Interface;
 import org.onosproject.incubator.net.intf.InterfaceEvent;
@@ -30,7 +29,6 @@ import org.onosproject.incubator.net.intf.InterfaceService;
 import org.onosproject.incubator.net.neighbour.NeighbourMessageContext;
 import org.onosproject.incubator.net.neighbour.NeighbourMessageHandler;
 import org.onosproject.incubator.net.neighbour.NeighbourResolutionService;
-import org.onosproject.net.ConnectPoint;
 import org.onosproject.net.Host;
 import org.onosproject.net.config.NetworkConfigEvent;
 import org.onosproject.net.config.NetworkConfigListener;
@@ -39,7 +37,6 @@ import org.onosproject.net.host.HostService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.Collection;
 import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -124,7 +121,7 @@ public class SlsNetL2Network {
      */
     protected void handleRequest(NeighbourMessageContext context) {
         // Find target L2 Network first, then broadcast to all interface of this L2 Network
-        L2Network l2Network = findL2Network(context);
+        L2Network l2Network = slsnet.findL2Network(context.inPort(), context.vlan());
         if (l2Network != null) {
             // TODO: need to check and update slsnet.L2Network
             log.debug("slsnet handle neightbour request message: {} {}", context.inPort(), context.vlan());
@@ -147,7 +144,7 @@ public class SlsNetL2Network {
     protected void handleReply(NeighbourMessageContext context,
                                HostService hostService) {
         // Find target L2 Network, then reply to the host
-        L2Network l2Network = findL2Network(context);
+        L2Network l2Network = slsnet.findL2Network(context.inPort(), context.vlan());
         if (l2Network != null) {
             // TODO: need to check and update slsnet.L2Network
             MacAddress dstMac = context.dstMac();
@@ -169,28 +166,6 @@ public class SlsNetL2Network {
                      context.inPort(), context.vlan());
             context.drop();
         }
-    }
-
-    /**
-     * Finds the L2 Network with given neighbour message context.
-     *
-     * @param context the neighbour message context
-     * @return the L2 Network for specific neighbour message context
-     */
-    private L2Network findL2Network(NeighbourMessageContext context) {
-        Collection<L2Network> l2Networks = slsnet.getL2Networks();
-        for (L2Network l2Network : l2Networks) {
-            Set<Interface> interfaces = l2Network.interfaces();
-            ConnectPoint port = context.inPort();
-            VlanId vlanId = context.vlan();
-            boolean match = interfaces.stream()
-                    .anyMatch(iface -> iface.connectPoint().equals(port) &&
-                            iface.vlan().equals(vlanId));
-            if (match) {
-                return l2Network;
-            }
-        }
-        return null;
     }
 
     /**

@@ -17,7 +17,6 @@
 package org.onosproject.slsnet;
 
 import com.google.common.collect.ImmutableSet;
-//import com.google.common.collect.Sets;
 import com.googlecode.concurrenttrees.radix.node.concrete.DefaultByteArrayNodeFactory;
 import com.googlecode.concurrenttrees.radixinverted.ConcurrentInvertedRadixTree;
 import com.googlecode.concurrenttrees.radixinverted.InvertedRadixTree;
@@ -32,10 +31,10 @@ import org.onlab.packet.Ip6Address;
 import org.onlab.packet.IpAddress;
 import org.onlab.packet.IpPrefix;
 import org.onlab.packet.MacAddress;
+import org.onlab.packet.VlanId;
 import org.onosproject.app.ApplicationService;
 import org.onosproject.core.ApplicationId;
 import org.onosproject.core.CoreService;
-//import org.onosproject.net.ConnectPoint;
 import org.onosproject.incubator.net.intf.Interface;
 import org.onosproject.incubator.net.intf.InterfaceService;
 import org.onosproject.incubator.net.routing.Route;
@@ -46,7 +45,7 @@ import org.onosproject.net.config.NetworkConfigListener;
 import org.onosproject.net.config.NetworkConfigRegistry;
 import org.onosproject.net.config.NetworkConfigService;
 import org.onosproject.net.config.basics.SubjectFactories;
-//import org.onosproject.routing.RoutingService;
+import org.onosproject.net.ConnectPoint;
 import org.onosproject.intentsync.IntentSynchronizationService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -55,15 +54,8 @@ import java.util.HashSet;
 import java.util.Collection;
 import java.util.Objects;
 import java.util.Set;
-//import java.util.Collection;
 import java.util.stream.Collectors;
 
-//import java.util.concurrent.Executors;
-//import java.util.concurrent.ScheduledExecutorService;
-//import java.util.concurrent.TimeUnit;
-//import java.util.stream.Collectors;
-
-//import static org.onlab.util.Tools.groupedThreads;
 import static org.onosproject.incubator.net.routing.RouteTools.createBinaryString;
 
 
@@ -269,6 +261,19 @@ public class SlsNet implements SlsNetService {
     @Override
     public boolean isL2NetworkInterface(Interface intf) {
         return l2NetworkInterfaces.contains(intf);
+    }
+
+    @Override
+    public L2Network findL2Network(ConnectPoint port, VlanId vlanId) {
+        for (L2Network l2Network : l2NetworkTable) {
+            boolean match = l2NetworkInterfaces.stream()
+                    .anyMatch(iface -> iface.connectPoint().equals(port) &&
+                              iface.vlan().equals(vlanId));
+            if (match) {
+                return l2Network;
+            }
+        }
+        return null;
     }
 
     @Override
