@@ -89,8 +89,7 @@ public class SlsNet implements SlsNetService {
     private ApplicationId appId;
 
     // l2 broadcast networks
-    private Set<L2NetworkConfig> l2NetworkConfig = new HashSet<>();
-    private Set<L2Network> l2NetworkTable = new HashSet<>();
+    private Set<L2Network> l2Networks = new HashSet<>();
     private Set<Interface> l2NetworkInterfaces = new HashSet<>();
 
     // Subnet table
@@ -162,8 +161,7 @@ public class SlsNet implements SlsNetService {
 
         // l2Networks
         Set<Interface> newL2NetworkInterfaces = new HashSet<>();
-        l2NetworkConfig = config.getL2Networks();
-        l2NetworkTable = l2NetworkConfig.stream()
+        l2Networks = config.getL2Networks().stream()
                 .map(l2NetworkConfig -> {
                     Set<Interface> interfaces = l2NetworkConfig.ifaces().stream()
                             .map(this::getInterfaceByName)
@@ -175,7 +173,7 @@ public class SlsNet implements SlsNetService {
                     return l2Network;
                 }).collect(Collectors.toSet());
         l2NetworkInterfaces = newL2NetworkInterfaces;
-        log.info("slsnet l2NetworkTable: {}", l2NetworkTable);
+        log.info("slsnet l2Networks: {}", l2Networks);
 
         // ipSubnets
         ip4Subnets = config.ip4Subnets();
@@ -218,12 +216,15 @@ public class SlsNet implements SlsNetService {
         virtualGatewayMacAddress = config.virtualGatewayMacAddress();
     }
 
-
     private Interface getInterfaceByName(String interfaceName) {
-        return interfaceService.getInterfaces().stream()
-                .filter(iface -> iface.name().equals(interfaceName))
-                .findFirst()
-                .orElse(null);
+        Interface intf = interfaceService.getInterfaces().stream()
+                          .filter(iface -> iface.name().equals(interfaceName))
+                          .findFirst()
+                          .orElse(null);
+        if (intf == null) {
+            log.warn("slsnet unknown interface name: {}", interfaceName);
+        }
+        return intf;
     }
 
     @Override
@@ -233,7 +234,7 @@ public class SlsNet implements SlsNetService {
 
     @Override
     public Collection<L2Network> getL2Networks() {
-        return ImmutableSet.copyOf(l2NetworkTable);
+        return ImmutableSet.copyOf(l2Networks);
     }
 
     @Override
@@ -265,7 +266,7 @@ public class SlsNet implements SlsNetService {
 
     @Override
     public L2Network findL2Network(ConnectPoint port, VlanId vlanId) {
-        for (L2Network l2Network : l2NetworkTable) {
+        for (L2Network l2Network : l2Networks) {
             boolean match = l2NetworkInterfaces.stream()
                     .anyMatch(iface -> iface.connectPoint().equals(port) &&
                               iface.vlan().equals(vlanId));
