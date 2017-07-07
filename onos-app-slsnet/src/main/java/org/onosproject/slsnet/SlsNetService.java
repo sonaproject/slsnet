@@ -19,7 +19,7 @@ import org.onlab.packet.IpAddress;
 import org.onlab.packet.IpPrefix;
 import org.onlab.packet.MacAddress;
 import org.onosproject.core.ApplicationId;
-//import org.onosproject.net.ConnectPoint;
+import org.onosproject.incubator.net.intf.Interface;
 
 import java.util.Set;
 import java.util.Collection;
@@ -88,6 +88,14 @@ public interface SlsNetService {
     MacAddress getVirtualGatewayMacAddress();
 
     /**
+     * Evaluates whether an Interface belongs to l2Networks.
+     *
+     * @param intf the interface to evaluate
+     * @return true if the inteface belongs to l2Networks configed, otherwise false
+     */
+    boolean isL2NetworkInterface(Interface intf);
+
+    /**
      * Evaluates whether an IP address is a virtual gateway IP address.
      *
      * @param ipAddress the IP address to evaluate
@@ -110,5 +118,7 @@ public interface SlsNetService {
      * @return true if the IP prefix belongs to local SDN network, otherwise false
      */
     boolean isIpPrefixLocal(IpPrefix ipPrefix);
+
+
 
 }

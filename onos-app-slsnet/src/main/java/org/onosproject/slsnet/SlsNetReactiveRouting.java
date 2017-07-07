@@ -249,7 +249,7 @@ public class SlsNetReactiveRouting {
                 // address is a virtual gateway IP address, then it will be
                 // processed.
                 if (arpPacket.getOpCode() == ARP.OP_REQUEST
-                        && slsnet.isVirtualGatewayIpAddress(targetIpAddress)) {
+                    && slsnet.isVirtualGatewayIpAddress(targetIpAddress)) {
                     MacAddress gatewayMacAddress =
                             slsnet.getVirtualGatewayMacAddress();
                     if (gatewayMacAddress == null) {
@@ -259,8 +259,7 @@ public class SlsNetReactiveRouting {
                                                      gatewayMacAddress,
                                                      ethPkt);
 
-                    TrafficTreatment.Builder builder =
-                            DefaultTrafficTreatment.builder();
+                    TrafficTreatment.Builder builder = DefaultTrafficTreatment.builder();
                     builder.setOutput(srcConnectPoint.port());
                     packetService.emit(new DefaultOutboundPacket(
                             srcConnectPoint.deviceId(),

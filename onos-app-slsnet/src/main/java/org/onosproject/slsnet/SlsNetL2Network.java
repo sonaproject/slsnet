@@ -22,7 +22,6 @@ import org.apache.felix.scr.annotations.Reference;
 import org.apache.felix.scr.annotations.ReferenceCardinality;
 import org.onlab.packet.MacAddress;
 import org.onlab.packet.VlanId;
-import org.onosproject.core.ApplicationId;
 import org.onosproject.core.CoreService;
 import org.onosproject.incubator.net.intf.Interface;
 import org.onosproject.incubator.net.intf.InterfaceEvent;
@@ -83,20 +82,23 @@ public class SlsNetL2Network {
 
     private final Logger log = LoggerFactory.getLogger(getClass());
 
-    private ApplicationId appId;
 
     @Activate
     protected void activate() {
+        log.info("slsnet l2network neighbour starting");
+        configNeighbourHandler();
         interfaceService.addListener(interfaceListener);
         configService.addListener(configListener);
-        configNeighbourHandler();
+        log.info("slsnet l2network neighbour started");
     }
 
     @Deactivate
     protected void deactivate() {
-        interfaceService.removeListener(interfaceListener);
+        log.info("slsnet l2network neighbour stopping");
         configService.removeListener(configListener);
+        interfaceService.removeListener(interfaceListener);
         neighbourService.unregisterNeighbourHandlers(slsnet.getAppId());
+        log.info("slsnet l2network neighbour stopped");
     }
 
     /**
@@ -106,10 +108,13 @@ public class SlsNetL2Network {
         neighbourService.unregisterNeighbourHandlers(slsnet.getAppId());
         interfaceService
                 .getInterfaces()
-                .forEach(intf ->
-                    neighbourService.registerNeighbourHandler(intf,
-                                     neighbourHandler, slsnet.getAppId())
-                );
+                .forEach(intf -> {
+                    if (slsnet.isL2NetworkInterface(intf)) {
+                        neighbourService.registerNeighbourHandler(intf,
+                                         neighbourHandler, slsnet.getAppId());
+                        log.info("slsnet l2network register neighbour handler: {}", intf);
+                    }
+                });
     }
 
     /**
@@ -119,13 +124,16 @@ public class SlsNetL2Network {
      */
     protected void handleRequest(NeighbourMessageContext context) {
         // Find target L2 Network first, then broadcast to all interface of this L2 Network
-        L2Network l2Network = findVpls(context);
+        L2Network l2Network = findL2Network(context);
         if (l2Network != null) {
+            // TODO: need to check and update slsnet.L2Network
+            log.debug("slsnet handle neightbour request message: {} {}", context.inPort(), context.vlan());
             l2Network.interfaces().stream()
                     .filter(intf -> !context.inPort().equals(intf.connectPoint()))
                     .forEach(context::forward);
         } else {
-            log.warn(CAN_NOT_FIND_L2NETWORK, context.inPort(), context.vlan());
+            log.warn("slsnet handle neightbour request message: {} {} --> DROP FOR L2NETWORK UNKNOWN",
+                     context.inPort(), context.vlan());
             context.drop();
         }
     }
@@ -139,15 +147,17 @@ public class SlsNetL2Network {
     protected void handleReply(NeighbourMessageContext context,
                                HostService hostService) {
         // Find target L2 Network, then reply to the host
-        L2Network l2Network = findVpls(context);
+        L2Network l2Network = findL2Network(context);
         if (l2Network != null) {
+            // TODO: need to check and update slsnet.L2Network
             MacAddress dstMac = context.dstMac();
             Set<Host> hosts = hostService.getHostsByMac(dstMac);
             hosts = hosts.stream()
                     .filter(host -> l2Network.interfaces().contains(getHostInterface(host)))
                     .collect(Collectors.toSet());
-
             // reply to all host in same L2 Network
+            log.debug("slsnet handle neightbour response message: {} {} --> {}",
+                      context.inPort(), context.vlan(), hosts);
             hosts.stream()
                     .map(this::getHostInterface)
                     .filter(Objects::nonNull)
@@ -155,7 +165,8 @@ public class SlsNetL2Network {
         } else {
             // this might be happened when we remove an interface from L2 Network
             // just ignore this message
-            log.warn(CAN_NOT_FIND_L2NETWORK, context.inPort(), context.vlan());
+            log.warn("slsnet handle neightbour response message: {} {} --> DROP FOR L2NETWORK UNKNOWN",
+                     context.inPort(), context.vlan());
             context.drop();
         }
     }
@@ -166,7 +177,7 @@ public class SlsNetL2Network {
      * @param context the neighbour message context
      * @return the L2 Network for specific neighbour message context
      */
-    private L2Network findVpls(NeighbourMessageContext context) {
+    private L2Network findL2Network(NeighbourMessageContext context) {
         Collection<L2Network> l2Networks = slsnet.getL2Networks();
         for (L2Network l2Network : l2Networks) {
             Set<Interface> interfaces = l2Network.interfaces();

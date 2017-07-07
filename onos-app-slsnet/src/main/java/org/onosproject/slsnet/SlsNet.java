@@ -99,6 +99,7 @@ public class SlsNet implements SlsNetService {
     // l2 broadcast networks
     private Set<L2NetworkConfig> l2NetworkConfig = new HashSet<>();
     private Set<L2Network> l2NetworkTable = new HashSet<>();
+    private Set<Interface> l2NetworkInterfaces = new HashSet<>();
 
     // Subnet table
     private Set<IpSubnet> ip4Subnets;
@@ -137,15 +138,19 @@ public class SlsNet implements SlsNetService {
 
     @Activate
     public void activate() {
+        log.info("slsnet starting");
+        /* intial setup first, before listener registration */
+        setUpConfiguration(null);
+
         appId = coreService.registerApplication(APP_ID);
         configService.addListener(configListener);
         registry.registerConfigFactory(reactiveRoutingConfigFactory);
-        setUpConfiguration(null);
         log.info("slsnet started");
     }
 
     @Deactivate
     public void deactivate() {
+        log.info("slsnet stopping");
         registry.unregisterConfigFactory(reactiveRoutingConfigFactory);
         configService.removeListener(configListener);
         log.info("slsnet stopped");
@@ -164,6 +169,7 @@ public class SlsNet implements SlsNetService {
         }
 
         // l2Networks
+        Set<Interface> newL2NetworkInterfaces = new HashSet<>();
         l2NetworkConfig = config.getL2Networks();
         l2NetworkTable = l2NetworkConfig.stream()
                 .map(l2NetworkConfig -> {
@@ -173,8 +179,11 @@ public class SlsNet implements SlsNetService {
                             .collect(Collectors.toSet());
                     L2Network l2Network = L2Network.of(l2NetworkConfig.name(), l2NetworkConfig.encap());
                     l2Network.addInterfaces(interfaces);
+                    newL2NetworkInterfaces.addAll(interfaces);
                     return l2Network;
                 }).collect(Collectors.toSet());
+        l2NetworkInterfaces = newL2NetworkInterfaces;
+        log.info("slsnet l2NetworkTable: {}", l2NetworkTable);
 
         // ipSubnets
         ip4Subnets = config.ip4Subnets();
@@ -255,6 +264,11 @@ public class SlsNet implements SlsNetService {
     @Override
     public MacAddress getVirtualGatewayMacAddress() {
         return virtualGatewayMacAddress;
+    }
+
+    @Override
+    public boolean isL2NetworkInterface(Interface intf) {
+        return l2NetworkInterfaces.contains(intf);
     }
 
     @Override
