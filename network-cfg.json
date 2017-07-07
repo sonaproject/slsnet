@@ -43,9 +43,9 @@
           { "name" : "LEAF2", "interfaces" : ["h21", "h22", "h23", "h24", "d21", "d22" ] }
         ],
         "ip4Subnets" : [
-           { "ipPrefix" : "10.0.0.0/24", "gatewayIp" : "10.0.0.10" },
-           { "ipPrefix" : "10.0.1.0/24", "gatewayIp" : "10.0.1.1"  },
-           { "ipPrefix" : "10.0.2.0/24", "gatewayIp" : "10.0.2.1"  }
+           { "ipPrefix" : "10.0.0.0/24", "gatewayIp" : "10.0.0.1" },
+           { "ipPrefix" : "10.0.1.0/24", "gatewayIp" : "10.0.1.1" },
+           { "ipPrefix" : "10.0.2.0/24", "gatewayIp" : "10.0.2.1" }
         ],
         "borderInterfaces" : ["SS1_h31", "SS1_h32"],
         "borderRoutes" : [
