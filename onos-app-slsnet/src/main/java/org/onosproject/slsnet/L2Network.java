@@ -26,8 +26,6 @@ import java.util.Collection;
 import java.util.Objects;
 import java.util.Set;
 
-import static java.util.Objects.*;
-
 /**
  * Class stores a L2Network information.
  */
@@ -70,7 +68,7 @@ public final class L2Network {
      * @return the L2Network data
      */
     public static L2Network of(String name) {
-        requireNonNull(name);
+        Objects.requireNonNull(name);
         return new L2Network(name, EncapsulationType.NONE);
     }
 
@@ -82,7 +80,7 @@ public final class L2Network {
      * @return the L2Network data
      */
     public static L2Network of(String name, EncapsulationType encapType) {
-        requireNonNull(name);
+        Objects.requireNonNull(name);
         if (encapType == null) {
             return new L2Network(name, EncapsulationType.NONE);
         } else {
@@ -97,7 +95,7 @@ public final class L2Network {
      * @return the copy of the L2Network data
      */
     public static L2Network of(L2Network l2Network) {
-        requireNonNull(l2Network);
+        Objects.requireNonNull(l2Network);
         L2Network l2NetworkCopy = new L2Network(l2Network.name(), l2Network.encapsulationType());
         l2NetworkCopy.state(l2Network.state());
         l2NetworkCopy.addInterfaces(l2Network.interfaces());
@@ -122,22 +120,22 @@ public final class L2Network {
     }
 
     public void addInterfaces(Collection<Interface> interfaces) {
-        requireNonNull(interfaces);
+        Objects.requireNonNull(interfaces);
         this.interfaces.addAll(interfaces);
     }
 
     public void addInterface(Interface iface) {
-        requireNonNull(iface);
+        Objects.requireNonNull(iface);
         this.interfaces.add(iface);
     }
 
     public void removeInterfaces(Collection<Interface> interfaces) {
-        requireNonNull(interfaces);
+        Objects.requireNonNull(interfaces);
         this.interfaces.removeAll(interfaces);
     }
 
     public void removeInterface(Interface iface) {
-        requireNonNull(iface);
+        Objects.requireNonNull(iface);
         this.interfaces.remove(iface);
     }
 
@@ -179,6 +177,6 @@ public final class L2Network {
 
     @Override
     public int hashCode() {
-        return hash(name, interfaces, encapsulationType);
+        return Objects.hash(name, interfaces, encapsulationType);
     }
 }

@@ -30,11 +30,14 @@ import java.util.Collection;
 public interface SlsNetService {
     static final String APP_ID = "org.onosproject.slsnet";
 
+    // priority for l2Network: L2NETWORK_UNICAST or L2NETWORK_BROADCAST
+    static final int PRI_L2NETWORK_UNICAST   = 601;
+    static final int PRI_L2NETWORK_BROADCAST = 602;
     // priority for ipReactiveRoutes: REACTIVE_ROUTE_BASE + ipPrefix * REACTIVE_ROUTE_STEP
-    // priority for ipPrefixRoutes:   PREFIX_BASE + ipPrefix * PREFIX_STEP + PREFIX_ROUTE
-    // priority for ipPrefixReact:    RREFIX_BASE + ipPrefix * PREFIX_STEP + PREFIX_REACT
     static final int PRI_REACTIVE_ROUTE_BASE = 400;
     static final int PRI_REACTIVE_ROUTE_STEP = 1;
+    // priority for ipPrefixRoutes:   PREFIX_BASE + ipPrefix * PREFIX_STEP + PREFIX_ROUTE
+    // priority for ipPrefixReact:    RREFIX_BASE + ipPrefix * PREFIX_STEP + PREFIX_REACT
     static final int PRI_PREFIX_BASE  = 100;
     static final int PRI_PREFIX_STEP  = 2;
     static final int PRI_PREFIX_ROUTE = 1;
@@ -53,6 +56,36 @@ public interface SlsNetService {
      * @return all the l2Networks
      */
     Collection<L2Network> getL2Networks();
+
+    /**
+     * Retrieves the entire set of ip4Subnets configuration.
+     *
+     * @return the set of IpSubnet for ip4Subnets
+     */
+    Set<IpSubnet> getIp4Subnets();
+
+    /**
+     * Retrieves the entire set of ip6Subnets configuration.
+     *
+     * @return the set of IpSubnet for ip6Subnets
+     */
+    Set<IpSubnet> getIp6Subnets();
+
+    /**
+     * Retrieves the entire set of Interface names connected to BGP peers in the
+     * network.
+     *
+     * @return the set of connect points connected to BGP peers
+     */
+    Set<String> getBorderInterfaces();
+
+    /**
+     * Get Virtual Gateway Mac Address for Local Subnet Virtual Router
+     * and also for myself to communicate with bgp Peers.
+     *
+     * @return mac address of virtual gateway
+     */
+    MacAddress getVirtualGatewayMacAddress();
 
     /**
      * Evaluates whether an IP address is a virtual gateway IP address.
@@ -77,35 +110,5 @@ public interface SlsNetService {
      * @return true if the IP prefix belongs to local SDN network, otherwise false
      */
     boolean isIpPrefixLocal(IpPrefix ipPrefix);
-
-    /**
-     * Retrieves the entire set of ip4Subnets configuration.
-     *
-     * @return the set of IpSubnet for ip4Subnets
-     */
-    Set<IpSubnet> getIp4Subnets();
-
-    /**
-     * Retrieves the entire set of ip6Subnets configuration.
-     *
-     * @return the set of IpSubnet for ip6Subnets
-     */
-    Set<IpSubnet> getIp6Subnets();
-
-    /**
-     * Get Virtual Gateway Mac Address for Local Subnet Virtual Router
-     * and also for myself to communicate with bgp Peers.
-     *
-     * @return mac address of virtual gateway
-     */
-    MacAddress getVirtualGatewayMacAddress();
-
-    /**
-     * Retrieves the entire set of Interface names connected to BGP peers in the
-     * network.
-     *
-     * @return the set of connect points connected to BGP peers
-     */
-    Set<String> getRouteInterfaces();
 
 }

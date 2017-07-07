@@ -70,7 +70,7 @@ import static org.onosproject.net.EncapsulationType.NONE;
  * FIB component of SDN-IP.
  */
 @Component(immediate = true)
-public class SlsNetRoute {
+public class SlsNetBorderRoute {
 
     private Logger log = LoggerFactory.getLogger(getClass());
 
@@ -339,16 +339,16 @@ public class SlsNetRoute {
             selector.matchEthType(Ethernet.TYPE_IPV4);
             selector.matchEthDst(slsnet.getVirtualGatewayMacAddress());
             // if it is default route, then we do not need match destination IP address
-            //if (prefix.prefixLength() != 0) {
+            if (prefix.prefixLength() != 0) {
                 selector.matchIPDst(prefix);
-            //}
+            }
         } else {
             selector.matchEthType(Ethernet.TYPE_IPV6);
             selector.matchEthDst(slsnet.getVirtualGatewayMacAddress());
             // if it is default route, then we do not need match destination IP address
-            //if (prefix.prefixLength() != 0) {
+            if (prefix.prefixLength() != 0) {
                 selector.matchIPv6Dst(prefix);
-            //}
+            }
         }
         return selector;
     }

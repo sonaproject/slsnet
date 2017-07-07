@@ -110,16 +110,16 @@ public class SlsNet implements SlsNetService {
             localPrefixTable6 = new ConcurrentInvertedRadixTree<>(
                     new DefaultByteArrayNodeFactory());
 
-    // Virtial Subnet gateway
-    private MacAddress virtualGatewayMacAddress;
-    private Set<IpAddress> gatewayIpAddresses = new HashSet<>();
+    // External router connectPoint from ipRouteInterface
+    private Set<String> borderInterfaces = new HashSet<>();
 
     // Route table
     @Reference(cardinality = ReferenceCardinality.MANDATORY_UNARY)
     private RouteAdminService routeService;
 
-    // External router connectPoint from ipRouteInterface
-    private Set<String> routeInterfaces = new HashSet<>();
+    // VirtialGateway
+    private MacAddress virtualGatewayMacAddress;
+    private Set<IpAddress> gatewayIpAddresses = new HashSet<>();
 
     private final InternalNetworkConfigListener configListener =
             new InternalNetworkConfigListener();
@@ -176,7 +176,7 @@ public class SlsNet implements SlsNetService {
                     return l2Network;
                 }).collect(Collectors.toSet());
 
-        // ipSubnet
+        // ipSubnets
         ip4Subnets = config.ip4Subnets();
         for (IpSubnet entry : ip4Subnets) {
             localPrefixTable4.put(createBinaryString(entry.ipPrefix()), entry);
@@ -187,17 +187,19 @@ public class SlsNet implements SlsNetService {
             localPrefixTable6.put(createBinaryString(entry.ipPrefix()), entry);
             gatewayIpAddresses.add(entry.getGatewayIpAddress());
         }
-        virtualGatewayMacAddress = config.virtualGatewayMacAddress();
+
+        /* borderInterfaces */
+        borderInterfaces = config.getBorderInterfaces();
 
         // ipRoutes config handling
         if (event == null) {
             // do not handle route info
         } else if (event.type() == NetworkConfigEvent.Type.CONFIG_ADDED) {
-            Set<Route> routes = ((SlsNetConfig) event.config().get()).getRoutes();
+            Set<Route> routes = ((SlsNetConfig) event.config().get()).getBorderRoutes();
             routeService.update(routes);
         } else if (event.type() == NetworkConfigEvent.Type.CONFIG_UPDATED) {
-            Set<Route> routes = ((SlsNetConfig) event.config().get()).getRoutes();
-            Set<Route> prevRoutes = ((SlsNetConfig) event.prevConfig().get()).getRoutes();
+            Set<Route> routes = ((SlsNetConfig) event.config().get()).getBorderRoutes();
+            Set<Route> prevRoutes = ((SlsNetConfig) event.prevConfig().get()).getBorderRoutes();
             Set<Route> pendingRemove = prevRoutes.stream()
                     .filter(prevRoute -> routes.stream()
                             .noneMatch(route -> route.prefix().equals(prevRoute.prefix())))
@@ -207,13 +209,14 @@ public class SlsNet implements SlsNetService {
             routeService.update(pendingUpdate);
             routeService.withdraw(pendingRemove);
         } else if (event.type() == NetworkConfigEvent.Type.CONFIG_REMOVED) {
-            Set<Route> prevRoutes = ((SlsNetConfig) event.prevConfig().get()).getRoutes();
+            Set<Route> prevRoutes = ((SlsNetConfig) event.prevConfig().get()).getBorderRoutes();
             routeService.withdraw(prevRoutes);
         }
 
-        /* ipRouteInterfaces */
-        routeInterfaces = config.getRouteInterfaces();
+        // Virtual Gateway MAC
+        virtualGatewayMacAddress = config.virtualGatewayMacAddress();
     }
+
 
     private Interface getInterfaceByName(String interfaceName) {
         return interfaceService.getInterfaces().stream()
@@ -230,6 +233,28 @@ public class SlsNet implements SlsNetService {
     @Override
     public Collection<L2Network> getL2Networks() {
         return ImmutableSet.copyOf(l2NetworkTable);
+    }
+
+    @Override
+    public Set<IpSubnet> getIp4Subnets() {
+        return ImmutableSet.copyOf(ip4Subnets);
+    }
+
+    @Override
+    public Set<IpSubnet> getIp6Subnets() {
+        return ImmutableSet.copyOf(ip6Subnets);
+    }
+
+    // Border Route is queried via RouteService
+
+    @Override
+    public Set<String> getBorderInterfaces() {
+        return ImmutableSet.copyOf(borderInterfaces);
+    }
+
+    @Override
+    public MacAddress getVirtualGatewayMacAddress() {
+        return virtualGatewayMacAddress;
     }
 
     @Override
@@ -263,25 +288,7 @@ public class SlsNet implements SlsNetService {
         return gatewayIpAddresses.contains(ipAddress);
     }
 
-    @Override
-    public Set<IpSubnet> getIp4Subnets() {
-        return ImmutableSet.copyOf(ip4Subnets);
-    }
-
-    @Override
-    public Set<IpSubnet> getIp6Subnets() {
-        return ImmutableSet.copyOf(ip6Subnets);
-    }
-
-    @Override
-    public MacAddress getVirtualGatewayMacAddress() {
-        return virtualGatewayMacAddress;
-    }
-
-    @Override
-    public Set<String> getRouteInterfaces() {
-        return ImmutableSet.copyOf(routeInterfaces);
-    }
+    // Service Listeners
 
     private class InternalNetworkConfigListener implements NetworkConfigListener {
         @Override

@@ -42,11 +42,11 @@ public class SlsNetConfig extends Config<ApplicationId> {
     private static final String INTERFACES = "interfaces";
     private static final String IP4SUBNETS = "ip4Subnets";
     private static final String IP6SUBNETS = "ip6Subnets";
-    private static final String IPROUTES = "ipRoutes";
+    private static final String BORDERINTERFACES = "borderInterfaces";
+    private static final String BORDERROUTES = "borderRoutes";
     private static final String IPPREFIX = "ipPrefix";
     private static final String TYPE = "type";
     private static final String GATEWAYIP = "gatewayIp";
-    private static final String IPROUTEINTERFACES = "ipRouteInterfaces";
     private static final String VIRTUALGATEWAYMACADDRESS =
                                "virtualGatewayMacAddress";
 
@@ -126,14 +126,31 @@ public class SlsNetConfig extends Config<ApplicationId> {
     }
 
     /**
+     *  Gets of the external gateway interfaces.
+     *
+     * @return interface names
+     */
+    public Set<String> getBorderInterfaces() {
+        Set<String> ifaces = Sets.newHashSet();
+
+        JsonNode routeIfaces = object.get(BORDERINTERFACES);
+        if (routeIfaces == null) {
+            return ifaces;
+        }
+        routeIfaces.forEach(ifacesNode -> ifaces.add(ifacesNode.asText()));
+
+        return ifaces;
+    }
+
+    /**
      * Returns all routes in this configuration.
      *
      * @return A set of route.
      */
-    public Set<Route> getRoutes() {
+    public Set<Route> getBorderRoutes() {
         Set<Route> routes = Sets.newHashSet();
 
-        JsonNode routesNode = object.get(IPROUTES);
+        JsonNode routesNode = object.get(BORDERROUTES);
         if (routesNode == null) {
             /* no warning for ip6 case is not implemented */
             /*log.warn("ip6LocalPrefixes is null!"); */
@@ -163,20 +180,4 @@ public class SlsNetConfig extends Config<ApplicationId> {
                 object.get(VIRTUALGATEWAYMACADDRESS).asText());
     }
 
-    /**
-     *  Gets of the external gateway interfaces.
-     *
-     * @return interface names
-     */
-    public Set<String> getRouteInterfaces() {
-        Set<String> ifaces = Sets.newHashSet();
-
-        JsonNode routeIfaces = object.get(IPROUTEINTERFACES);
-        if (routeIfaces == null) {
-            return ifaces;
-        }
-        routeIfaces.forEach(ifacesNode -> ifaces.add(ifacesNode.asText()));
-
-        return ifaces;
-    }
 }

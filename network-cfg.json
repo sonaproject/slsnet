@@ -47,10 +47,10 @@
            { "ipPrefix" : "10.0.1.0/24", "gatewayIp" : "10.0.1.1"  },
            { "ipPrefix" : "10.0.2.0/24", "gatewayIp" : "10.0.2.1"  }
         ],
-        "ipRoutes" : [
+        "borderInterfaces" : ["SS1_h31", "SS1_h32"],
+        "borderRoutes" : [
           { "ipPrefix" : "0.0.0.0/0",   "gatewayIp" : "10.0.0.31" }
         ],
-        "ipRouteInterfaces" : ["SS1_h31", "SS1_h32"],
         "virtualGatewayMacAddress" : "00:00:00:00:00:01"
       }
     }

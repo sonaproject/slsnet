@@ -148,14 +148,14 @@ public class SlsNetReactiveRouting {
     @Reference(cardinality = ReferenceCardinality.MANDATORY_UNARY)
     protected HostService hostService;
 
-    private SlsNetReactiveRoutingFib intentRequestListener;
+    private SlsNetReactiveRoutingIntent intentRequestListener;
 
     private ReactiveRoutingProcessor processor =
             new ReactiveRoutingProcessor();
 
     @Activate
     public void activate() {
-        intentRequestListener = new SlsNetReactiveRoutingFib(slsnet.getAppId(), hostService,
+        intentRequestListener = new SlsNetReactiveRoutingIntent(slsnet.getAppId(), hostService,
                 interfaceService, intentSynchronizer);
         packetService.addProcessor(processor, PacketProcessor.director(2));
         requestIntercepts();
@@ -387,19 +387,19 @@ public class SlsNetReactiveRouting {
         Optional<Interface> srcInterface =
                 interfaceService.getInterfacesByPort(srcConnectPoint).stream().findFirst();
 
-        Set<String> routeInterfaces = slsnet.getRouteInterfaces();
+        Set<String> borderInterfaces = slsnet.getBorderInterfaces();
 
         switch (dstIpLocationType) {
         case INTERNET:
             if (srcInterface.isPresent() &&
-                    (!routeInterfaces.contains(srcInterface.get().name()))) {
+                    (!borderInterfaces.contains(srcInterface.get().name()))) {
                 return TrafficType.HOST_TO_INTERNET;
             } else {
                 return TrafficType.INTERNET_TO_INTERNET;
             }
         case LOCAL:
             if (srcInterface.isPresent() &&
-                    (!routeInterfaces.contains(srcInterface.get().name()))) {
+                    (!borderInterfaces.contains(srcInterface.get().name()))) {
                 return TrafficType.HOST_TO_HOST;
             } else {
                 // TODO Currently we only consider local public prefixes.

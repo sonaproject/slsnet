@@ -55,7 +55,7 @@ import static com.google.common.base.Preconditions.checkNotNull;
 /**
  * FIB component for reactive routing intents.
  */
-public class SlsNetReactiveRoutingFib {
+public class SlsNetReactiveRoutingIntent {
 
     @Reference(cardinality = ReferenceCardinality.MANDATORY_UNARY)
     protected SlsNetService slsnet;
@@ -81,7 +81,7 @@ public class SlsNetReactiveRoutingFib {
      * @param interfaceService interface service
      * @param intentSynchronizer intent synchronization service
      */
-    public SlsNetReactiveRoutingFib(ApplicationId appId, HostService hostService,
+    public SlsNetReactiveRoutingIntent(ApplicationId appId, HostService hostService,
                               InterfaceService interfaceService,
                               IntentSynchronizationService intentSynchronizer) {
         this.appId = appId;
