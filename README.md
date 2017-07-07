@@ -88,7 +88,7 @@ Logical Switch Context
 <tr><td>
 Network Diagram
 </td><td>
-Mininet Model: <a href="slsnet.py"><code>slsnet.py</code></a>
+Mininet Model: <a href="mininet-slsnet.py"><code>mininet-slsnet.py</code></a>
 </td></tr>
 <tr><td>
 <pre>
