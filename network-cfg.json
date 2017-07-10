@@ -25,7 +25,7 @@
     "of:000000000000000a/7" : { "interfaces" : [ { "name" : "LS1_SS1" } ] },
     "of:000000000000000a/8" : { "interfaces" : [ { "name" : "LS1_SS2" } ] },
 
-    "of:0000000000000014/1" : { "interfaces" : [ { "name" : "h21" ] },
+    "of:0000000000000014/1" : { "interfaces" : [ { "name" : "h21" } ] } ,
     "of:0000000000000014/2" : { "interfaces" : [ { "name" : "h22" } ] },
     "of:0000000000000014/3" : { "interfaces" : [ { "name" : "h23" } ] },
     "of:0000000000000014/4" : { "interfaces" : [ { "name" : "h24" } ] },

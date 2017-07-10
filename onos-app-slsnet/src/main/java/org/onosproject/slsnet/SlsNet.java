@@ -155,23 +155,33 @@ public class SlsNet implements SlsNetService {
                 coreService.registerApplication(APP_ID),
                 SlsNetConfig.class);
         if (config == null) {
-            log.warn("No reactive routing config available!");
+            //log.warn("No reactive routing config available!");
             return;
         }
 
         // l2Networks
+        Set<L2Network> newL2Networks = new HashSet<>();
         Set<Interface> newL2NetworkInterfaces = new HashSet<>();
-        l2Networks = config.getL2Networks().stream()
+        newL2Networks = config.getL2Networks().stream()
                 .map(l2NetworkConfig -> {
-                    Set<Interface> interfaces = l2NetworkConfig.ifaces().stream()
+                    Set<Interface> interfaces = l2NetworkConfig.interfaceNames().stream()
                             .map(this::getInterfaceByName)
                             .filter(Objects::nonNull)
                             .collect(Collectors.toSet());
-                    L2Network l2Network = L2Network.of(l2NetworkConfig.name(), l2NetworkConfig.encap());
+                    L2Network l2Network = L2Network.of(l2NetworkConfig.name(), l2NetworkConfig.encapsulationType());
+                    l2Network.addInterfaceNames(l2NetworkConfig.interfaceNames());
                     l2Network.addInterfaces(interfaces);
-                    newL2NetworkInterfaces.addAll(interfaces);
+                    l2Network.setDirty(true);
+                    // update l2Network's dirty flags if same entry already exists
+                    for (L2Network prevL2Network : l2Networks) {
+                        if (prevL2Network.equals(l2Network)) {
+                            l2Network.setDirty(prevL2Network.dirty());
+                        }
+                    }
+                    newL2NetworkInterfaces.addAll(l2Network.interfaces());
                     return l2Network;
                 }).collect(Collectors.toSet());
+        l2Networks = newL2Networks;
         l2NetworkInterfaces = newL2NetworkInterfaces;
         log.info("slsnet l2Networks: {}", l2Networks);
 

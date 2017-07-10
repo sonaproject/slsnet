@@ -55,8 +55,8 @@ public class SlsNetConfig extends Config<ApplicationId> {
      *
      * @return A set of L2Network.
      */
-    public Set<L2NetworkConfig> getL2Networks() {
-        Set<L2NetworkConfig> l2Networks = Sets.newHashSet();
+    public Set<L2Network> getL2Networks() {
+        Set<L2Network> l2Networks = Sets.newHashSet();
         JsonNode l2NetworkNode = object.get(L2NETWORKS);
         if (l2NetworkNode == null) {
             return l2Networks;
@@ -71,7 +71,7 @@ public class SlsNetConfig extends Config<ApplicationId> {
                 l2NetworkIfaces.forEach(ifacesNode -> ifaces.add(new String(ifacesNode.asText())));
             }
 
-            l2Networks.add(new L2NetworkConfig(name, ifaces, EncapsulationType.NONE));
+            l2Networks.add(new L2Network(name, ifaces, EncapsulationType.NONE));
         });
         return l2Networks;
     }

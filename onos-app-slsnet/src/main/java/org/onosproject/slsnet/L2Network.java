@@ -30,22 +30,28 @@ import java.util.Set;
  * Class stores a L2Network information.
  */
 public final class L2Network {
-    /**
-     * States of a Entry.
-     */
-    public enum State {
-        UPDATING,
-        ADDING,
-        REMOVING,
-        ADDED,
-        REMOVED,
-        FAILED
-    }
 
-    private String name;
+    private String name;                  // also for network configuration
+    private Set<String> interfaceNames;   // also for network configuration
     private Set<Interface> interfaces;
-    private EncapsulationType encapsulationType;
-    private State state;
+    private EncapsulationType encapsulationType;  // also for network configuration
+    private boolean dirty;
+
+    /**
+     * Constructs a L2Network data for Config value.
+     *
+     * @param name the given name
+     * @param ifaceNames the interface names
+     * @param encapType the encapsulation type
+     */
+    L2Network(String name, Collection<String> ifaceNames, EncapsulationType encapType) {
+        this.name = name;
+        this.interfaceNames = Sets.newHashSet();
+        this.interfaces = Sets.newHashSet();
+        this.encapsulationType = encapType;
+        this.dirty = false;
+        this.addInterfaceNames(ifaceNames);
+    }
 
     /**
      * Constructs a L2Network data by given name and encapsulation type.
@@ -56,8 +62,9 @@ public final class L2Network {
     private L2Network(String name, EncapsulationType encapType) {
         this.name = name;
         this.encapsulationType = encapType;
+        this.interfaceNames = Sets.newHashSet();
         this.interfaces = Sets.newHashSet();
-        this.state = State.ADDING;
+        this.dirty = false;
     }
 
     /**
@@ -97,18 +104,20 @@ public final class L2Network {
     public static L2Network of(L2Network l2Network) {
         Objects.requireNonNull(l2Network);
         L2Network l2NetworkCopy = new L2Network(l2Network.name(), l2Network.encapsulationType());
-        l2NetworkCopy.state(l2Network.state());
+        l2NetworkCopy.addInterfaceNames(l2Network.interfaceNames());
         l2NetworkCopy.addInterfaces(l2Network.interfaces());
-        return l2Network;
+        l2NetworkCopy.setDirty(l2Network.dirty());
+        return l2NetworkCopy;
     }
 
-    /**
-     * Gets name of the L2Network.
-     *
-     * @return the name of the L2Network
-     */
+    // field queries
+
     public String name() {
         return name;
+    }
+
+    public Set<String> interfaceNames() {
+        return ImmutableSet.copyOf(interfaceNames);
     }
 
     public Set<Interface> interfaces() {
@@ -117,6 +126,22 @@ public final class L2Network {
 
     public EncapsulationType encapsulationType() {
         return encapsulationType;
+    }
+
+    public boolean dirty() {
+        return dirty;
+    }
+
+    // field updates
+
+    public void addInterfaceNames(Collection<String> ifaceNames) {
+        Objects.requireNonNull(ifaceNames);
+        this.interfaceNames.addAll(ifaceNames);
+    }
+
+    public void addInterfaceName(String ifaceName) {
+        Objects.requireNonNull(ifaceName);
+        this.interfaceNames.add(ifaceName);
     }
 
     public void addInterfaces(Collection<Interface> interfaces) {
@@ -139,25 +164,22 @@ public final class L2Network {
         this.interfaces.remove(iface);
     }
 
-    public void encapsulationType(EncapsulationType encapType) {
+    public void setEncapsulationType(EncapsulationType encapType) {
         this.encapsulationType = encapType;
     }
 
-    public State state() {
-        return state;
-    }
-
-    public void state(State state) {
-        this.state = state;
+    public void setDirty(boolean newDirty) {
+        dirty = newDirty;
     }
 
     @Override
     public String toString() {
         return MoreObjects.toStringHelper(getClass())
                 .add("name", name)
+                .add("interfaceNames", interfaceNames)
                 .add("interfaces", interfaces)
                 .add("encap type", encapsulationType)
-                .add("state", state)
+                .add("dirty", dirty)
                 .toString();
     }
 

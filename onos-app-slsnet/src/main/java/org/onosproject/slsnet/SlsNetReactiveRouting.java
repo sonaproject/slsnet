@@ -34,6 +34,7 @@ import org.onosproject.incubator.net.intf.InterfaceService;
 import org.onosproject.incubator.net.routing.Route;
 import org.onosproject.incubator.net.routing.RouteService;
 import org.onosproject.net.ConnectPoint;
+import org.onosproject.net.device.DeviceService;
 import org.onosproject.net.Host;
 import org.onosproject.net.flow.DefaultTrafficSelector;
 import org.onosproject.net.flow.DefaultTrafficTreatment;
@@ -46,6 +47,7 @@ import org.onosproject.net.packet.OutboundPacket;
 import org.onosproject.net.packet.PacketContext;
 import org.onosproject.net.packet.PacketProcessor;
 import org.onosproject.net.packet.PacketService;
+//import org.onosproject.net.packet.PacketPriority;
 import org.onosproject.intentsync.IntentSynchronizationService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -146,6 +148,9 @@ public class SlsNetReactiveRouting {
     protected InterfaceService interfaceService;
 
     @Reference(cardinality = ReferenceCardinality.MANDATORY_UNARY)
+    protected DeviceService deviceService;
+
+    @Reference(cardinality = ReferenceCardinality.MANDATORY_UNARY)
     protected HostService hostService;
 
     private SlsNetReactiveRoutingIntent intentRequestListener;
@@ -176,20 +181,42 @@ public class SlsNetReactiveRouting {
     private void requestIntercepts() {
         //TODO: to support IPv6 later
 
+/*
         // local ipSubnet intercepts
-        /*
-        for (IpSubnet subnet : slsnet.getIpSubnets()) {
+        Set<FlowRule> flowRules = new HashSet<>();
+        for (IpSubnet subnet : slsnet.getIp4Subnets()) {
+
             int p = slsnet.PRI_PREFIX_BASE + slsnet.PRI_PREFIX_REACT
                     + subnet.ipPrefix().prefixLength() * slsnet.PRI_PREFIX_STEP;
-            TrafficSelector.Builder selector = DefaultTrafficSelector.builder();
-            selector.matchEthType(TYPE_IPV4);
-            //selector.matchEthDst(slsnet.getVirtualGatewayMacAddress());
-            selector.matchIPDst(subnet.ipPrefix());
-            packetService.requestPackets(selector.build(), PacketPriority(p), slsnet.getAppId());
+
+            TrafficSelector.Builder selector =
+                DefaultTrafficSelector.builder();
+                    .matchEthType(TYPE_IPV4);
+                    //.matchEthDst(slsnet.getVirtualGatewayMacAddress());
+                    .matchIPDst(subnet.ipPrefix());
+
+            TrafficTreatment.Builder treatment =
+                DefaultTrafficTreatment.builder()
+                   .punt();
+
+            FlowRule.Builder flowRule =
+                DefaultFlowRule.builder();
+                   .fromApp(slsnet.getAppId()
+                   .withSelector(selector)
+                   .withTreatment(treatment)
+                   .makePermanent();
+
+             flowRules.add(flowRule.build());
         }
-        */
+        FlowRuleIntent(slsnet.getAppId(),
+                       Key.of(subnet.ipPrefix().toString(), "-react_route"),
+                       flowRules,
+                       deviceService.getAvaliableDevices())slsnet.getAppId())
+        for (Device device : deviceService.getAvailiableDevices()) {
+        }
 
         log.info("slsnet reactive routing intercepts packet started");
+*/
 
         // default intercepts
         TrafficSelector.Builder selector = DefaultTrafficSelector.builder();

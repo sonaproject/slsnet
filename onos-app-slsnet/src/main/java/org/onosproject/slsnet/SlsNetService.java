@@ -130,6 +130,4 @@ public interface SlsNetService {
      */
     boolean isIpPrefixLocal(IpPrefix ipPrefix);
 
-
-
 }

@@ -223,7 +223,7 @@ public class SlsNetBorderRoute {
                                              .key(key)
                                              .filteredIngressPoints(ingressFilteredCPs)
                                              .filteredEgressPoint(egressFilteredCP)
-                                             .treatment(treatment.build())
+                                             .treatment(treatment.punt().build())
                                              .priority(priority)
                                              .constraints(CONSTRAINTS);
 
