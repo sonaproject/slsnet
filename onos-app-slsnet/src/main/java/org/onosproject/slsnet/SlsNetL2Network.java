@@ -22,7 +22,6 @@ import org.apache.felix.scr.annotations.Reference;
 import org.apache.felix.scr.annotations.ReferenceCardinality;
 import org.onlab.packet.MacAddress;
 import org.onosproject.core.CoreService;
-import org.onosproject.incubator.net.intf.Interface;
 import org.onosproject.incubator.net.intf.InterfaceEvent;
 import org.onosproject.incubator.net.intf.InterfaceListener;
 import org.onosproject.incubator.net.intf.InterfaceService;
@@ -150,13 +149,13 @@ public class SlsNetL2Network {
             MacAddress dstMac = context.dstMac();
             Set<Host> hosts = hostService.getHostsByMac(dstMac);
             hosts = hosts.stream()
-                    .filter(host -> l2Network.interfaces().contains(getHostInterface(host)))
+                    .filter(host -> l2Network.interfaces().contains(slsnet.getHostInterface(host)))
                     .collect(Collectors.toSet());
             // reply to all host in same L2 Network
             log.debug("slsnet handle neightbour response message: {} {} --> {}",
                       context.inPort(), context.vlan(), hosts);
             hosts.stream()
-                    .map(this::getHostInterface)
+                    .map(host -> slsnet.getHostInterface(host))
                     .filter(Objects::nonNull)
                     .forEach(context::forward);
         } else {
@@ -166,21 +165,6 @@ public class SlsNetL2Network {
                      context.inPort(), context.vlan());
             context.drop();
         }
-    }
-
-    /**
-     * Finds the network interface related to the host.
-     *
-     * @param host the host
-     * @return the interface related to the host
-     */
-    private Interface getHostInterface(Host host) {
-        Set<Interface> interfaces = interfaceService.getInterfaces();
-        return interfaces.stream()
-                .filter(iface -> iface.connectPoint().equals(host.location()) &&
-                                 iface.vlan().equals(host.vlan()))
-                .findFirst()
-                .orElse(null);
     }
 
     /**
@@ -226,4 +210,6 @@ public class SlsNetL2Network {
             configNeighbourHandler();
         }
     }
+
 }
+

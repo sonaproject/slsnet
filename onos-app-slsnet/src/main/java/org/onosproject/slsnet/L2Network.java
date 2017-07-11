@@ -20,6 +20,8 @@ import com.google.common.base.MoreObjects;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
 import org.onosproject.incubator.net.intf.Interface;
+import org.onosproject.net.Host;
+import org.onosproject.net.HostId;
 import org.onosproject.net.EncapsulationType;
 
 import java.util.Collection;
@@ -33,8 +35,9 @@ public final class L2Network {
 
     private String name;                  // also for network configuration
     private Set<String> interfaceNames;   // also for network configuration
-    private Set<Interface> interfaces;
     private EncapsulationType encapsulationType;  // also for network configuration
+    private Set<Interface> interfaces;
+    private Set<HostId> hostIds;
     private boolean dirty;
 
     /**
@@ -120,54 +123,105 @@ public final class L2Network {
         return ImmutableSet.copyOf(interfaceNames);
     }
 
-    public Set<Interface> interfaces() {
-        return ImmutableSet.copyOf(interfaces);
-    }
-
     public EncapsulationType encapsulationType() {
         return encapsulationType;
     }
 
+    public Set<Interface> interfaces() {
+        return ImmutableSet.copyOf(interfaces);
+    }
+
+    public boolean interfacesContains(Interface iface) {
+        return interfaces.contains(iface);
+    }
+
+    public Set<HostId> hostIds() {
+        return ImmutableSet.copyOf(hostIds);
+    }
+
+    public boolean hostIdsContains(Host host) {
+        return hostIds.contains(host.id());
+    }
     public boolean dirty() {
         return dirty;
     }
 
     // field updates
 
+    public void setEncapsulationType(EncapsulationType encapType) {
+        if (encapsulationType != encapType) {
+            encapsulationType = encapType;
+            setDirty(true);
+        }
+    }
+
+    // add only for interfaceName configuration values
     public void addInterfaceNames(Collection<String> ifaceNames) {
         Objects.requireNonNull(ifaceNames);
-        this.interfaceNames.addAll(ifaceNames);
+        if (interfaceNames.addAll(ifaceNames)) {
+            setDirty(true);
+        }
     }
-
     public void addInterfaceName(String ifaceName) {
         Objects.requireNonNull(ifaceName);
-        this.interfaceNames.add(ifaceName);
+        if (interfaceNames.add(ifaceName)) {
+            setDirty(true);
+        }
     }
 
-    public void addInterfaces(Collection<Interface> interfaces) {
-        Objects.requireNonNull(interfaces);
-        this.interfaces.addAll(interfaces);
+    // add and remove interfaces from port configuration for each interfaceName */
+    public void addInterfaces(Collection<Interface> ifaces) {
+        Objects.requireNonNull(ifaces);
+        if (interfaces.addAll(ifaces)) {
+            setDirty(true);
+        }
     }
-
     public void addInterface(Interface iface) {
         Objects.requireNonNull(iface);
-        this.interfaces.add(iface);
+        if (interfaces.add(iface)) {
+            setDirty(true);
+        }
     }
-
-    public void removeInterfaces(Collection<Interface> interfaces) {
-        Objects.requireNonNull(interfaces);
-        this.interfaces.removeAll(interfaces);
+    public void removeInterfaces(Collection<Interface> ifaces) {
+        Objects.requireNonNull(ifaces);
+        if (interfaces.removeAll(ifaces)) {
+            setDirty(true);
+        }
     }
-
     public void removeInterface(Interface iface) {
         Objects.requireNonNull(iface);
-        this.interfaces.remove(iface);
+        if (interfaces.remove(iface)) {
+            setDirty(true);
+        }
     }
 
-    public void setEncapsulationType(EncapsulationType encapType) {
-        this.encapsulationType = encapType;
+    // add and remove hostNames for HostName->Interface lookup relation
+    public void addHosts(Collection<Host> hosts) {
+        Objects.requireNonNull(hosts);
+        for (Host host : hosts) {
+            addHost(host);
+        }
+    }
+    public void addHost(Host host) {
+        Objects.requireNonNull(host);
+        if (hostIds.add(host.id())) {
+            setDirty(true);
+        }
+    }
+    public void removeHosts(Collection<Host> hosts) {
+        Objects.requireNonNull(hosts);
+        for (Host host : hosts) {
+            removeHost(host);
+        }
+    }
+    public void removeHost(Host host) {
+        Objects.requireNonNull(host);
+        if (hostIds.remove(host.id())) {
+            setDirty(true);
+        }
     }
 
+    // set L2NetworkEntry Dirty Mark
     public void setDirty(boolean newDirty) {
         dirty = newDirty;
     }
@@ -178,6 +232,7 @@ public final class L2Network {
                 .add("name", name)
                 .add("interfaceNames", interfaceNames)
                 .add("interfaces", interfaces)
+                .add("hostIds", hostIds)
                 .add("encap type", encapsulationType)
                 .add("dirty", dirty)
                 .toString();
@@ -192,9 +247,11 @@ public final class L2Network {
             return false;
         }
         L2Network other = (L2Network) obj;
-        return Objects.equals(other.name, this.name) &&
-                Objects.equals(other.interfaces, this.interfaces) &&
-                Objects.equals(other.encapsulationType, this.encapsulationType);
+        return Objects.equals(other.name, this.name)
+               && Objects.equals(other.encapsulationType, this.encapsulationType)
+               && Objects.equals(other.interfaceNames, this.interfaceNames)
+               && Objects.equals(other.interfaces, this.interfaces)
+               && Objects.equals(other.hostIds, this.hostIds);
     }
 
     @Override

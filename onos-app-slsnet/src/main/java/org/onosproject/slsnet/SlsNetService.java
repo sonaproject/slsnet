@@ -22,6 +22,7 @@ import org.onlab.packet.VlanId;
 import org.onosproject.core.ApplicationId;
 import org.onosproject.incubator.net.intf.Interface;
 import org.onosproject.net.ConnectPoint;
+import org.onosproject.net.Host;
 
 import java.util.Set;
 import java.util.Collection;
@@ -105,6 +106,14 @@ public interface SlsNetService {
      * @return the L2 Network for specific port and vlanId or null
      */
     L2Network findL2Network(ConnectPoint port, VlanId vlanId);
+
+    /**
+     * Finds the network interface related to the host.
+     *
+     * @param host the host
+     * @return the interface related to the host
+     */
+    Interface getHostInterface(Host host);
 
     /**
      * Evaluates whether an IP address is a virtual gateway IP address.

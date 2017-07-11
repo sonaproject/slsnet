@@ -46,13 +46,16 @@ import org.onosproject.net.config.NetworkConfigRegistry;
 import org.onosproject.net.config.NetworkConfigService;
 import org.onosproject.net.config.basics.SubjectFactories;
 import org.onosproject.net.ConnectPoint;
+import org.onosproject.net.Host;
+import org.onosproject.net.host.HostService;
+import org.onosproject.net.host.HostListener;
+import org.onosproject.net.host.HostEvent;
 import org.onosproject.intentsync.IntentSynchronizationService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.HashSet;
 import java.util.Collection;
-import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -82,6 +85,9 @@ public class SlsNet implements SlsNetService {
 
     @Reference(cardinality = ReferenceCardinality.MANDATORY_UNARY)
     protected InterfaceService interfaceService;
+
+    @Reference(cardinality = ReferenceCardinality.MANDATORY_UNARY)
+    protected HostService hostService;
 
     @Reference(cardinality = ReferenceCardinality.MANDATORY_UNARY)
     protected IntentSynchronizationService intentSynchronizer;
@@ -116,6 +122,9 @@ public class SlsNet implements SlsNetService {
     private final InternalNetworkConfigListener configListener =
             new InternalNetworkConfigListener();
 
+    private final InternalHostListener hostListener =
+            new InternalHostListener();
+
     private ConfigFactory<ApplicationId, SlsNetConfig>
             reactiveRoutingConfigFactory =
             new ConfigFactory<ApplicationId, SlsNetConfig>(
@@ -130,30 +139,34 @@ public class SlsNet implements SlsNetService {
     @Activate
     public void activate() {
         log.info("slsnet starting");
-        /* intial setup first, before listener registration */
-        setUpConfiguration(null);
 
         appId = coreService.registerApplication(APP_ID);
+
+        /* intial setup first, before listener registration */
+        refreshNetworkConfig(null);
         configService.addListener(configListener);
         registry.registerConfigFactory(reactiveRoutingConfigFactory);
+        hostService.addListener(hostListener);
+
         log.info("slsnet started");
     }
 
     @Deactivate
     public void deactivate() {
         log.info("slsnet stopping");
+
+        hostService.removeListener(hostListener);
         registry.unregisterConfigFactory(reactiveRoutingConfigFactory);
         configService.removeListener(configListener);
+
         log.info("slsnet stopped");
     }
 
     /**
      * Set up from configuration.
      */
-    private void setUpConfiguration(NetworkConfigEvent event) {
-        SlsNetConfig config = configService.getConfig(
-                coreService.registerApplication(APP_ID),
-                SlsNetConfig.class);
+    private void refreshNetworkConfig(NetworkConfigEvent event) {
+        SlsNetConfig config = configService.getConfig(coreService.registerApplication(APP_ID), SlsNetConfig.class);
         if (config == null) {
             //log.warn("No reactive routing config available!");
             return;
@@ -164,21 +177,29 @@ public class SlsNet implements SlsNetService {
         Set<Interface> newL2NetworkInterfaces = new HashSet<>();
         newL2Networks = config.getL2Networks().stream()
                 .map(l2NetworkConfig -> {
-                    Set<Interface> interfaces = l2NetworkConfig.interfaceNames().stream()
-                            .map(this::getInterfaceByName)
-                            .filter(Objects::nonNull)
-                            .collect(Collectors.toSet());
                     L2Network l2Network = L2Network.of(l2NetworkConfig.name(), l2NetworkConfig.encapsulationType());
                     l2Network.addInterfaceNames(l2NetworkConfig.interfaceNames());
-                    l2Network.addInterfaces(interfaces);
+                    // fill up interfaces and Hosts
+                    for (String ifaceName : l2NetworkConfig.interfaceNames()) {
+                         Interface iface = getInterfaceByName(ifaceName);
+                         if (iface != null) {
+                             l2Network.addInterface(iface);
+                             newL2NetworkInterfaces.add(iface);
+                         }
+                    }
+                    for (Host host : hostService.getHosts()) {
+                         if (l2Network.interfacesContains(getHostInterface(host))) {
+                             l2Network.addHost(host);
+                         }
+                    }
                     l2Network.setDirty(true);
                     // update l2Network's dirty flags if same entry already exists
                     for (L2Network prevL2Network : l2Networks) {
                         if (prevL2Network.equals(l2Network)) {
                             l2Network.setDirty(prevL2Network.dirty());
+                            break;
                         }
                     }
-                    newL2NetworkInterfaces.addAll(l2Network.interfaces());
                     return l2Network;
                 }).collect(Collectors.toSet());
         l2Networks = newL2Networks;
@@ -200,7 +221,7 @@ public class SlsNet implements SlsNetService {
         /* borderInterfaces */
         borderInterfaces = config.getBorderInterfaces();
 
-        // ipRoutes config handling
+        // ipRoutes config handling; TODO: USE LOCAL COPY OF ROUTE CONFIG AND APPLY DIFFERENCE
         if (event == null) {
             // do not handle route info
         } else if (event.type() == NetworkConfigEvent.Type.CONFIG_ADDED) {
@@ -288,6 +309,15 @@ public class SlsNet implements SlsNetService {
     }
 
     @Override
+    public Interface getHostInterface(Host host) {
+        return interfaceService.getInterfaces().stream()
+                .filter(iface -> iface.connectPoint().equals(host.location()) &&
+                                 iface.vlan().equals(host.vlan()))
+                .findFirst()
+                .orElse(null);
+    }
+
+    @Override
     public boolean isIpAddressLocal(IpAddress ipAddress) {
         boolean result;
         if (ipAddress.isIp4()) {
@@ -323,16 +353,33 @@ public class SlsNet implements SlsNetService {
     private class InternalNetworkConfigListener implements NetworkConfigListener {
         @Override
         public void event(NetworkConfigEvent event) {
-            if (event.configClass().equals(SlsNetConfig.class)) {
-                switch (event.type()) {
-                case CONFIG_ADDED:
-                case CONFIG_UPDATED:
-                case CONFIG_REMOVED:
-                    setUpConfiguration(event);
-                    break;
-                default:
-                    break;
+            switch (event.type()) {
+            case CONFIG_ADDED:
+            case CONFIG_UPDATED:
+            case CONFIG_REMOVED:
+                if (event.configClass().equals(SlsNetConfig.class)) {
+                    refreshNetworkConfig(event);
                 }
+                break;
+            default:
+                break;
+            }
+        }
+    }
+
+    private class InternalHostListener implements HostListener {
+        @Override
+        public void event(HostEvent event) {
+            Host host = event.subject();
+            switch (event.type()) {
+            case HOST_MOVED:
+            case HOST_REMOVED:
+            case HOST_ADDED:
+            case HOST_UPDATED:
+                refreshNetworkConfig(null);
+                break;
+            default:
+                break;
             }
         }
     }
