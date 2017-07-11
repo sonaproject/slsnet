@@ -111,7 +111,7 @@ Mininet Model: <a href="mininet-slsnet.py"><code>mininet-slsnet.py</code></a>
    h31(10.0.0.31/24)    h32(10.0.0.32/24)
            |                    |
            |                    |
-  [ss1(10.0.0.1/24)]   [ss2(10.0.0.1/24)]
+  [ss1(10.0.0.1/24)]   [ss2(10.0.0.2/24)]
            |        \ /         |
            |         X          |
            |        / \         |
