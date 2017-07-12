@@ -93,7 +93,6 @@ public class SlsNetConfig extends Config<ApplicationId> {
         prefixesNode.forEach(jsonNode -> {
             prefixes.add(new IpSubnet(
                     IpPrefix.valueOf(jsonNode.get(IPPREFIX).asText()),
-                    IpSubnet.IpPrefixType.valueOf("PRIVATE"),
                     IpAddress.valueOf(jsonNode.get(GATEWAYIP).asText())));
         });
 
@@ -118,7 +117,6 @@ public class SlsNetConfig extends Config<ApplicationId> {
         prefixesNode.forEach(jsonNode -> {
             prefixes.add(new IpSubnet(
                     IpPrefix.valueOf(jsonNode.get(IPPREFIX).asText()),
-                    IpSubnet.IpPrefixType.valueOf("PRIVATE"),
                     IpAddress.valueOf(jsonNode.get(GATEWAYIP).asText())));
         });
 

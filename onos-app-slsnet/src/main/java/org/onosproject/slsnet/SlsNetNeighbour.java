@@ -22,16 +22,12 @@ import org.apache.felix.scr.annotations.Reference;
 import org.apache.felix.scr.annotations.ReferenceCardinality;
 import org.onlab.packet.MacAddress;
 import org.onosproject.core.CoreService;
-import org.onosproject.incubator.net.intf.InterfaceEvent;
-import org.onosproject.incubator.net.intf.InterfaceListener;
+import org.onosproject.incubator.net.intf.Interface;
 import org.onosproject.incubator.net.intf.InterfaceService;
 import org.onosproject.incubator.net.neighbour.NeighbourMessageContext;
 import org.onosproject.incubator.net.neighbour.NeighbourMessageHandler;
 import org.onosproject.incubator.net.neighbour.NeighbourResolutionService;
 import org.onosproject.net.Host;
-import org.onosproject.net.config.NetworkConfigEvent;
-import org.onosproject.net.config.NetworkConfigListener;
-import org.onosproject.net.config.NetworkConfigService;
 import org.onosproject.net.host.HostService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -46,14 +42,15 @@ import java.util.stream.Collectors;
  * will be changed automatically by interface or network configuration events.
  */
 @Component(immediate = true)
-public class SlsNetL2Network {
-    private static final String UNKNOWN_CONTEXT = "Unknown context type: {}";
+public class SlsNetNeighbour {
 
-    private static final String CAN_NOT_FIND_L2NETWORK =
-            "Cannot find L2 Network for port {} with VLAN Id {}.";
+    private final Logger log = LoggerFactory.getLogger(getClass());
 
     @Reference(cardinality = ReferenceCardinality.MANDATORY_UNARY)
     protected CoreService coreService;
+
+    @Reference(cardinality = ReferenceCardinality.MANDATORY_UNARY)
+    protected HostService hostService;
 
     @Reference(cardinality = ReferenceCardinality.MANDATORY_UNARY)
     protected InterfaceService interfaceService;
@@ -64,43 +61,27 @@ public class SlsNetL2Network {
     @Reference(cardinality = ReferenceCardinality.MANDATORY_UNARY)
     protected SlsNetService slsnet;
 
-    @Reference(cardinality = ReferenceCardinality.MANDATORY_UNARY)
-    protected NetworkConfigService configService;
-
-    private L2NetworkInterfaceListener interfaceListener =
-            new L2NetworkInterfaceListener();
-
     protected L2NetworkNeighbourMessageHandler neighbourHandler =
             new L2NetworkNeighbourMessageHandler();
 
-    protected L2NetworkConfigListener configListener =
-            new L2NetworkConfigListener();
-
-    private final Logger log = LoggerFactory.getLogger(getClass());
-
-
     @Activate
     protected void activate() {
-        log.info("slsnet l2network neighbour starting");
-        configNeighbourHandler();
-        interfaceService.addListener(interfaceListener);
-        configService.addListener(configListener);
-        log.info("slsnet l2network neighbour started");
+        log.info("slsnet neighbour starting");
+        refreshNeighbourHandler();
+        log.info("slsnet neighbour started");
     }
 
     @Deactivate
     protected void deactivate() {
-        log.info("slsnet l2network neighbour stopping");
-        configService.removeListener(configListener);
-        interfaceService.removeListener(interfaceListener);
+        log.info("slsnet neighbour stopping");
         neighbourService.unregisterNeighbourHandlers(slsnet.getAppId());
-        log.info("slsnet l2network neighbour stopped");
+        log.info("slsnet neighbour stopped");
     }
 
     /**
      * Registers neighbour handler to all available interfaces.
      */
-    protected void configNeighbourHandler() {
+    protected void refreshNeighbourHandler() {
         neighbourService.unregisterNeighbourHandlers(slsnet.getAppId());
         interfaceService
                 .getInterfaces()
@@ -108,7 +89,9 @@ public class SlsNetL2Network {
                     if (slsnet.isL2NetworkInterface(intf)) {
                         neighbourService.registerNeighbourHandler(intf,
                                          neighbourHandler, slsnet.getAppId());
-                        log.info("slsnet l2network register neighbour handler: {}", intf);
+                        log.info("slsnet neighbour register handler: {}", intf);
+                    } else {
+                        log.warn("slsnet neighobur unknown interface: {}", intf);
                     }
                 });
     }
@@ -119,16 +102,39 @@ public class SlsNetL2Network {
      * @param context the message context
      */
     protected void handleRequest(NeighbourMessageContext context) {
-        // Find target L2 Network first, then broadcast to all interface of this L2 Network
+        if (slsnet.isVirtualGatewayIpAddress(context.target())) {
+            // TODO: may need to check if from valid l2Network or border gateway
+            log.info("slsnet neightbour request on virtualGatewayAddress {}; response to {} {}",
+                     context.target(), context.inPort(), context.vlan());
+            context.reply(slsnet.getVirtualGatewayMacAddress());
+            return;
+        }
+
         L2Network l2Network = slsnet.findL2Network(context.inPort(), context.vlan());
         if (l2Network != null) {
-            // TODO: need to check and update slsnet.L2Network
-            log.debug("slsnet handle neightbour request message: {} {}", context.inPort(), context.vlan());
-            l2Network.interfaces().stream()
-                    .filter(intf -> !context.inPort().equals(intf.connectPoint()))
-                    .forEach(context::forward);
+            int numForwards = 0;
+            if (!context.dstMac().isBroadcast() && !context.dstMac().isMulticast()) {
+                for (Host host : hostService.getHostsByMac(context.dstMac())) {
+                    log.info("slsnet neightbour request forward unicast to {}", host.location());
+                    context.forward(host.location());  // ASSUME: vlan is same
+                    // TODO: may need to check host.location().time()
+                    numForwards++;
+                }
+                if (numForwards > 0) {
+                    return;
+                }
+            }
+            // else do broadcast to all host in the same l2 network
+            log.info("slsnet neightbour request forward broadcast: {} {}",
+                     context.inPort(), context.vlan());
+            for (Interface iface : l2Network.interfaces()) {
+                if (!context.inPort().equals(iface.connectPoint())) {
+                    log.info("slsnet forward neighbour request broadcast to {}", iface);
+                    context.forward(iface);
+                }
+            }
         } else {
-            log.warn("slsnet handle neightbour request message: {} {} --> DROP FOR L2NETWORK UNKNOWN",
+            log.warn("slsnet neightbour request drop: {} {}",
                      context.inPort(), context.vlan());
             context.drop();
         }
@@ -152,7 +158,7 @@ public class SlsNetL2Network {
                     .filter(host -> l2Network.interfaces().contains(slsnet.getHostInterface(host)))
                     .collect(Collectors.toSet());
             // reply to all host in same L2 Network
-            log.debug("slsnet handle neightbour response message: {} {} --> {}",
+            log.debug("slsnet neightbour response message forward: {} {} --> {}",
                       context.inPort(), context.vlan(), hosts);
             hosts.stream()
                     .map(host -> slsnet.getHostInterface(host))
@@ -161,20 +167,9 @@ public class SlsNetL2Network {
         } else {
             // this might be happened when we remove an interface from L2 Network
             // just ignore this message
-            log.warn("slsnet handle neightbour response message: {} {} --> DROP FOR L2NETWORK UNKNOWN",
+            log.warn("slsnet neightbour response message drop for unknown l2Network: {} {}",
                      context.inPort(), context.vlan());
             context.drop();
-        }
-    }
-
-    /**
-     * Listener for interface configuration events.
-     */
-    private class L2NetworkInterfaceListener implements InterfaceListener {
-
-        @Override
-        public void event(InterfaceEvent event) {
-            configNeighbourHandler();
         }
     }
 
@@ -194,20 +189,9 @@ public class SlsNetL2Network {
                     handleReply(context, hostService);
                     break;
                 default:
-                    log.warn(UNKNOWN_CONTEXT, context.type());
+                    log.warn("slsnet neightor unknown context type: {}", context.type());
                     break;
             }
-        }
-    }
-
-    /**
-     * Listener for network configuration events.
-     */
-    private class L2NetworkConfigListener implements NetworkConfigListener {
-
-        @Override
-        public void event(NetworkConfigEvent event) {
-            configNeighbourHandler();
         }
     }
 

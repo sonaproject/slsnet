@@ -19,7 +19,9 @@ package org.onosproject.slsnet;
 import com.google.common.base.MoreObjects;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
+import org.onlab.packet.VlanId;
 import org.onosproject.incubator.net.intf.Interface;
+import org.onosproject.net.ConnectPoint;
 import org.onosproject.net.Host;
 import org.onosproject.net.HostId;
 import org.onosproject.net.EncapsulationType;
@@ -50,8 +52,9 @@ public final class L2Network {
     L2Network(String name, Collection<String> ifaceNames, EncapsulationType encapType) {
         this.name = name;
         this.interfaceNames = Sets.newHashSet();
-        this.interfaces = Sets.newHashSet();
         this.encapsulationType = encapType;
+        this.interfaces = Sets.newHashSet();
+        this.hostIds = Sets.newHashSet();
         this.dirty = false;
         this.addInterfaceNames(ifaceNames);
     }
@@ -64,9 +67,10 @@ public final class L2Network {
      */
     private L2Network(String name, EncapsulationType encapType) {
         this.name = name;
-        this.encapsulationType = encapType;
         this.interfaceNames = Sets.newHashSet();
+        this.encapsulationType = encapType;
         this.interfaces = Sets.newHashSet();
+        this.hostIds = Sets.newHashSet();
         this.dirty = false;
     }
 
@@ -131,8 +135,17 @@ public final class L2Network {
         return ImmutableSet.copyOf(interfaces);
     }
 
-    public boolean interfacesContains(Interface iface) {
+    public boolean contains(Interface iface) {
         return interfaces.contains(iface);
+    }
+
+    public boolean contains(ConnectPoint port, VlanId vlanId) {
+        for (Interface iface : interfaces) {
+            if (iface.connectPoint().equals(port) && iface.vlan().equals(vlanId)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     public Set<HostId> hostIds() {

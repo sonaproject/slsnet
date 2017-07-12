@@ -10,11 +10,11 @@
   "ports" : {
     "of:0000000000000001/1" : { "interfaces" : [ { "name" : "SS1_LS1" } ] },
     "of:0000000000000001/2" : { "interfaces" : [ { "name" : "SS1_LS2" } ] },
-    "of:0000000000000001/3" : { "interfaces" : [ { "name" : "SS1_h31" } ] },
+    "of:0000000000000001/3" : { "interfaces" : [ { "name" : "SS1_h31", "ips" : [ "10.0.0.1/24" ], "mac" : "00:00:00:00:00:01" } ] },
 
     "of:0000000000000002/1" : { "interfaces" : [ { "name" : "SS2_LS1" } ] },
     "of:0000000000000002/2" : { "interfaces" : [ { "name" : "SS2_LS2" } ] },
-    "of:0000000000000002/3" : { "interfaces" : [ { "name" : "SS2_h32" } ] },
+    "of:0000000000000002/3" : { "interfaces" : [ { "name" : "SS2_h32", "ips" : [ "10.0.0.2/24" ], "mac" : "00:00:00:00:00:01" } ] },
 
     "of:000000000000000a/1" : { "interfaces" : [ { "name" : "h11" } ] },
     "of:000000000000000a/2" : { "interfaces" : [ { "name" : "h12" } ] },
@@ -48,6 +48,7 @@
         ],
         "borderInterfaces" : ["SS1_h31", "SS1_h32"],
         "borderRoutes" : [
+          { "ipPrefix" : "10.0.0.0/24",   "gatewayIp" : "10.0.0.31" },
           { "ipPrefix" : "0.0.0.0/0",   "gatewayIp" : "10.0.0.31" }
         ],
         "virtualGatewayMacAddress" : "00:00:00:00:00:01"

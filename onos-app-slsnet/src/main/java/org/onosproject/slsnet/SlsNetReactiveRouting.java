@@ -20,7 +20,6 @@ import org.apache.felix.scr.annotations.Component;
 import org.apache.felix.scr.annotations.Deactivate;
 import org.apache.felix.scr.annotations.Reference;
 import org.apache.felix.scr.annotations.ReferenceCardinality;
-import org.onlab.packet.ARP;
 import org.onlab.packet.EthType;
 import org.onlab.packet.Ethernet;
 import org.onlab.packet.IPv4;
@@ -52,12 +51,10 @@ import org.onosproject.intentsync.IntentSynchronizationService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.nio.ByteBuffer;
 import java.util.Optional;
 import java.util.Set;
 
 import static com.google.common.base.Preconditions.checkNotNull;
-import static org.onlab.packet.Ethernet.TYPE_ARP;
 import static org.onlab.packet.Ethernet.TYPE_IPV4;
 import static org.onosproject.net.packet.PacketPriority.REACTIVE;
 
@@ -221,10 +218,9 @@ public class SlsNetReactiveRouting {
         // default intercepts
         TrafficSelector.Builder selector = DefaultTrafficSelector.builder();
         selector.matchEthType(TYPE_IPV4);
-        //selector.matchEthDst(slsnet.getVirtualGatewayMacAddress());
+        selector.matchEthDst(slsnet.getVirtualGatewayMacAddress());
         packetService.requestPackets(selector.build(), REACTIVE, slsnet.getAppId());
-        selector.matchEthType(TYPE_ARP);
-        packetService.requestPackets(selector.build(), REACTIVE, slsnet.getAppId());
+        log.info("slsnet reactive routing IPV4 intercepts packet started");
     }
 
     /**
@@ -247,13 +243,9 @@ public class SlsNetReactiveRouting {
         // default intercepts
         TrafficSelector.Builder selector = DefaultTrafficSelector.builder();
         selector.matchEthType(TYPE_IPV4);
-        //selector.matchEthDst(slsnet.getVirtualGatewayMacAddress());
+        selector.matchEthDst(slsnet.getVirtualGatewayMacAddress());
         packetService.cancelPackets(selector.build(), REACTIVE, slsnet.getAppId());
-        selector = DefaultTrafficSelector.builder();
-        selector.matchEthType(TYPE_ARP);
-        packetService.cancelPackets(selector.build(), REACTIVE, slsnet.getAppId());
-
-        log.info("slsnet reactive routing intercepts packet stopped");
+        log.info("slsnet reactive routing IPV4 intercepts packet stopped");
     }
 
     private class ReactiveRoutingProcessor implements PacketProcessor {
@@ -268,32 +260,6 @@ public class SlsNetReactiveRouting {
             ConnectPoint srcConnectPoint = pkt.receivedFrom();
 
             switch (EthType.EtherType.lookup(ethPkt.getEtherType())) {
-            case ARP:
-                ARP arpPacket = (ARP) ethPkt.getPayload();
-                Ip4Address targetIpAddress = Ip4Address
-                        .valueOf(arpPacket.getTargetProtocolAddress());
-                // Only when it is an ARP request packet and the target IP
-                // address is a virtual gateway IP address, then it will be
-                // processed.
-                if (arpPacket.getOpCode() == ARP.OP_REQUEST
-                    && slsnet.isVirtualGatewayIpAddress(targetIpAddress)) {
-                    MacAddress gatewayMacAddress =
-                            slsnet.getVirtualGatewayMacAddress();
-                    if (gatewayMacAddress == null) {
-                        break;
-                    }
-                    Ethernet eth = ARP.buildArpReply(targetIpAddress,
-                                                     gatewayMacAddress,
-                                                     ethPkt);
-
-                    TrafficTreatment.Builder builder = DefaultTrafficTreatment.builder();
-                    builder.setOutput(srcConnectPoint.port());
-                    packetService.emit(new DefaultOutboundPacket(
-                            srcConnectPoint.deviceId(),
-                            builder.build(),
-                            ByteBuffer.wrap(eth.serialize())));
-                }
-                break;
             case IPV4:
                 // Parse packet
                 IPv4 ipv4Packet = (IPv4) ethPkt.getPayload();

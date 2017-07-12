@@ -37,6 +37,8 @@ import org.onosproject.core.ApplicationId;
 import org.onosproject.core.CoreService;
 import org.onosproject.incubator.net.intf.Interface;
 import org.onosproject.incubator.net.intf.InterfaceService;
+import org.onosproject.incubator.net.intf.InterfaceListener;
+import org.onosproject.incubator.net.intf.InterfaceEvent;
 import org.onosproject.incubator.net.routing.Route;
 import org.onosproject.incubator.net.routing.RouteAdminService;
 import org.onosproject.net.config.ConfigFactory;
@@ -125,6 +127,9 @@ public class SlsNet implements SlsNetService {
     private final InternalHostListener hostListener =
             new InternalHostListener();
 
+    private InternalInterfaceListener interfaceListener =
+            new InternalInterfaceListener();
+
     private ConfigFactory<ApplicationId, SlsNetConfig>
             reactiveRoutingConfigFactory =
             new ConfigFactory<ApplicationId, SlsNetConfig>(
@@ -188,7 +193,7 @@ public class SlsNet implements SlsNetService {
                          }
                     }
                     for (Host host : hostService.getHosts()) {
-                         if (l2Network.interfacesContains(getHostInterface(host))) {
+                         if (l2Network.contains((Interface) getHostInterface(host))) {
                              l2Network.addHost(host);
                          }
                     }
@@ -210,12 +215,12 @@ public class SlsNet implements SlsNetService {
         ip4Subnets = config.ip4Subnets();
         for (IpSubnet entry : ip4Subnets) {
             localPrefixTable4.put(createBinaryString(entry.ipPrefix()), entry);
-            gatewayIpAddresses.add(entry.getGatewayIpAddress());
+            gatewayIpAddresses.add(entry.getGatewayIp());
         }
         ip6Subnets = config.ip6Subnets();
         for (IpSubnet entry : ip6Subnets) {
             localPrefixTable6.put(createBinaryString(entry.ipPrefix()), entry);
-            gatewayIpAddresses.add(entry.getGatewayIpAddress());
+            gatewayIpAddresses.add(entry.getGatewayIp());
         }
 
         /* borderInterfaces */
@@ -298,10 +303,7 @@ public class SlsNet implements SlsNetService {
     @Override
     public L2Network findL2Network(ConnectPoint port, VlanId vlanId) {
         for (L2Network l2Network : l2Networks) {
-            boolean match = l2NetworkInterfaces.stream()
-                    .anyMatch(iface -> iface.connectPoint().equals(port) &&
-                              iface.vlan().equals(vlanId));
-            if (match) {
+            if (l2Network.contains(port, vlanId)) {
                 return l2Network;
             }
         }
@@ -354,6 +356,8 @@ public class SlsNet implements SlsNetService {
         @Override
         public void event(NetworkConfigEvent event) {
             switch (event.type()) {
+            case CONFIG_REGISTERED:
+            case CONFIG_UNREGISTERED:
             case CONFIG_ADDED:
             case CONFIG_UPDATED:
             case CONFIG_REMOVED:
@@ -371,6 +375,7 @@ public class SlsNet implements SlsNetService {
         @Override
         public void event(HostEvent event) {
             Host host = event.subject();
+            Host prevHost = event.prevSubject();
             switch (event.type()) {
             case HOST_MOVED:
             case HOST_REMOVED:
@@ -383,5 +388,23 @@ public class SlsNet implements SlsNetService {
             }
         }
     }
+
+    private class InternalInterfaceListener implements InterfaceListener {
+        @Override
+        public void event(InterfaceEvent event) {
+            Interface iface = event.subject();
+            Interface prevIface = event.prevSubject();
+            switch (event.type()) {
+            case INTERFACE_ADDED:
+            case INTERFACE_REMOVED:
+            case INTERFACE_UPDATED:
+                refreshNetworkConfig(null);
+                break;
+            default:
+                break;
+            }
+        }
+    }
+
 }
 
