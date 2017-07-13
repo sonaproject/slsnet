@@ -215,12 +215,12 @@ public class SlsNet implements SlsNetService {
         ip4Subnets = config.ip4Subnets();
         for (IpSubnet entry : ip4Subnets) {
             localPrefixTable4.put(createBinaryString(entry.ipPrefix()), entry);
-            gatewayIpAddresses.add(entry.getGatewayIp());
+            gatewayIpAddresses.add(entry.gatewayIp());
         }
         ip6Subnets = config.ip6Subnets();
         for (IpSubnet entry : ip6Subnets) {
             localPrefixTable6.put(createBinaryString(entry.ipPrefix()), entry);
-            gatewayIpAddresses.add(entry.getGatewayIp());
+            gatewayIpAddresses.add(entry.gatewayIp());
         }
 
         /* borderInterfaces */
@@ -248,7 +248,7 @@ public class SlsNet implements SlsNetService {
             routeService.withdraw(prevRoutes);
         }
 
-        // Virtual Gateway MAC
+        // virtual gateway MAC
         virtualGatewayMacAddress = config.virtualGatewayMacAddress();
     }
 
@@ -298,6 +298,11 @@ public class SlsNet implements SlsNetService {
     @Override
     public boolean isL2NetworkInterface(Interface intf) {
         return l2NetworkInterfaces.contains(intf);
+    }
+
+    @Override
+    public boolean isBorderInterface(Interface intf) {
+        return borderInterfaces.contains(intf);
     }
 
     @Override
@@ -398,7 +403,8 @@ public class SlsNet implements SlsNetService {
             case INTERFACE_ADDED:
             case INTERFACE_REMOVED:
             case INTERFACE_UPDATED:
-                refreshNetworkConfig(null);
+                // target interfaces are static from netcfg
+                //refreshNetworkConfig(null);
                 break;
             default:
                 break;

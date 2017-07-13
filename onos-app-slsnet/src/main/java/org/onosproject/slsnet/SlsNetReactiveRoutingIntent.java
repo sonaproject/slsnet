@@ -40,7 +40,7 @@ import org.onosproject.net.intent.Constraint;
 import org.onosproject.net.intent.Key;
 import org.onosproject.net.intent.MultiPointToSinglePointIntent;
 import org.onosproject.net.intent.constraint.PartialFailureConstraint;
-import org.onosproject.net.intent.constraint.HashedPathSelectionConstraint;
+//import org.onosproject.net.intent.constraint.HashedPathSelectionConstraint;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -61,8 +61,9 @@ public class SlsNetReactiveRoutingIntent {
     protected SlsNetService slsnet;
 
     protected static final ImmutableList<Constraint> CONSTRAINTS
-            = ImmutableList.of(new PartialFailureConstraint(),
-                               new HashedPathSelectionConstraint());
+            = ImmutableList.of(new PartialFailureConstraint());
+           // = ImmutableList.of(new PartialFailureConstraint(),
+           //                    new HashedPathSelectionConstraint());
 
     private final Logger log = LoggerFactory.getLogger(getClass());
 

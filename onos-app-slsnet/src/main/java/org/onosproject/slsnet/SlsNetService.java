@@ -34,8 +34,8 @@ public interface SlsNetService {
     static final String APP_ID = "org.onosproject.slsnet";
 
     // priority for l2Network: L2NETWORK_UNICAST or L2NETWORK_BROADCAST
-    static final int PRI_L2NETWORK_UNICAST   = 601;
-    static final int PRI_L2NETWORK_BROADCAST = 602;
+    static final int PRI_L2NETWORK_UNICAST   = 602;
+    static final int PRI_L2NETWORK_BROADCAST = 601;
     // priority for ipReactiveRoutes: REACTIVE_ROUTE_BASE + ipPrefix * REACTIVE_ROUTE_STEP
     static final int PRI_REACTIVE_ROUTE_BASE = 400;
     static final int PRI_REACTIVE_ROUTE_STEP = 1;
@@ -97,6 +97,14 @@ public interface SlsNetService {
      * @return true if the inteface belongs to l2Networks configed, otherwise false
      */
     boolean isL2NetworkInterface(Interface intf);
+
+    /**
+     * Evaluates whether an Interface belongs to borderInterfaces.
+     *
+     * @param intf the interface to evaluate
+     * @return true if the inteface belongs to borderInterfaces configed, otherwise false
+     */
+    boolean isBorderInterface(Interface intf);
 
     /**
      * Finds the L2 Network with given port and vlanId.

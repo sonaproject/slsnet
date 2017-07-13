@@ -34,7 +34,7 @@ public class SlsNetCli extends AbstractShellCommand {
     protected static RouteAdminService routeService;
 
     @Argument(index = 0, name = "command", description = "Command name (show)",
-            required = true, multiValued = false)
+              required = true, multiValued = false)
     String command = null;
 
     @Override

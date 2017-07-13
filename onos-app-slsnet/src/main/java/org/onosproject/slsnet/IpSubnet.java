@@ -27,16 +27,19 @@ import java.util.Objects;
 public class IpSubnet {
     private final IpPrefix ipPrefix;
     private final IpAddress gatewayIp;
+    private final String l2NetworkName;
 
     /**
      * Creates a new IP prefix entry.
      *
      * @param ipPrefix  an IP prefix
      * @param gatewayIp IP of the gateway
+     * @param l2NetworkName Name of L2 Network this subnet is bound
      */
-    public IpSubnet(IpPrefix ipPrefix, IpAddress gatewayIp) {
+    public IpSubnet(IpPrefix ipPrefix, IpAddress gatewayIp, String l2NetworkName) {
         this.ipPrefix = ipPrefix;
         this.gatewayIp = gatewayIp;
+        this.l2NetworkName = l2NetworkName;
     }
 
     /**
@@ -53,8 +56,17 @@ public class IpSubnet {
      *
      * @return the gateway IP address
      */
-    public IpAddress getGatewayIp() {
+    public IpAddress gatewayIp() {
         return gatewayIp;
+    }
+
+    /**
+     * Gets the name of L2 Network this subnet is bound.
+     *
+     * @return the gateway IP address
+     */
+    public String l2NetworkName() {
+        return l2NetworkName;
     }
 
     /**
@@ -90,7 +102,8 @@ public class IpSubnet {
         }
         IpSubnet that = (IpSubnet) obj;
         return Objects.equals(this.ipPrefix, that.ipPrefix)
-               && Objects.equals(this.gatewayIp, that.gatewayIp);
+               && Objects.equals(this.gatewayIp, that.gatewayIp)
+               && Objects.equals(this.l2NetworkName, that.l2NetworkName);
     }
 
     @Override
@@ -98,6 +111,7 @@ public class IpSubnet {
         return MoreObjects.toStringHelper(getClass())
                 .add("ipPrefix", ipPrefix)
                 .add("gatewayIp", gatewayIp)
+                .add("l2NetworkName", l2NetworkName)
                 .toString();
     }
 }

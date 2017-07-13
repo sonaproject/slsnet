@@ -65,35 +65,41 @@ public class SlsNetNeighbour {
             new L2NetworkNeighbourMessageHandler();
 
     @Activate
-    protected void activate() {
-        log.info("slsnet neighbour starting");
-        refreshNeighbourHandler();
+    public void activate() {
+        refresh();
         log.info("slsnet neighbour started");
     }
 
     @Deactivate
-    protected void deactivate() {
-        log.info("slsnet neighbour stopping");
-        neighbourService.unregisterNeighbourHandlers(slsnet.getAppId());
-        log.info("slsnet neighbour stopped");
+    public void deactivate() {
+        unregister();
+        log.info("slsnet neighbour stoped");
     }
 
     /**
      * Registers neighbour handler to all available interfaces.
      */
-    protected void refreshNeighbourHandler() {
+    protected void refresh() {
         neighbourService.unregisterNeighbourHandlers(slsnet.getAppId());
         interfaceService
                 .getInterfaces()
                 .forEach(intf -> {
                     if (slsnet.isL2NetworkInterface(intf)) {
+                        log.info("slsnet neighbour register handler: {}", intf);
                         neighbourService.registerNeighbourHandler(intf,
                                          neighbourHandler, slsnet.getAppId());
-                        log.info("slsnet neighbour register handler: {}", intf);
                     } else {
                         log.warn("slsnet neighobur unknown interface: {}", intf);
                     }
                 });
+    }
+
+    /**
+     * Unregisters neighbour handler to all available interfaces.
+     */
+    protected void unregister() {
+        log.info("slsnet neighbour unregister handler");
+        neighbourService.unregisterNeighbourHandlers(slsnet.getAppId());
     }
 
     /**

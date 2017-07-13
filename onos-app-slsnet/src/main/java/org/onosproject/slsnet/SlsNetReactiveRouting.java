@@ -268,13 +268,16 @@ public class SlsNetReactiveRouting {
                 IpAddress srcIp =
                         IpAddress.valueOf(ipv4Packet.getSourceAddress());
                 MacAddress srcMac = ethPkt.getSourceMAC();
+
+                log.info("slsnet reactive routing IPV4 packet detected: srcIp={} dstIp={}", srcIp, dstIp);
                 packetReactiveProcessor(dstIp, srcIp, srcConnectPoint, srcMac);
 
                 // TODO emit packet first or packetReactiveProcessor first
-                ConnectPoint egressConnectPoint = null;
-                egressConnectPoint = getEgressConnectPoint(dstIp);
+                ConnectPoint egressConnectPoint = getEgressConnectPoint(dstIp);
                 if (egressConnectPoint != null) {
                     forwardPacketToDst(context, egressConnectPoint);
+                } else {
+                    log.warn("slsnet reactive routing dstIp connect point not found: {}", dstIp);
                 }
                 break;
             default:
