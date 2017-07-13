@@ -316,6 +316,29 @@ public class SlsNet implements SlsNetService {
     }
 
     @Override
+    public L2Network findL2Network(String name) {
+        for (L2Network l2Network : l2Networks) {
+            if (l2Network.name().equals(name)) {
+                return l2Network;
+            }
+        }
+        return null;
+    }
+
+    @Override
+    public IpSubnet findIpSubnet(IpAddress ipAddress) {
+        if (ipAddress.isIp4()) {
+            return (IpSubnet) localPrefixTable4.getValuesForKeysPrefixing(
+                                  createBinaryString(IpPrefix.valueOf(ipAddress, Ip4Address.BIT_LENGTH)))
+                              .iterator().next();
+        } else {
+            return (IpSubnet) localPrefixTable6.getValuesForKeysPrefixing(
+                                  createBinaryString(IpPrefix.valueOf(ipAddress, Ip6Address.BIT_LENGTH)))
+                              .iterator().next();
+        }
+    }
+
+    @Override
     public Interface getHostInterface(Host host) {
         return interfaceService.getInterfaces().stream()
                 .filter(iface -> iface.connectPoint().equals(host.location()) &&

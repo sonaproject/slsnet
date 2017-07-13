@@ -116,6 +116,22 @@ public interface SlsNetService {
     L2Network findL2Network(ConnectPoint port, VlanId vlanId);
 
     /**
+     * Finds the L2 Network of the name.
+     *
+     * @param name the name to be matched
+     * @return the L2 Network for specific name
+     */
+    L2Network findL2Network(String name);
+
+    /**
+     * Finds the IpSubnet containing the ipAddress.
+     *
+     * @param ipAddress the ipAddress to be matched
+     * @return the IpSubnet for specific ipAddress
+     */
+    IpSubnet findIpSubnet(IpAddress ipAddress);
+
+    /**
      * Finds the network interface related to the host.
      *
      * @param host the host

@@ -20,14 +20,17 @@ import org.apache.felix.scr.annotations.Component;
 import org.apache.felix.scr.annotations.Deactivate;
 import org.apache.felix.scr.annotations.Reference;
 import org.apache.felix.scr.annotations.ReferenceCardinality;
+import org.onlab.packet.ARP;
 import org.onlab.packet.EthType;
 import org.onlab.packet.Ethernet;
 import org.onlab.packet.IPv4;
 import org.onlab.packet.Ip4Address;
+import org.onlab.packet.IPv6;
 import org.onlab.packet.Ip6Address;
 import org.onlab.packet.IpAddress;
 import org.onlab.packet.IpPrefix;
 import org.onlab.packet.MacAddress;
+import org.onlab.packet.ndp.NeighborSolicitation;
 import org.onosproject.incubator.net.intf.Interface;
 import org.onosproject.incubator.net.intf.InterfaceService;
 import org.onosproject.incubator.net.routing.Route;
@@ -53,6 +56,7 @@ import org.slf4j.LoggerFactory;
 
 import java.util.Optional;
 import java.util.Set;
+import java.nio.ByteBuffer;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import static org.onlab.packet.Ethernet.TYPE_IPV4;
@@ -434,6 +438,8 @@ public class SlsNetReactiveRouting {
                 return hosts.iterator().next().location();
             } else {
                 hostService.startMonitoringIp(dstIpAddress);
+                // hostService.requestMac(dstIpAddress); NOT IMPLEMENTED in HostManager.java
+                requestMac(dstIpAddress);
                 return null;
             }
         } else if (type == LocationType.INTERNET) {
@@ -470,7 +476,51 @@ public class SlsNetReactiveRouting {
                 new DefaultOutboundPacket(connectPoint.deviceId(), treatment,
                                           context.inPacket().unparsed());
         packetService.emit(packet);
-        log.trace("sending packet: {}", packet);
+        log.info("slsnet reactive routing forward packet: {}", packet);
     }
+
+    /**
+     * Send Neighbour Query to Find Host Location.
+     *
+     * @param ipAddress    the ip address to resolve
+     */
+    private void requestMac(IpAddress ipAddress) {
+        IpSubnet ipSubnet = slsnet.findIpSubnet(ipAddress);
+        if (ipSubnet == null) {
+            log.warn("slsnet reactive routing request mac failed for unknown IpSubnet: {}", ipAddress);
+            return;
+        }
+        L2Network l2Network = slsnet.findL2Network(ipSubnet.l2NetworkName());
+        if (l2Network == null) {
+            log.warn("slsnet reactive routing request mac failed for unknown l2Network name {}: {}",
+                     ipSubnet.l2NetworkName(), ipAddress);
+            return;
+        }
+        log.info("slsnet reactive routing send request mac to L2Network {}: {}", l2Network.name(), ipAddress);
+        for (Interface iface : l2Network.interfaces()) {
+            Ethernet neighbourReq;
+            if (ipAddress.isIp4()) {
+                neighbourReq = ARP.buildArpRequest(slsnet.getVirtualGatewayMacAddress().toBytes(),
+                                                   ipSubnet.gatewayIp().toOctets(),
+                                                   ipAddress.toOctets(),
+                                                   iface.vlan().toShort());
+            } else {
+                byte[] soliciteIp = IPv6.getSolicitNodeAddress(ipAddress.toOctets());
+                neighbourReq = NeighborSolicitation.buildNdpSolicit(
+                                                   ipAddress.toOctets(),
+                                                   ipSubnet.gatewayIp().toOctets(),
+                                                   soliciteIp,
+                                                   slsnet.getVirtualGatewayMacAddress().toBytes(),
+                                                   IPv6.getMCastMacAddress(soliciteIp),
+                                                   iface.vlan());
+            }
+            TrafficTreatment treatment = DefaultTrafficTreatment.builder()
+                                               .setOutput(iface.connectPoint().port()).build();
+            OutboundPacket packet = new DefaultOutboundPacket(iface.connectPoint().deviceId(),
+                                               treatment, ByteBuffer.wrap(neighbourReq.serialize()));
+            packetService.emit(packet);
+        }
+    }
+
 }
 
