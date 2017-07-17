@@ -106,7 +106,6 @@ public class SlsNetManager extends ListenerRegistry<SlsNetEvent, SlsNetListener>
     );
 
     // SlsNet variables
-
     private ApplicationId appId = null;
 
     // l2 broadcast networks
@@ -134,7 +133,6 @@ public class SlsNetManager extends ListenerRegistry<SlsNetEvent, SlsNetListener>
     private MacAddress virtualGatewayMacAddress;
     private Set<IpAddress> virtualGatewayIpAddresses = new HashSet<>();
 
-
     // Listener for Service Events
     private final InternalNetworkConfigListener configListener =
             new InternalNetworkConfigListener();
@@ -155,7 +153,6 @@ public class SlsNetManager extends ListenerRegistry<SlsNetEvent, SlsNetListener>
             return new SlsNetConfig();
         }
     };
-
 
     @Activate
     public void activate() {
@@ -189,7 +186,6 @@ public class SlsNetManager extends ListenerRegistry<SlsNetEvent, SlsNetListener>
 
         log.info("slsnet stopped");
     }
-
 
     // Set up from configuration
     private void refreshNetworkConfig(NetworkConfigEvent event) {

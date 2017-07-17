@@ -265,9 +265,7 @@ public class SlsNetBorderRouting {
         }
     }
 
-    /*
-     * Handles the case in which an existing interface gets removed.
-     */
+    // Handles the case in which an existing interface gets removed.
     private void removeInterface(Interface intf) {
         synchronized (this) {
             for (Map.Entry<IpPrefix, MultiPointToSinglePointIntent> entry : routeIntents.entrySet()) {
@@ -326,10 +324,8 @@ public class SlsNetBorderRouting {
         }
     }
 
-    /*
-     * Builds an ingress traffic selector builder given an ingress interface and
-     * the IP prefix to be reached.
-     */
+    // Builds an ingress traffic selector builder given an ingress interface and
+    // the IP prefix to be reached.
     private TrafficSelector.Builder buildIngressTrafficSelector(Interface intf, IpPrefix prefix) {
         TrafficSelector.Builder selector = buildTrafficSelector(intf);
 
@@ -354,9 +350,7 @@ public class SlsNetBorderRouting {
         return selector;
     }
 
-    /*
-     * Builds a traffic selector builder based on interface tagging settings.
-     */
+    // Builds a traffic selector builder based on interface tagging settings.
     private TrafficSelector.Builder buildTrafficSelector(Interface intf) {
         TrafficSelector.Builder selector = DefaultTrafficSelector.builder();
 
@@ -423,13 +417,7 @@ public class SlsNetBorderRouting {
         }
     }
 
-    /**
-     * Sets an encapsulation constraint to the intent builder given.
-     *
-     * @param builder the intent builder
-     * @param constraints the existing intent constraints
-     * @param encap the encapsulation type to be set
-     */
+    // Sets an encapsulation constraint to the intent builder given.
     private static void setEncap(ConnectivityIntent.Builder builder,
                                  List<Constraint> constraints,
                                  EncapsulationType encap) {
