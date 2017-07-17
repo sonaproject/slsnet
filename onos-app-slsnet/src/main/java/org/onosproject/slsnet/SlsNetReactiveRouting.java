@@ -32,6 +32,7 @@ import org.onlab.packet.IpAddress;
 import org.onlab.packet.IpPrefix;
 import org.onlab.packet.MacAddress;
 import org.onlab.packet.ndp.NeighborSolicitation;
+import org.onosproject.core.ApplicationId;
 import org.onosproject.incubator.net.intf.Interface;
 import org.onosproject.incubator.net.intf.InterfaceService;
 import org.onosproject.incubator.net.routing.Route;
@@ -44,14 +45,13 @@ import org.onosproject.net.flow.DefaultTrafficTreatment;
 import org.onosproject.net.flow.TrafficSelector;
 import org.onosproject.net.flow.TrafficTreatment;
 import org.onosproject.net.host.HostService;
+import org.onosproject.net.intent.IntentService;
 import org.onosproject.net.packet.DefaultOutboundPacket;
 import org.onosproject.net.packet.InboundPacket;
 import org.onosproject.net.packet.OutboundPacket;
 import org.onosproject.net.packet.PacketContext;
 import org.onosproject.net.packet.PacketProcessor;
 import org.onosproject.net.packet.PacketService;
-//import org.onosproject.net.packet.PacketPriority;
-import org.onosproject.intentsync.IntentSynchronizationService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -99,18 +99,13 @@ enum TrafficType {
 public class SlsNetReactiveRouting {
 
     private final Logger log = LoggerFactory.getLogger(getClass());
+    protected ApplicationId appId;
 
     @Reference(cardinality = ReferenceCardinality.MANDATORY_UNARY)
     protected PacketService packetService;
 
     @Reference(cardinality = ReferenceCardinality.MANDATORY_UNARY)
     protected RouteService routeService;
-
-    @Reference(cardinality = ReferenceCardinality.MANDATORY_UNARY)
-    protected IntentSynchronizationService intentSynchronizer;
-
-    @Reference(cardinality = ReferenceCardinality.MANDATORY_UNARY)
-    protected SlsNetService slsnet;
 
     @Reference(cardinality = ReferenceCardinality.MANDATORY_UNARY)
     protected InterfaceService interfaceService;
@@ -120,6 +115,12 @@ public class SlsNetReactiveRouting {
 
     @Reference(cardinality = ReferenceCardinality.MANDATORY_UNARY)
     protected HostService hostService;
+
+    @Reference(cardinality = ReferenceCardinality.MANDATORY_UNARY)
+    protected IntentService intentService;
+
+    @Reference(cardinality = ReferenceCardinality.MANDATORY_UNARY)
+    protected SlsNetService slsnet;
 
     private final InternalSlsNetListener slsnetListener =
             new InternalSlsNetListener();
@@ -132,15 +133,15 @@ public class SlsNetReactiveRouting {
     // last EthDst MAC selector for intercept selector
     private MacAddress selectorDstMacAddress = null;
 
-
     @Activate
     public void activate() {
         log.info("slsnet reactive routing starting");
 
+        appId = slsnet.getAppId();
         slsnet.addListener(slsnetListener);
 
-        intentRequestListener = new SlsNetReactiveRoutingIntent(slsnet.getAppId(), hostService,
-                interfaceService, intentSynchronizer);
+        intentRequestListener = new SlsNetReactiveRoutingIntent(slsnet, hostService,
+                                                  interfaceService, intentService);
 
         packetService.addProcessor(processor, PacketProcessor.director(2));
         refreshIntercepts();
@@ -177,7 +178,7 @@ public class SlsNetReactiveRouting {
                 TrafficSelector.Builder selector = DefaultTrafficSelector.builder();
                 selector.matchEthType(TYPE_IPV4);
                 selector.matchEthDst(newSelectorDstMacAddress);
-                packetService.requestPackets(selector.build(), REACTIVE, slsnet.getAppId());
+                packetService.requestPackets(selector.build(), REACTIVE, appId);
                 log.info("slsnet reactive routing IPV4 intercepts packet started: EthDst={}",
                          newSelectorDstMacAddress);
             }
@@ -195,7 +196,7 @@ public class SlsNetReactiveRouting {
             TrafficSelector.Builder selector = DefaultTrafficSelector.builder();
             selector.matchEthType(TYPE_IPV4);
             selector.matchEthDst(selectorDstMacAddress);
-            packetService.cancelPackets(selector.build(), REACTIVE, slsnet.getAppId());
+            packetService.cancelPackets(selector.build(), REACTIVE, appId);
             log.info("slsnet reactive routing IPV4 intercepts packet stopped: EthDst={}", selectorDstMacAddress);
             selectorDstMacAddress = null;
         }

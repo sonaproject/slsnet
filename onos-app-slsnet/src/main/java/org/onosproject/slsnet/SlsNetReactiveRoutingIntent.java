@@ -16,8 +16,6 @@
 
 package org.onosproject.slsnet;
 
-import org.apache.felix.scr.annotations.Reference;
-import org.apache.felix.scr.annotations.ReferenceCardinality;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Maps;
 import org.onlab.packet.Ethernet;
@@ -28,7 +26,6 @@ import org.onlab.packet.VlanId;
 import org.onosproject.core.ApplicationId;
 import org.onosproject.incubator.net.intf.Interface;
 import org.onosproject.incubator.net.intf.InterfaceService;
-import org.onosproject.intentsync.IntentSynchronizationService;
 import org.onosproject.net.ConnectPoint;
 import org.onosproject.net.Host;
 import org.onosproject.net.flow.DefaultTrafficSelector;
@@ -37,6 +34,7 @@ import org.onosproject.net.flow.TrafficSelector;
 import org.onosproject.net.flow.TrafficTreatment;
 import org.onosproject.net.host.HostService;
 import org.onosproject.net.intent.Constraint;
+import org.onosproject.net.intent.IntentService;
 import org.onosproject.net.intent.Key;
 import org.onosproject.net.intent.MultiPointToSinglePointIntent;
 import org.onosproject.net.intent.constraint.PartialFailureConstraint;
@@ -57,38 +55,37 @@ import static com.google.common.base.Preconditions.checkNotNull;
  */
 public class SlsNetReactiveRoutingIntent {
 
-    @Reference(cardinality = ReferenceCardinality.MANDATORY_UNARY)
-    protected SlsNetService slsnet;
+    private final Logger log = LoggerFactory.getLogger(getClass());
+    private final ApplicationId appId;
+
+    private final SlsNetService slsnet;
+    private final HostService hostService;
+    private final InterfaceService interfaceService;
+    private final IntentService intentService;
 
     protected static final ImmutableList<Constraint> CONSTRAINTS
             = ImmutableList.of(new PartialFailureConstraint());
            // = ImmutableList.of(new PartialFailureConstraint(),
            //                    new HashedPathSelectionConstraint());
 
-    private final Logger log = LoggerFactory.getLogger(getClass());
-
-    private final ApplicationId appId;
-    private final HostService hostService;
-    private final InterfaceService interfaceService;
-    private final IntentSynchronizationService intentSynchronizer;
-
     private final Map<IpPrefix, MultiPointToSinglePointIntent> routeIntents;
 
     /**
      * Class constructor.
      *
-     * @param appId application ID to use to generate intents
+     * @param slsnet slsnet service
      * @param hostService host service
      * @param interfaceService interface service
-     * @param intentSynchronizer intent synchronization service
+     * @param intentService intent service
      */
-    public SlsNetReactiveRoutingIntent(ApplicationId appId, HostService hostService,
-                              InterfaceService interfaceService,
-                              IntentSynchronizationService intentSynchronizer) {
-        this.appId = appId;
+    public SlsNetReactiveRoutingIntent(SlsNetService slsnet, HostService hostService,
+                              InterfaceService interfaceService, IntentService intentService) {
+        appId = slsnet.getAppId();
+
+        this.slsnet = slsnet;
         this.hostService = hostService;
         this.interfaceService = interfaceService;
-        this.intentSynchronizer = intentSynchronizer;
+        this.intentService = intentService;
 
         routeIntents = Maps.newConcurrentMap();
     }
@@ -390,7 +387,7 @@ public class SlsNetReactiveRoutingIntent {
     void submitReactiveIntent(IpPrefix ipPrefix, MultiPointToSinglePointIntent intent) {
         routeIntents.put(ipPrefix, intent);
 
-        intentSynchronizer.submit(intent);
+        intentService.submit(intent);
     }
 
     /**
@@ -408,8 +405,8 @@ public class SlsNetReactiveRoutingIntent {
     //@Override
     public boolean mp2pIntentExists(IpPrefix ipPrefix) {
         checkNotNull(ipPrefix);
-        log.info("slsnet reactive routing intents mp2pIntentExists: ipPrefix={} reouteIntents={}",
-                 ipPrefix, routeIntents);
+        //log.info("slsnet reactive routing intents mp2pIntentExists: ipPrefix={} reouteIntents={}",
+        //         ipPrefix, routeIntents);
         return routeIntents.get(ipPrefix) != null;
     }
 }

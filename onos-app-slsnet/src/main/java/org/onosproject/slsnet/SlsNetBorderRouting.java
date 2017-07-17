@@ -28,6 +28,7 @@ import org.onlab.packet.IpAddress;
 import org.onlab.packet.IpPrefix;
 import org.onlab.packet.MacAddress;
 import org.onlab.packet.VlanId;
+import org.onosproject.core.ApplicationId;
 import org.onosproject.core.CoreService;
 import org.onosproject.incubator.net.intf.Interface;
 import org.onosproject.incubator.net.intf.InterfaceEvent;
@@ -46,12 +47,12 @@ import org.onosproject.net.flow.TrafficSelector;
 import org.onosproject.net.flow.TrafficTreatment;
 import org.onosproject.net.intent.ConnectivityIntent;
 import org.onosproject.net.intent.Constraint;
+import org.onosproject.net.intent.IntentService;
 import org.onosproject.net.intent.Key;
 import org.onosproject.net.intent.MultiPointToSinglePointIntent;
 import org.onosproject.net.intent.constraint.EncapsulationConstraint;
 import org.onosproject.net.intent.constraint.PartialFailureConstraint;
 import org.onosproject.net.intent.constraint.HashedPathSelectionConstraint;
-import org.onosproject.intentsync.IntentSynchronizationService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -70,12 +71,13 @@ import static org.onosproject.net.EncapsulationType.NONE;
 public class SlsNetBorderRouting {
 
     private Logger log = LoggerFactory.getLogger(getClass());
+    protected ApplicationId appId;
 
     @Reference(cardinality = ReferenceCardinality.MANDATORY_UNARY)
     protected InterfaceService interfaceService;
 
     @Reference(cardinality = ReferenceCardinality.MANDATORY_UNARY)
-    protected IntentSynchronizationService intentSynchronizer;
+    protected IntentService intentService;
 
     @Reference(cardinality = ReferenceCardinality.MANDATORY_UNARY)
     protected CoreService coreService;
@@ -104,6 +106,7 @@ public class SlsNetBorderRouting {
 
     @Activate
     public void activate() {
+        appId = slsnet.getAppId();
         slsnet.addListener(slsnetListener);
         interfaceService.addListener(interfaceListener);
         routeService.addListener(routeListener);
@@ -134,7 +137,7 @@ public class SlsNetBorderRouting {
             }
 
             routeIntents.put(prefix, intent);
-            intentSynchronizer.submit(intent);
+            intentService.submit(intent);
         }
     }
 
@@ -147,7 +150,7 @@ public class SlsNetBorderRouting {
                           prefix);
                 return;
             }
-            intentSynchronizer.withdraw(intent);
+            intentService.withdraw(intent);
         }
     }
 
@@ -213,11 +216,11 @@ public class SlsNetBorderRouting {
                        + prefix.prefixLength() * slsnet.PRI_PREFIX_STEP;
 
         // Set key
-        Key key = Key.of(prefix.toString(), slsnet.getAppId());
+        Key key = Key.of(prefix.toString(), appId);
 
         MultiPointToSinglePointIntent.Builder intentBuilder =
                 MultiPointToSinglePointIntent.builder()
-                                             .appId(slsnet.getAppId())
+                                             .appId(appId)
                                              .key(key)
                                              .filteredIngressPoints(ingressFilteredCPs)
                                              .filteredEgressPoint(egressFilteredCP)
@@ -257,7 +260,7 @@ public class SlsNetBorderRouting {
                                 .build();
 
                 routeIntents.put(entry.getKey(), newIntent);
-                intentSynchronizer.submit(newIntent);
+                intentService.submit(newIntent);
             }
         }
     }
@@ -291,7 +294,7 @@ public class SlsNetBorderRouting {
                      // The interface is an egress interface for the intent.
                      // This intent just lost its head. Remove it and let higher
                      // layer routing reroute
-                    intentSynchronizer.withdraw(routeIntents.remove(entry.getKey()));
+                    intentService.withdraw(routeIntents.remove(entry.getKey()));
                 } else {
                     if (intent.filteredIngressPoints().contains(removedIngressFilteredCP)) {
                          // The FilteredConnectPoint is an ingress
@@ -311,11 +314,11 @@ public class SlsNetBorderRouting {
                                             .build();
 
                             routeIntents.put(entry.getKey(), newIntent);
-                            intentSynchronizer.submit(newIntent);
+                            intentService.submit(newIntent);
                         } else {
                              // No more ingress FilteredConnectPoint. Withdraw
                              //the intent
-                            intentSynchronizer.withdraw(routeIntents.remove(entry.getKey()));
+                            intentService.withdraw(routeIntents.remove(entry.getKey()));
                         }
                     }
                 }
@@ -414,7 +417,7 @@ public class SlsNetBorderRouting {
                             intentBuilder.build();
 
                     routeIntents.put(entry.getKey(), newIntent);
-                    intentSynchronizer.submit(newIntent);
+                    intentService.submit(newIntent);
                 }
             }
         }

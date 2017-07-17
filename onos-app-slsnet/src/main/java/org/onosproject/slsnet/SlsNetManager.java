@@ -55,7 +55,6 @@ import org.onosproject.net.Host;
 import org.onosproject.net.host.HostService;
 import org.onosproject.net.host.HostListener;
 import org.onosproject.net.host.HostEvent;
-import org.onosproject.intentsync.IntentSynchronizationService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -95,10 +94,6 @@ public class SlsNetManager extends ListenerRegistry<SlsNetEvent, SlsNetListener>
 
     @Reference(cardinality = ReferenceCardinality.MANDATORY_UNARY)
     protected HostService hostService;
-
-    @Reference(cardinality = ReferenceCardinality.MANDATORY_UNARY)
-    protected IntentSynchronizationService intentSynchronizer;
-
 
     // compoents to be activated within SlsNet
     @Reference(cardinality = ReferenceCardinality.MANDATORY_UNARY)

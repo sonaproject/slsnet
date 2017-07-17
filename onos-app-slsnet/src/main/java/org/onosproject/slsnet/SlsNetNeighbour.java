@@ -21,6 +21,7 @@ import org.apache.felix.scr.annotations.Deactivate;
 import org.apache.felix.scr.annotations.Reference;
 import org.apache.felix.scr.annotations.ReferenceCardinality;
 import org.onlab.packet.MacAddress;
+import org.onosproject.core.ApplicationId;
 import org.onosproject.core.CoreService;
 import org.onosproject.incubator.net.intf.Interface;
 import org.onosproject.incubator.net.intf.InterfaceService;
@@ -45,6 +46,7 @@ import java.util.stream.Collectors;
 public class SlsNetNeighbour {
 
     private final Logger log = LoggerFactory.getLogger(getClass());
+    protected ApplicationId appId;
 
     @Reference(cardinality = ReferenceCardinality.MANDATORY_UNARY)
     protected CoreService coreService;
@@ -69,6 +71,7 @@ public class SlsNetNeighbour {
 
     @Activate
     public void activate() {
+        appId = slsnet.getAppId();
         slsnet.addListener(slsnetListener);
         refresh();
         log.info("slsnet neighbour started");
@@ -85,7 +88,7 @@ public class SlsNetNeighbour {
      * Registers neighbour handler to all available interfaces.
      */
     protected void refresh() {
-        neighbourService.unregisterNeighbourHandlers(slsnet.getAppId());
+        neighbourService.unregisterNeighbourHandlers(appId);
         log.info("slsnet neighbour register handler");
         interfaceService
                 .getInterfaces()
@@ -93,7 +96,7 @@ public class SlsNetNeighbour {
                     if (slsnet.isL2NetworkInterface(intf)) {
                         log.debug("slsnet neighbour register handler: {}", intf);
                         neighbourService.registerNeighbourHandler(intf,
-                                         neighbourHandler, slsnet.getAppId());
+                                         neighbourHandler, appId);
                     } else {
                         log.debug("slsnet neighobur unknown interface: {}", intf);
                     }
@@ -105,7 +108,7 @@ public class SlsNetNeighbour {
      */
     protected void unregister() {
         log.info("slsnet neighbour unregister handler");
-        neighbourService.unregisterNeighbourHandlers(slsnet.getAppId());
+        neighbourService.unregisterNeighbourHandlers(appId);
     }
 
     /**

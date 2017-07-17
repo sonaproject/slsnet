@@ -23,6 +23,7 @@ import org.apache.felix.scr.annotations.Deactivate;
 import org.apache.felix.scr.annotations.Reference;
 import org.apache.felix.scr.annotations.ReferenceCardinality;
 import org.onlab.util.Tools;
+import org.onosproject.core.ApplicationId;
 import org.onosproject.core.CoreService;
 import org.onosproject.incubator.net.intf.Interface;
 import org.onosproject.net.Host;
@@ -59,7 +60,11 @@ import static org.onlab.util.Tools.groupedThreads;
  */
 @Component(immediate = true, enabled = false)
 public class SlsNetL2NetworkRouting {
+
     private static final int COMPLETE_TIMEOUT_SEC = 5;
+
+    private final Logger log = LoggerFactory.getLogger(getClass());
+    protected ApplicationId appId;
 
     @Reference(cardinality = ReferenceCardinality.MANDATORY_UNARY)
     protected CoreService coreService;
@@ -73,14 +78,12 @@ public class SlsNetL2NetworkRouting {
     @Reference(cardinality = ReferenceCardinality.MANDATORY_UNARY)
     protected SlsNetService slsnet;
 
-
-    private final Logger log = LoggerFactory.getLogger(getClass());
-
     protected ScheduledExecutorService schedulerExecutor;
-
 
     @Activate
     public void activate() {
+        appId = slsnet.getAppId();
+
         // A single thread pool for L2NetworkOperationScheduler
         schedulerExecutor = Executors.newScheduledThreadPool(1,
                                             groupedThreads("onos/apps/slsnet", "scheduler-%d", log));
@@ -95,7 +98,7 @@ public class SlsNetL2NetworkRouting {
 
         // remove all intents from VPLS application when deactivated
         Tools.stream(intentService.getIntents())
-                .filter(intent -> intent.appId().equals(slsnet.getAppId()))
+                .filter(intent -> intent.appId().equals(appId))
                 .forEach(intentService::withdraw);
     }
 
@@ -131,7 +134,7 @@ public class SlsNetL2NetworkRouting {
             Set<Intent> currentBrcIntents = currentIntents.stream()
                     .filter(intent -> intent instanceof SinglePointToMultiPointIntent)
                     .collect(Collectors.toSet());
-            Set<Intent> targetBrcIntents = SlsNetL2NetworkIntent.buildBrcIntents(l2Network, slsnet.getAppId());
+            Set<Intent> targetBrcIntents = SlsNetL2NetworkIntent.buildBrcIntents(l2Network, appId);
             if (!intentSetEquals(currentBrcIntents, targetBrcIntents)) {
                 // If broadcast Intents changes, it means some network
                 // interfaces or encapsulation constraint changed; Need to
@@ -148,8 +151,7 @@ public class SlsNetL2NetworkRouting {
                     .filter(intent -> intent instanceof MultiPointToSinglePointIntent)
                     .collect(Collectors.toSet());
             Set<Intent> targetUniIntents = SlsNetL2NetworkIntent.buildUniIntents(l2Network,
-                                                                     hostsFromL2Network(l2Network),
-                                                                     slsnet.getAppId());
+                                                                     hostsFromL2Network(l2Network), appId);
 
             // New unicast Intents to install
             targetUniIntents.forEach(intent -> {
@@ -261,9 +263,9 @@ public class SlsNetL2NetworkRouting {
          * @return Intents for the L2 Network
          */
         private Set<Intent> generateL2NetworkIntents(L2Network l2Network) {
-            Set<Intent> brcIntents = SlsNetL2NetworkIntent.buildBrcIntents(l2Network, slsnet.getAppId());
+            Set<Intent> brcIntents = SlsNetL2NetworkIntent.buildBrcIntents(l2Network, appId);
             Set<Intent> uniIntent = SlsNetL2NetworkIntent.buildUniIntents(l2Network,
-                                                             hostsFromL2Network(l2Network), slsnet.getAppId());
+                                                             hostsFromL2Network(l2Network), appId);
 
             return Stream.concat(brcIntents.stream(), uniIntent.stream())
                     .collect(Collectors.toSet());
