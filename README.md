@@ -150,7 +150,6 @@ Folling app are auto activated by SLSNET app's dependency
 - OpenFlow Provider (for OpenFlow Controller) --> Optical inforamtion model
 - Host Location Provider (for auto regi host from ARP)
 - Network Config Link Provider (for auto Regi/Deregi Links)
-- NO Proxy ARP/NDP App needed: ARP is forwarded by SlsNetL2Network
   
 
 ### ONOS Network Configuration
@@ -189,3 +188,6 @@ SLSNET SDN-IP + Incubator Routing API
 - registers MultiPointToSinglePointIntent for source={all edge ports with named interface} to target={port for next hop}
   (seems auto probe for the next hop host)
 
+Aditional Feature
+- Implement RequestMAC (ARP) when destination Host location is not known
+- Do response on ICMP ECHO Request on virtual gateway addresses
