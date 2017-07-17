@@ -176,8 +176,11 @@ public class SlsNetConfig extends Config<ApplicationId> {
      * @return virtual gateway MAC address
      */
     public MacAddress virtualGatewayMacAddress() {
-        return MacAddress.valueOf(
-                object.get(VIRTUALGATEWAYMACADDRESS).asText());
+        JsonNode macNode = object.get(VIRTUALGATEWAYMACADDRESS);
+        if (macNode == null) {
+            return null;
+        }
+        return MacAddress.valueOf(macNode.asText());
     }
 
 }

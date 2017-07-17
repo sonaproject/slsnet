@@ -112,15 +112,15 @@ public class SlsNetManager extends ListenerRegistry<SlsNetEvent, SlsNetListener>
 
     // SlsNet variables
 
-    private ApplicationId appId;
+    private ApplicationId appId = null;
 
     // l2 broadcast networks
     private Set<L2Network> l2Networks = new HashSet<>();
     private Set<Interface> l2NetworkInterfaces = new HashSet<>();
 
     // Subnet table
-    private Set<IpSubnet> ip4Subnets;
-    private Set<IpSubnet> ip6Subnets;
+    private Set<IpSubnet> ip4Subnets = new HashSet<>();
+    private Set<IpSubnet> ip6Subnets = new HashSet<>();
     private InvertedRadixTree<IpSubnet>
             localPrefixTable4 = new ConcurrentInvertedRadixTree<>(
                     new DefaultByteArrayNodeFactory());
@@ -166,7 +166,9 @@ public class SlsNetManager extends ListenerRegistry<SlsNetEvent, SlsNetListener>
     public void activate() {
         log.info("slsnet starting");
 
-        appId = coreService.registerApplication(APP_ID);
+        if (appId == null) {
+            appId = coreService.registerApplication(APP_ID);
+        }
 
         refreshNetworkConfig(null);
 
@@ -295,6 +297,9 @@ public class SlsNetManager extends ListenerRegistry<SlsNetEvent, SlsNetListener>
 
     @Override
     public ApplicationId getAppId() {
+        if (appId == null) {
+            appId = coreService.registerApplication(APP_ID);
+        }
         return appId;
     }
 

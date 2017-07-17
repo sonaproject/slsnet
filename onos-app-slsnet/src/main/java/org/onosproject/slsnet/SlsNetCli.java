@@ -91,6 +91,9 @@ public class SlsNetCli extends AbstractShellCommand {
 
         print("virtualGatewayMacAddress:\n");
         print("    %s\n", slsnet.getVirtualGatewayMacAddress());
+
+        print("virtualGatewayIpAddressed:\n");
+        print("    %s\n", slsnet.getVirtualGatewayIpAddresses());
     }
 
 }

@@ -41,7 +41,7 @@ import java.util.stream.Collectors;
  * Handles neighbour messages for on behalf of the L2 Network application. Handlers
  * will be changed automatically by interface or network configuration events.
  */
-@Component(immediate = true)
+@Component(immediate = true, enabled = false)
 public class SlsNetNeighbour {
 
     private final Logger log = LoggerFactory.getLogger(getClass());
@@ -61,17 +61,22 @@ public class SlsNetNeighbour {
     @Reference(cardinality = ReferenceCardinality.MANDATORY_UNARY)
     protected SlsNetService slsnet;
 
-    protected L2NetworkNeighbourMessageHandler neighbourHandler =
+    private final InternalSlsNetListener slsnetListener =
+            new InternalSlsNetListener();
+
+    private L2NetworkNeighbourMessageHandler neighbourHandler =
             new L2NetworkNeighbourMessageHandler();
 
     @Activate
     public void activate() {
+        slsnet.addListener(slsnetListener);
         refresh();
         log.info("slsnet neighbour started");
     }
 
     @Deactivate
     public void deactivate() {
+        slsnet.removeListener(slsnetListener);
         unregister();
         log.info("slsnet neighbour stoped");
     }
@@ -81,15 +86,16 @@ public class SlsNetNeighbour {
      */
     protected void refresh() {
         neighbourService.unregisterNeighbourHandlers(slsnet.getAppId());
+        log.info("slsnet neighbour register handler");
         interfaceService
                 .getInterfaces()
                 .forEach(intf -> {
                     if (slsnet.isL2NetworkInterface(intf)) {
-                        log.info("slsnet neighbour register handler: {}", intf);
+                        log.debug("slsnet neighbour register handler: {}", intf);
                         neighbourService.registerNeighbourHandler(intf,
                                          neighbourHandler, slsnet.getAppId());
                     } else {
-                        log.warn("slsnet neighobur unknown interface: {}", intf);
+                        log.debug("slsnet neighobur unknown interface: {}", intf);
                     }
                 });
     }
@@ -179,11 +185,7 @@ public class SlsNetNeighbour {
         }
     }
 
-    /**
-     * Handler for neighbour messages.
-     */
     private class L2NetworkNeighbourMessageHandler implements NeighbourMessageHandler {
-
         @Override
         public void handleMessage(NeighbourMessageContext context,
                                   HostService hostService) {
@@ -197,6 +199,19 @@ public class SlsNetNeighbour {
                 default:
                     log.warn("slsnet neightor unknown context type: {}", context.type());
                     break;
+            }
+        }
+    }
+
+    private class InternalSlsNetListener implements SlsNetListener {
+        @Override
+        public void event(SlsNetEvent event) {
+            switch (event.type()) {
+            case SLSNET_UPDATED:
+                refresh();
+                break;
+            default:
+                break;
             }
         }
     }

@@ -20,6 +20,7 @@ import org.onlab.packet.IpPrefix;
 import org.onlab.packet.MacAddress;
 import org.onlab.packet.VlanId;
 import org.onosproject.core.ApplicationId;
+import org.onosproject.event.ListenerService;
 import org.onosproject.incubator.net.intf.Interface;
 import org.onosproject.net.ConnectPoint;
 import org.onosproject.net.Host;
@@ -30,7 +31,9 @@ import java.util.Collection;
 /**
  * Provides information about the routing configuration.
  */
-public interface SlsNetService {
+public interface SlsNetService
+        extends ListenerService<SlsNetEvent, SlsNetListener> {
+
     static final String APP_ID = "org.onosproject.slsnet";
 
     // priority for l2Network: L2NETWORK_UNICAST or L2NETWORK_BROADCAST
@@ -83,12 +86,18 @@ public interface SlsNetService {
     Set<String> getBorderInterfaces();
 
     /**
-     * Get Virtual Gateway Mac Address for Local Subnet Virtual Router
-     * and also for myself to communicate with bgp Peers.
+     * Get Virtual Gateway Mac Address for Local Subnet Virtual Gateway.
      *
      * @return mac address of virtual gateway
      */
     MacAddress getVirtualGatewayMacAddress();
+
+    /**
+     * Get Virtual Gateway Ip Addresses for Local Subnet Virtual Gateway.
+     *
+     * @return ip addresses of virtual gateway from ipSubnets
+     */
+    Set<IpAddress> getVirtualGatewayIpAddresses();
 
     /**
      * Evaluates whether an Interface belongs to l2Networks.

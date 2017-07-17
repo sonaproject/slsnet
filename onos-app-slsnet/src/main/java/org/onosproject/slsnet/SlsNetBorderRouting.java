@@ -390,7 +390,7 @@ public class SlsNetBorderRouting {
             // Get the encapsulation type just set from the configuration
             EncapsulationType encap = encap();
 
-            log.info("slsnet route refresh");
+            log.info("slsnet border routing refresh");
 
             for (Map.Entry<IpPrefix, MultiPointToSinglePointIntent> entry : routeIntents.entrySet()) {
                  // Get each intent currently registered by SDN-IP

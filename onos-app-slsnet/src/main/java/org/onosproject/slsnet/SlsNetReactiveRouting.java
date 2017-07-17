@@ -23,6 +23,7 @@ import org.apache.felix.scr.annotations.ReferenceCardinality;
 import org.onlab.packet.ARP;
 import org.onlab.packet.EthType;
 import org.onlab.packet.Ethernet;
+import org.onlab.packet.ICMP;
 import org.onlab.packet.IPv4;
 import org.onlab.packet.Ip4Address;
 import org.onlab.packet.IPv6;
@@ -67,20 +68,10 @@ import static org.onosproject.net.packet.PacketPriority.REACTIVE;
  * Specifies the type of an IP address or an IP prefix location.
  */
 enum LocationType {
-    /**
-     * The location of an IP address or an IP prefix is in local SDN network.
-     */
-    LOCAL,
-    /**
-     * The location of an IP address or an IP prefix is outside local SDN network.
-     */
-    INTERNET,
-    /**
-     * There is no route for this IP address or IP prefix.
-     */
-    NO_ROUTE
+    LOCAL,    // The location of an IP address or an IP prefix is in local SDN network.
+    INTERNET, // The location of an IP address or an IP prefix is outside local SDN network.
+    NO_ROUTE  // There is no route for this IP address or IP prefix.
 }
-
 
 /**
  * Specifies the type of traffic.
@@ -89,36 +80,12 @@ enum LocationType {
  * </p>
  */
 enum TrafficType {
-    /**
-     * Traffic from a host located in local SDN network wants to
-     * communicate with destination host located in Internet (outside
-     * local SDN network).
-     */
     HOST_TO_INTERNET,
-    /**
-     * Traffic from Internet wants to communicate with a host located
-     * in local SDN network.
-     */
     INTERNET_TO_HOST,
-    /**
-     * Both the source host and destination host of a traffic are in
-     * local SDN network.
-     */
     HOST_TO_HOST,
-    /**
-     * Traffic from Internet wants to traverse local SDN network.
-     */
     INTERNET_TO_INTERNET,
-    /**
-     * Any traffic wants to communicate with a destination which has
-     * no route, or traffic from Internet wants to access a local private
-     * IP address.
-     */
-    DROP,
-    /**
-     * Traffic does not belong to the types above.
-     */
-    UNKNOWN
+    DROP,    // Any traffic wants to communicate with a destination which has no route
+    UNKNOWN  // Traffic does not belong to the types above.
 }
 
 /**
@@ -128,7 +95,7 @@ enum TrafficType {
  * (2) one host in SDN network wants to talk to another host in Internet.
  * (3) one host from Internet wants to talk to another host in SDN network.
  */
-@Component(immediate = true)
+@Component(immediate = true, enabled = false)
 public class SlsNetReactiveRouting {
 
     private final Logger log = LoggerFactory.getLogger(getClass());
@@ -154,102 +121,84 @@ public class SlsNetReactiveRouting {
     @Reference(cardinality = ReferenceCardinality.MANDATORY_UNARY)
     protected HostService hostService;
 
+    private final InternalSlsNetListener slsnetListener =
+            new InternalSlsNetListener();
+
     private SlsNetReactiveRoutingIntent intentRequestListener;
 
     private ReactiveRoutingProcessor processor =
             new ReactiveRoutingProcessor();
 
+    // last EthDst MAC selector for intercept selector
+    private MacAddress selectorDstMacAddress = null;
+
+
     @Activate
     public void activate() {
+        log.info("slsnet reactive routing starting");
+
+        slsnet.addListener(slsnetListener);
+
         intentRequestListener = new SlsNetReactiveRoutingIntent(slsnet.getAppId(), hostService,
                 interfaceService, intentSynchronizer);
+
         packetService.addProcessor(processor, PacketProcessor.director(2));
-        requestIntercepts();
+        refreshIntercepts();
+
         log.info("slsnet reactive routing started");
     }
 
     @Deactivate
     public void deactivate() {
+        log.info("slsnet reactive routing stopping");
+
+        slsnet.removeListener(slsnetListener);
         withdrawIntercepts();
+
         packetService.removeProcessor(processor);
         processor = null;
+
         log.info("slsnet reactive routing stopped");
     }
 
     /**
      * Request packet in via the PacketService.
      */
-    private void requestIntercepts() {
-        //TODO: to support IPv6 later
-
-/*
-        // local ipSubnet intercepts
-        Set<FlowRule> flowRules = new HashSet<>();
-        for (IpSubnet subnet : slsnet.getIp4Subnets()) {
-
-            int p = slsnet.PRI_PREFIX_BASE + slsnet.PRI_PREFIX_REACT
-                    + subnet.ipPrefix().prefixLength() * slsnet.PRI_PREFIX_STEP;
-
-            TrafficSelector.Builder selector =
-                DefaultTrafficSelector.builder();
-                    .matchEthType(TYPE_IPV4);
-                    //.matchEthDst(slsnet.getVirtualGatewayMacAddress());
-                    .matchIPDst(subnet.ipPrefix());
-
-            TrafficTreatment.Builder treatment =
-                DefaultTrafficTreatment.builder()
-                   .punt();
-
-            FlowRule.Builder flowRule =
-                DefaultFlowRule.builder();
-                   .fromApp(slsnet.getAppId()
-                   .withSelector(selector)
-                   .withTreatment(treatment)
-                   .makePermanent();
-
-             flowRules.add(flowRule.build());
-        }
-        FlowRuleIntent(slsnet.getAppId(),
-                       Key.of(subnet.ipPrefix().toString(), "-react_route"),
-                       flowRules,
-                       deviceService.getAvaliableDevices())slsnet.getAppId())
-        for (Device device : deviceService.getAvailiableDevices()) {
-        }
-
-        log.info("slsnet reactive routing intercepts packet started");
-*/
-
+    private void refreshIntercepts() {
+        // TODO: local ipSubnet intercepts
+        // TODO: to support IPv6 later
         // default intercepts
-        TrafficSelector.Builder selector = DefaultTrafficSelector.builder();
-        selector.matchEthType(TYPE_IPV4);
-        selector.matchEthDst(slsnet.getVirtualGatewayMacAddress());
-        packetService.requestPackets(selector.build(), REACTIVE, slsnet.getAppId());
-        log.info("slsnet reactive routing IPV4 intercepts packet started");
+        MacAddress newSelectorDstMacAddress = slsnet.getVirtualGatewayMacAddress();
+        if (selectorDstMacAddress == null || !selectorDstMacAddress.equals(newSelectorDstMacAddress)) {
+            if (selectorDstMacAddress != null) {
+                withdrawIntercepts();
+            }
+            if (newSelectorDstMacAddress != null) {
+                TrafficSelector.Builder selector = DefaultTrafficSelector.builder();
+                selector.matchEthType(TYPE_IPV4);
+                selector.matchEthDst(newSelectorDstMacAddress);
+                packetService.requestPackets(selector.build(), REACTIVE, slsnet.getAppId());
+                log.info("slsnet reactive routing IPV4 intercepts packet started: EthDst={}",
+                         newSelectorDstMacAddress);
+            }
+            selectorDstMacAddress = newSelectorDstMacAddress;
+        }
     }
 
     /**
      * Cancel request for packet in via PacketService.
      */
     private void withdrawIntercepts() {
-        // local ipSubnet intercepts
-        /*
-        for (IpSubnet subnet : slsnet.getIp4Subnets()) {
-            int priority = slsnet.PRI_PREFIX_BASE + slsnet.PRI_PREFIX_REACT
-                           + subnet.ipPrefix().prefixLength() * slsnet.PRI_PREFIX_STEP;
+        // TODO: local ipSubnet intercepts
+        // default intercepts
+        if (selectorDstMacAddress != null) {
             TrafficSelector.Builder selector = DefaultTrafficSelector.builder();
             selector.matchEthType(TYPE_IPV4);
-            //selector.matchEthDst(slsnet.getVirtualGatewayMacAddress());
-            selector.matchIPDst(subnet.ipPrefix());
-            packetService.cancelPackets(selector.build(), PacketPriority(priority), slsnet.getAppId());
+            selector.matchEthDst(selectorDstMacAddress);
+            packetService.cancelPackets(selector.build(), REACTIVE, slsnet.getAppId());
+            log.info("slsnet reactive routing IPV4 intercepts packet stopped: EthDst={}", selectorDstMacAddress);
+            selectorDstMacAddress = null;
         }
-        */
-
-        // default intercepts
-        TrafficSelector.Builder selector = DefaultTrafficSelector.builder();
-        selector.matchEthType(TYPE_IPV4);
-        selector.matchEthDst(slsnet.getVirtualGatewayMacAddress());
-        packetService.cancelPackets(selector.build(), REACTIVE, slsnet.getAppId());
-        log.info("slsnet reactive routing IPV4 intercepts packet stopped");
     }
 
     private class ReactiveRoutingProcessor implements PacketProcessor {
@@ -261,28 +210,42 @@ public class SlsNetReactiveRouting {
             if (ethPkt == null) {
                 return;
             }
-            ConnectPoint srcConnectPoint = pkt.receivedFrom();
+            ConnectPoint srcCp = pkt.receivedFrom();
 
             switch (EthType.EtherType.lookup(ethPkt.getEtherType())) {
             case IPV4:
                 // Parse packet
                 IPv4 ipv4Packet = (IPv4) ethPkt.getPayload();
-                IpAddress dstIp =
-                        IpAddress.valueOf(ipv4Packet.getDestinationAddress());
-                IpAddress srcIp =
-                        IpAddress.valueOf(ipv4Packet.getSourceAddress());
+                IpAddress dstIp = IpAddress.valueOf(ipv4Packet.getDestinationAddress());
+                IpAddress srcIp = IpAddress.valueOf(ipv4Packet.getSourceAddress());
                 MacAddress srcMac = ethPkt.getSourceMAC();
 
-                log.info("slsnet reactive routing IPV4 packet detected: srcIp={} dstIp={}", srcIp, dstIp);
-                packetReactiveProcessor(dstIp, srcIp, srcConnectPoint, srcMac);
-
-                // TODO emit packet first or packetReactiveProcessor first
-                ConnectPoint egressConnectPoint = getEgressConnectPoint(dstIp);
-                if (egressConnectPoint != null) {
-                    forwardPacketToDst(context, egressConnectPoint);
-                } else {
-                    log.warn("slsnet reactive routing dstIp connect point not found: {}", dstIp);
+                // check and do icmp echo response on virtual gateway ip
+                if (ethPkt.getDestinationMAC().equals(slsnet.getVirtualGatewayMacAddress())
+                    && slsnet.isVirtualGatewayIpAddress(dstIp)) {
+                    if (ipv4Packet.getProtocol() == IPv4.PROTOCOL_ICMP) {
+                       ICMP icmpPacket = (ICMP) ipv4Packet.getPayload();
+                       if (icmpPacket.getIcmpType() == ICMP.TYPE_ECHO_REQUEST) {
+                           log.info("slsnet reactive routing IPV4 ICMP ECHO request to virtual gateway: "
+                                    + "srcIp={} dstIp={} proto={}", srcIp, dstIp, ipv4Packet.getProtocol());
+                           TrafficTreatment treatment = DefaultTrafficTreatment.builder()
+                                   .setOutput(pkt.receivedFrom().port()).build();
+                           OutboundPacket packet =
+                           new DefaultOutboundPacket(pkt.receivedFrom().deviceId(), treatment,
+                                   ByteBuffer.wrap(icmpPacket.buildIcmpReply(ethPkt).serialize()));
+                           packetService.emit(packet);
+                       }
+                    } else {
+                       log.warn("slsnet reactive routing IPV4 packet to virtual gateway dropped: "
+                                + "srcIp={} dstIp={} proto={}", srcIp, dstIp, ipv4Packet.getProtocol());
+                    }
+                    break;
                 }
+
+                log.info("slsnet reactive routing IPV4 packet detected: srcIp={} dstIp={}", srcIp, dstIp);
+                packetReactiveProcessor(dstIp, srcIp, srcCp, srcMac);
+
+                forwardPacketToDstIp(context, dstIp);
                 break;
             default:
                 break;
@@ -293,45 +256,41 @@ public class SlsNetReactiveRouting {
     /**
      * Routes packet reactively.
      *
-     * @param dstIpAddress the destination IP address of a packet
-     * @param srcIpAddress the source IP address of a packet
-     * @param srcConnectPoint the connect point where a packet comes from
+     * @param dstIp the destination IP address of a packet
+     * @param srcIp the source IP address of a packet
+     * @param srcCp the connect point where a packet comes from
      * @param srcMacAddress the source MAC address of a packet
      */
-    private void packetReactiveProcessor(IpAddress dstIpAddress,
-                                        IpAddress srcIpAddress,
-                                        ConnectPoint srcConnectPoint,
+    private void packetReactiveProcessor(IpAddress dstIp, IpAddress srcIp,
+                                        ConnectPoint srcCp,
                                         MacAddress srcMacAddress) {
-        checkNotNull(dstIpAddress);
-        checkNotNull(srcIpAddress);
-        checkNotNull(srcConnectPoint);
+        checkNotNull(dstIp);
+        checkNotNull(srcIp);
+        checkNotNull(srcCp);
         checkNotNull(srcMacAddress);
 
-        //
         // Step1: Try to update the existing intent first if it exists.
-        //
         IpPrefix ipPrefix = null;
         Route route = null;
-        if (slsnet.isIpAddressLocal(dstIpAddress)) {
-            if (dstIpAddress.isIp4()) {
-                ipPrefix = IpPrefix.valueOf(dstIpAddress,
-                        Ip4Address.BIT_LENGTH);
+        if (slsnet.isIpAddressLocal(dstIp)) {
+            if (dstIp.isIp4()) {
+                ipPrefix = IpPrefix.valueOf(dstIp, Ip4Address.BIT_LENGTH);
             } else {
-                ipPrefix = IpPrefix.valueOf(dstIpAddress,
-                        Ip6Address.BIT_LENGTH);
+                ipPrefix = IpPrefix.valueOf(dstIp, Ip6Address.BIT_LENGTH);
             }
         } else {
             // This Should not happen for SlsNetRoute should already register intents for this case.
             // Get IP prefix from route table
-            route = routeService.longestPrefixMatch(dstIpAddress);
+            log.warn("slsnet reactive routing incorrect case for route to non-local: srcCp={} srcIp={} dstIp={}",
+                     srcCp, srcIp, dstIp);
+            route = routeService.longestPrefixMatch(dstIp);
             if (route != null) {
                 ipPrefix = route.prefix();
             }
         }
-        if (ipPrefix != null
-                && intentRequestListener.mp2pIntentExists(ipPrefix)) {
-            intentRequestListener.updateExistingMp2pIntent(ipPrefix,
-                    srcConnectPoint);
+        if (ipPrefix != null && intentRequestListener.mp2pIntentExists(ipPrefix)) {
+            log.info("slsnet reactive routing update mp2p intent: dstIp={} srcCp={}", ipPrefix, srcCp);
+            intentRequestListener.updateExistingMp2pIntent(ipPrefix, srcCp);
             return;
         }
 
@@ -340,22 +299,21 @@ public class SlsNetReactiveRouting {
         // Check whether it is necessary to create a new one. If necessary then
         // create a new one.
         //
-        TrafficType trafficType =
-                trafficTypeClassifier(srcConnectPoint, dstIpAddress);
+        TrafficType trafficType = trafficTypeClassifier(srcCp, dstIp);
 
         switch (trafficType) {
         case HOST_TO_INTERNET:
             // If the destination IP address is outside the local SDN network.
             // The Step 1 has already handled it. We do not need to do anything here.
-            intentRequestListener.setUpConnectivityHostToInternet(srcIpAddress,
+            intentRequestListener.setUpConnectivityHostToInternet(srcIp,
                     ipPrefix, route.nextHop());
             break;
         case INTERNET_TO_HOST:
-            intentRequestListener.setUpConnectivityInternetToHost(dstIpAddress);
+            intentRequestListener.setUpConnectivityInternetToHost(dstIp);
             break;
         case HOST_TO_HOST:
-            intentRequestListener.setUpConnectivityHostToHost(dstIpAddress,
-                    srcIpAddress, srcMacAddress, srcConnectPoint);
+            intentRequestListener.setUpConnectivityHostToHost(dstIp,
+                    srcIp, srcMacAddress, srcCp);
             break;
         case INTERNET_TO_INTERNET:
             log.trace("This is transit traffic, "
@@ -376,15 +334,15 @@ public class SlsNetReactiveRouting {
     /**
      * Classifies the traffic and return the traffic type.
      *
-     * @param srcConnectPoint the connect point where the packet comes from
+     * @param srcCp the connect point where the packet comes from
      * @param dstIp the destination IP address in packet
      * @return the traffic type which this packet belongs to
      */
-    private TrafficType trafficTypeClassifier(ConnectPoint srcConnectPoint,
-                                              IpAddress dstIp) {
+    private TrafficType trafficTypeClassifier(ConnectPoint srcCp, IpAddress dstIp) {
         LocationType dstIpLocationType = getLocationType(dstIp);
+
         Optional<Interface> srcInterface =
-                interfaceService.getInterfacesByPort(srcConnectPoint).stream().findFirst();
+                interfaceService.getInterfacesByPort(srcCp).stream().findFirst();
 
         Set<String> borderInterfaces = slsnet.getBorderInterfaces();
 
@@ -417,47 +375,16 @@ public class SlsNetReactiveRouting {
     /**
      * Evaluates the location of an IP address and returns the location type.
      *
-     * @param ipAddress the IP address to evaluate
+     * @param ip the IP address to evaluate
      * @return the IP address location type
      */
-    private LocationType getLocationType(IpAddress ipAddress) {
-        if (slsnet.isIpAddressLocal(ipAddress)) {
+    private LocationType getLocationType(IpAddress ip) {
+        if (slsnet.isIpAddressLocal(ip)) {
             return LocationType.LOCAL;
-        } else if (routeService.longestPrefixMatch(ipAddress) != null) {
+        } else if (routeService.longestPrefixMatch(ip) != null) {
             return LocationType.INTERNET;
         } else {
             return LocationType.NO_ROUTE;
-        }
-    }
-
-    public ConnectPoint getEgressConnectPoint(IpAddress dstIpAddress) {
-        LocationType type = getLocationType(dstIpAddress);
-        if (type == LocationType.LOCAL) {
-            Set<Host> hosts = hostService.getHostsByIp(dstIpAddress);
-            if (!hosts.isEmpty()) {
-                return hosts.iterator().next().location();
-            } else {
-                hostService.startMonitoringIp(dstIpAddress);
-                // hostService.requestMac(dstIpAddress); NOT IMPLEMENTED in HostManager.java
-                requestMac(dstIpAddress);
-                return null;
-            }
-        } else if (type == LocationType.INTERNET) {
-            IpAddress nextHopIpAddress = null;
-            Route route = routeService.longestPrefixMatch(dstIpAddress);
-            if (route != null) {
-                nextHopIpAddress = route.nextHop();
-                Interface it = interfaceService.getMatchingInterface(nextHopIpAddress);
-                if (it != null) {
-                    return it.connectPoint();
-                } else {
-                    return null;
-                }
-            } else {
-                return null;
-            }
-        } else {
-            return null;
         }
     }
 
@@ -465,49 +392,67 @@ public class SlsNetReactiveRouting {
      * Emits the specified packet onto the network.
      *
      * @param context      the packet context
-     * @param connectPoint the connect point where the packet should be
-     *                     sent out
+     * @param dstIp the destination IP address to evaluate
      */
-    private void forwardPacketToDst(PacketContext context,
-                                    ConnectPoint connectPoint) {
+    private void forwardPacketToDstIp(PacketContext context, IpAddress dstIp) {
+        if (!slsnet.isIpAddressLocal(dstIp)) {
+            Route route = routeService.longestPrefixMatch(dstIp);
+            if (route == null) {
+                log.warn("slsnet reactive routing forward packet route to dstIp unknown: dstIp={}", dstIp);
+                return;
+            }
+            dstIp = route.nextHop();
+        }
+        Set<Host> hosts = hostService.getHostsByIp(dstIp);
+        Host dstHost;
+        if (!hosts.isEmpty()) {
+            dstHost = hosts.iterator().next();
+        } else {
+            // NOTE: hostService.requestMac(dstIp); NOT IMPLEMENTED in ONOS HostManager.java
+            log.warn("slsnet reactive routing forward packet dstIp host_mac unknown: dstIp={}", dstIp);
+            hostService.startMonitoringIp(dstIp);
+            requestMac(dstIp);
+            return;
+        }
+        log.info("slsnet reactive routing forward packet: dstHost={} packet={}", dstHost, context);
         TrafficTreatment treatment = DefaultTrafficTreatment.builder()
-                .setOutput(connectPoint.port()).build();
+                .setEthDst(dstHost.mac())
+                .setOutput(dstHost.location().port()).build();
         OutboundPacket packet =
-                new DefaultOutboundPacket(connectPoint.deviceId(), treatment,
+                new DefaultOutboundPacket(dstHost.location().deviceId(), treatment,
                                           context.inPacket().unparsed());
         packetService.emit(packet);
-        log.info("slsnet reactive routing forward packet: {}", packet);
     }
 
     /**
      * Send Neighbour Query to Find Host Location.
      *
-     * @param ipAddress    the ip address to resolve
+     * @param ip    the ip address to resolve
      */
-    private void requestMac(IpAddress ipAddress) {
-        IpSubnet ipSubnet = slsnet.findIpSubnet(ipAddress);
+    private void requestMac(IpAddress ip) {
+        IpSubnet ipSubnet = slsnet.findIpSubnet(ip);
         if (ipSubnet == null) {
-            log.warn("slsnet reactive routing request mac failed for unknown IpSubnet: {}", ipAddress);
+            log.warn("slsnet reactive routing request mac failed for unknown IpSubnet: {}", ip);
             return;
         }
         L2Network l2Network = slsnet.findL2Network(ipSubnet.l2NetworkName());
         if (l2Network == null) {
             log.warn("slsnet reactive routing request mac failed for unknown l2Network name {}: {}",
-                     ipSubnet.l2NetworkName(), ipAddress);
+                     ipSubnet.l2NetworkName(), ip);
             return;
         }
-        log.info("slsnet reactive routing send request mac to L2Network {}: {}", l2Network.name(), ipAddress);
+        log.info("slsnet reactive routing send neighbor mac requests to L2Network {}: {}", l2Network.name(), ip);
         for (Interface iface : l2Network.interfaces()) {
             Ethernet neighbourReq;
-            if (ipAddress.isIp4()) {
+            if (ip.isIp4()) {
                 neighbourReq = ARP.buildArpRequest(slsnet.getVirtualGatewayMacAddress().toBytes(),
                                                    ipSubnet.gatewayIp().toOctets(),
-                                                   ipAddress.toOctets(),
+                                                   ip.toOctets(),
                                                    iface.vlan().toShort());
             } else {
-                byte[] soliciteIp = IPv6.getSolicitNodeAddress(ipAddress.toOctets());
+                byte[] soliciteIp = IPv6.getSolicitNodeAddress(ip.toOctets());
                 neighbourReq = NeighborSolicitation.buildNdpSolicit(
-                                                   ipAddress.toOctets(),
+                                                   ip.toOctets(),
                                                    ipSubnet.gatewayIp().toOctets(),
                                                    soliciteIp,
                                                    slsnet.getVirtualGatewayMacAddress().toBytes(),
@@ -519,6 +464,19 @@ public class SlsNetReactiveRouting {
             OutboundPacket packet = new DefaultOutboundPacket(iface.connectPoint().deviceId(),
                                                treatment, ByteBuffer.wrap(neighbourReq.serialize()));
             packetService.emit(packet);
+        }
+    }
+
+    private class InternalSlsNetListener implements SlsNetListener {
+        @Override
+        public void event(SlsNetEvent event) {
+            switch (event.type()) {
+            case SLSNET_UPDATED:
+                refreshIntercepts();
+                break;
+            default:
+                break;
+            }
         }
     }
 

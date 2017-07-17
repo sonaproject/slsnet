@@ -352,8 +352,7 @@ public class SlsNetReactiveRoutingIntent {
         checkNotNull(ipPrefix);
         checkNotNull(ingressConnectPoint);
 
-        MultiPointToSinglePointIntent existingIntent =
-                getExistingMp2pIntent(ipPrefix);
+        MultiPointToSinglePointIntent existingIntent = getExistingMp2pIntent(ipPrefix);
         if (existingIntent != null) {
             Set<ConnectPoint> ingressPoints = existingIntent.ingressPoints();
             // Add host connect point into ingressPoints of the existing intent
@@ -409,6 +408,8 @@ public class SlsNetReactiveRoutingIntent {
     //@Override
     public boolean mp2pIntentExists(IpPrefix ipPrefix) {
         checkNotNull(ipPrefix);
+        log.info("slsnet reactive routing intents mp2pIntentExists: ipPrefix={} reouteIntents={}",
+                 ipPrefix, routeIntents);
         return routeIntents.get(ipPrefix) != null;
     }
 }
