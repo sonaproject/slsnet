@@ -30,16 +30,23 @@ import org.onlab.packet.IpAddress;
 import org.onlab.packet.IpPrefix;
 import org.onlab.packet.MacAddress;
 import org.onosproject.core.ApplicationId;
+import org.onosproject.core.CoreService;
 import org.onosproject.incubator.net.intf.Interface;
 import org.onosproject.incubator.net.intf.InterfaceService;
 import org.onosproject.incubator.net.routing.Route;
 import org.onosproject.incubator.net.routing.RouteService;
 import org.onosproject.net.ConnectPoint;
+import org.onosproject.net.Device;
+import org.onosproject.net.device.DeviceEvent;
+import org.onosproject.net.device.DeviceListener;
 import org.onosproject.net.device.DeviceService;
+import org.onosproject.net.flow.DefaultFlowRule;
 import org.onosproject.net.flow.DefaultTrafficSelector;
 import org.onosproject.net.flow.DefaultTrafficTreatment;
 import org.onosproject.net.flow.TrafficSelector;
 import org.onosproject.net.flow.TrafficTreatment;
+import org.onosproject.net.flow.FlowRule;
+import org.onosproject.net.flow.FlowRuleService;
 import org.onosproject.net.Host;
 import org.onosproject.net.host.HostService;
 import org.onosproject.net.intent.IntentService;
@@ -95,8 +102,13 @@ enum TrafficType {
 @Component(immediate = true, enabled = false)
 public class SlsNetReactiveRouting {
 
+    static final String REACT_APP_ID = "org.onosproject.slsnet.react";
+
     private final Logger log = LoggerFactory.getLogger(getClass());
-    protected ApplicationId appId;
+    protected ApplicationId reactAppId;
+
+    @Reference(cardinality = ReferenceCardinality.MANDATORY_UNARY)
+    protected CoreService coreService;
 
     @Reference(cardinality = ReferenceCardinality.MANDATORY_UNARY)
     protected PacketService packetService;
@@ -117,30 +129,28 @@ public class SlsNetReactiveRouting {
     protected IntentService intentService;
 
     @Reference(cardinality = ReferenceCardinality.MANDATORY_UNARY)
+    protected FlowRuleService flowRuleService;
+
+    @Reference(cardinality = ReferenceCardinality.MANDATORY_UNARY)
     protected SlsNetService slsnet;
 
-    private final InternalSlsNetListener slsnetListener =
-            new InternalSlsNetListener();
-
-    private SlsNetReactiveRoutingIntent intentRequestListener;
-
-    private ReactiveRoutingProcessor processor =
-            new ReactiveRoutingProcessor();
-
-    // last EthDst MAC selector for intercept selector
-    private MacAddress selectorDstMacAddress = null;
+    private final InternalDeviceListener deviceListener = new InternalDeviceListener();
+    private final InternalSlsNetListener slsnetListener = new InternalSlsNetListener();
+    private ReactiveRoutingProcessor processor = new ReactiveRoutingProcessor();
+    private SlsNetReactiveRoutingIntent intentRequest;
 
     @Activate
     public void activate() {
-        log.info("slsnet reactive routing starting");
+        reactAppId = coreService.registerApplication(REACT_APP_ID);
+        log.info("slsnet reactive routing starting with react app id {}", reactAppId);
 
-        appId = slsnet.getAppId();
+        intentRequest = new SlsNetReactiveRoutingIntent(slsnet, hostService,
+                                                        interfaceService, intentService);
         slsnet.addListener(slsnetListener);
-
-        intentRequestListener = new SlsNetReactiveRoutingIntent(slsnet, hostService,
-                                                  interfaceService, intentService);
-
         packetService.addProcessor(processor, PacketProcessor.director(2));
+        registerIntercepts();
+
+        deviceService.addListener(deviceListener);
         refreshIntercepts();
 
         log.info("slsnet reactive routing started");
@@ -150,11 +160,13 @@ public class SlsNetReactiveRouting {
     public void deactivate() {
         log.info("slsnet reactive routing stopping");
 
-        slsnet.removeListener(slsnetListener);
         withdrawIntercepts();
+        flowRuleService.removeFlowRulesById(reactAppId);
 
         packetService.removeProcessor(processor);
+        slsnet.removeListener(slsnetListener);
         processor = null;
+
 
         log.info("slsnet reactive routing stopped");
     }
@@ -162,43 +174,66 @@ public class SlsNetReactiveRouting {
     /**
      * Request packet in via the PacketService.
      */
-    private void refreshIntercepts() {
-        // TODO: local ipSubnet intercepts
-        // TODO: to support IPv6 later
-        // default intercepts
-        MacAddress newSelectorDstMacAddress = slsnet.getVirtualGatewayMacAddress();
-        if (selectorDstMacAddress == null || !selectorDstMacAddress.equals(newSelectorDstMacAddress)) {
-            if (selectorDstMacAddress != null) {
-                withdrawIntercepts();
-            }
-            if (newSelectorDstMacAddress != null) {
-                TrafficSelector.Builder selector = DefaultTrafficSelector.builder();
-                selector.matchEthType(TYPE_IPV4);
-                selector.matchEthDst(newSelectorDstMacAddress);
-                packetService.requestPackets(selector.build(), REACTIVE, appId);
-                log.info("slsnet reactive routing IPV4 intercepts packet started: EthDst={}",
-                         newSelectorDstMacAddress);
-            }
-            selectorDstMacAddress = newSelectorDstMacAddress;
-        }
+    private void registerIntercepts() {
+        // register default intercepts on packetService
+        TrafficSelector.Builder selector = DefaultTrafficSelector.builder();
+        selector.matchEthType(TYPE_IPV4);
+        packetService.requestPackets(selector.build(), REACTIVE, slsnet.getAppId());
+        log.info("slsnet reactive routing IPV4 intercepts packet started");
     }
 
     /**
      * Cancel request for packet in via PacketService.
      */
     private void withdrawIntercepts() {
-        // TODO: local ipSubnet intercepts
-        // default intercepts
-        if (selectorDstMacAddress != null) {
-            TrafficSelector.Builder selector = DefaultTrafficSelector.builder();
-            selector.matchEthType(TYPE_IPV4);
-            selector.matchEthDst(selectorDstMacAddress);
-            packetService.cancelPackets(selector.build(), REACTIVE, appId);
-            log.info("slsnet reactive routing IPV4 intercepts packet stopped: EthDst={}", selectorDstMacAddress);
-            selectorDstMacAddress = null;
+        // unregister default intercepts on packetService
+        TrafficSelector.Builder selector = DefaultTrafficSelector.builder();
+        selector.matchEthType(TYPE_IPV4);
+        packetService.cancelPackets(selector.build(), REACTIVE, slsnet.getAppId());
+        log.info("slsnet reactive routing IPV4 intercepts packet stopped");
+    }
+
+    /**
+     * Refresh device flow rules for reative intercepts on local ipSubnets.
+     */
+    private void refreshIntercepts() {
+        if (slsnet.getVirtualGatewayMacAddress() == null) {
+            log.warn("slsnet reactive routing refresh intercepts skipped "
+                     + "for virtual gateway mac address unknown");
+        }
+        // clean all previous flow rules
+        flowRuleService.removeFlowRulesById(reactAppId);
+        for (Device device : deviceService.getAvailableDevices()) {
+            // install new flow rules
+            for (IpSubnet ipSubnet : slsnet.getIp4Subnets()) {
+                int priority = slsnet.PRI_REACTIVE_ROUTE_BASE +
+                               ipSubnet.ipPrefix().prefixLength() * slsnet.PRI_REACTIVE_ROUTE_STEP +
+                               slsnet.PRI_PREFIX_REACT;
+                TrafficSelector selector = DefaultTrafficSelector.builder()
+                        .matchEthType(TYPE_IPV4)
+                        .matchEthDst(slsnet.getVirtualGatewayMacAddress())
+                        .matchIPDst(ipSubnet.ipPrefix()).build();
+                TrafficTreatment treatment = DefaultTrafficTreatment.builder()
+                        .punt().build();
+                FlowRule rule = DefaultFlowRule.builder()
+                        .forDevice(device.id())
+                        .withPriority(priority)
+                        .withSelector(selector)
+                        .withTreatment(treatment)
+                        .fromApp(reactAppId)
+                        .makePermanent()
+                        .forTable(0).build();
+                flowRuleService.applyFlowRules(rule);
+                log.debug("slsnet reactive routing install FlowRule: deviceId={} {}",
+                          device.id(), rule);
+            }
+            // MAY NEED TO ADD IPv6 CASE
         }
     }
 
+    /**
+     * Reactive Packet Handling.
+     */
     private class ReactiveRoutingProcessor implements PacketProcessor {
         @Override
         public void process(PacketContext context) {
@@ -286,9 +321,9 @@ public class SlsNetReactiveRouting {
                 ipPrefix = route.prefix();
             }
         }
-        if (ipPrefix != null && intentRequestListener.mp2pIntentExists(ipPrefix)) {
+        if (ipPrefix != null && intentRequest.mp2pIntentExists(ipPrefix)) {
             log.info("slsnet reactive routing update mp2p intent: dstIp={} srcCp={}", ipPrefix, srcCp);
-            intentRequestListener.updateExistingMp2pIntent(ipPrefix, srcCp);
+            intentRequest.updateExistingMp2pIntent(ipPrefix, srcCp);
             return;
         }
 
@@ -303,15 +338,14 @@ public class SlsNetReactiveRouting {
         case HOST_TO_INTERNET:
             // If the destination IP address is outside the local SDN network.
             // The Step 1 has already handled it. We do not need to do anything here.
-            intentRequestListener.setUpConnectivityHostToInternet(srcIp,
+            intentRequest.setUpConnectivityHostToInternet(srcIp,
                     ipPrefix, route.nextHop());
             break;
         case INTERNET_TO_HOST:
-            intentRequestListener.setUpConnectivityInternetToHost(dstIp);
+            intentRequest.setUpConnectivityInternetToHost(dstIp);
             break;
         case HOST_TO_HOST:
-            intentRequestListener.setUpConnectivityHostToHost(dstIp,
-                    srcIp, srcMacAddress, srcCp);
+            intentRequest.setUpConnectivityHostToHost(dstIp, srcIp, srcMacAddress, srcCp);
             break;
         case INTERNET_TO_INTERNET:
             log.trace("This is transit traffic, "
@@ -420,6 +454,26 @@ public class SlsNetReactiveRouting {
                 new DefaultOutboundPacket(dstHost.location().deviceId(), treatment,
                                           context.inPacket().unparsed());
         packetService.emit(packet);
+    }
+
+
+    // Service Listeners
+
+    private class InternalDeviceListener implements DeviceListener {
+        @Override
+        public void event(DeviceEvent event) {
+            switch (event.type()) {
+            case DEVICE_ADDED:
+            case DEVICE_AVAILABILITY_CHANGED:
+            case DEVICE_REMOVED:
+            case DEVICE_SUSPENDED:
+            case DEVICE_UPDATED:
+                refreshIntercepts();
+                break;
+            default:
+                break;
+            }
+        }
     }
 
     private class InternalSlsNetListener implements SlsNetListener {

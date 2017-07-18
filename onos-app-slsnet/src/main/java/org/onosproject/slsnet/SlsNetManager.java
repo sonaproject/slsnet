@@ -147,14 +147,9 @@ public class SlsNetManager extends ListenerRegistry<SlsNetEvent, SlsNetListener>
     private Set<IpAddress> virtualGatewayIpAddresses = new HashSet<>();
 
     // Listener for Service Events
-    private final InternalNetworkConfigListener configListener =
-            new InternalNetworkConfigListener();
-
-    private final InternalHostListener hostListener =
-            new InternalHostListener();
-
-    private final InternalInterfaceListener interfaceListener =
-            new InternalInterfaceListener();
+    private final InternalNetworkConfigListener configListener = new InternalNetworkConfigListener();
+    private final InternalHostListener hostListener = new InternalHostListener();
+    private final InternalInterfaceListener interfaceListener = new InternalInterfaceListener();
 
     private ConfigFactory<ApplicationId, SlsNetConfig>
             reactiveRoutingConfigFactory =

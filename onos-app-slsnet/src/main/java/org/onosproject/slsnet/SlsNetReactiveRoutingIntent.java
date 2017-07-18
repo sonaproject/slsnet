@@ -125,8 +125,9 @@ public class SlsNetReactiveRoutingIntent {
         TrafficTreatment.Builder treatment =
                 DefaultTrafficTreatment.builder().setEthDst(hostMac);
         Key key = Key.of(ipPrefix.toString(), appId);
-        int priority = slsnet.PRI_REACTIVE_ROUTE_BASE +
-                       ipPrefix.prefixLength() * slsnet.PRI_REACTIVE_ROUTE_STEP;
+        int priority = slsnet.PRI_REACTIVE_ROUTE_BASE
+                       + ipPrefix.prefixLength() * slsnet.PRI_REACTIVE_ROUTE_STEP
+                       + slsnet.PRI_PREFIX_ROUTE;
 
         Set<ConnectPoint> interfaceConnectPoints =
                 interfaceService.getInterfaces().stream()
@@ -218,8 +219,9 @@ public class SlsNetReactiveRoutingIntent {
         }
 
         Key key = Key.of(prefix.toString() + "-reactive", appId);
-        int priority = slsnet.PRI_REACTIVE_ROUTE_BASE +
-                       prefix.prefixLength() * slsnet.PRI_REACTIVE_ROUTE_STEP;
+        int priority = slsnet.PRI_REACTIVE_ROUTE_BASE
+                       + prefix.prefixLength() * slsnet.PRI_REACTIVE_ROUTE_STEP
+                       + slsnet.PRI_PREFIX_ROUTE;
         MultiPointToSinglePointIntent intent = MultiPointToSinglePointIntent.builder()
                 .appId(appId)
                 .key(key)
@@ -327,8 +329,9 @@ public class SlsNetReactiveRoutingIntent {
                 DefaultTrafficTreatment.builder().setEthDst(dstMacAddress);
 
         Key key = Key.of(dstIpPrefix.toString(), appId);
-        int priority = slsnet.PRI_REACTIVE_ROUTE_BASE +
-                       dstIpPrefix.prefixLength() * slsnet.PRI_REACTIVE_ROUTE_STEP;
+        int priority = slsnet.PRI_REACTIVE_ROUTE_BASE
+                       + dstIpPrefix.prefixLength() * slsnet.PRI_REACTIVE_ROUTE_STEP
+                       + slsnet.PRI_PREFIX_ROUTE;
         MultiPointToSinglePointIntent intent =
                 MultiPointToSinglePointIntent.builder()
                         .appId(appId)
