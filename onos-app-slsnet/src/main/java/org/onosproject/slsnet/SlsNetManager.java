@@ -27,12 +27,16 @@ import org.apache.felix.scr.annotations.Deactivate;
 import org.apache.felix.scr.annotations.Reference;
 import org.apache.felix.scr.annotations.ReferenceCardinality;
 import org.apache.felix.scr.annotations.Service;
+import org.onlab.packet.ARP;
+import org.onlab.packet.Ethernet;
 import org.onlab.packet.Ip4Address;
 import org.onlab.packet.Ip6Address;
 import org.onlab.packet.IpAddress;
 import org.onlab.packet.IpPrefix;
+import org.onlab.packet.IPv6;
 import org.onlab.packet.MacAddress;
 import org.onlab.packet.VlanId;
+import org.onlab.packet.ndp.NeighborSolicitation;
 import org.onosproject.app.ApplicationService;
 import org.onosproject.core.ApplicationId;
 import org.onosproject.core.CoreService;
@@ -51,13 +55,19 @@ import org.onosproject.net.config.NetworkConfigRegistry;
 import org.onosproject.net.config.NetworkConfigService;
 import org.onosproject.net.config.basics.SubjectFactories;
 import org.onosproject.net.ConnectPoint;
+import org.onosproject.net.flow.DefaultTrafficTreatment;
+import org.onosproject.net.flow.TrafficTreatment;
 import org.onosproject.net.Host;
 import org.onosproject.net.host.HostService;
 import org.onosproject.net.host.HostListener;
 import org.onosproject.net.host.HostEvent;
+import org.onosproject.net.packet.PacketService;
+import org.onosproject.net.packet.DefaultOutboundPacket;
+import org.onosproject.net.packet.OutboundPacket;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.nio.ByteBuffer;
 import java.util.HashSet;
 import java.util.Collection;
 import java.util.List;
@@ -94,6 +104,9 @@ public class SlsNetManager extends ListenerRegistry<SlsNetEvent, SlsNetListener>
 
     @Reference(cardinality = ReferenceCardinality.MANDATORY_UNARY)
     protected HostService hostService;
+
+    @Reference(cardinality = ReferenceCardinality.MANDATORY_UNARY)
+    protected PacketService packetService;
 
     // compoents to be activated within SlsNet
     @Reference(cardinality = ReferenceCardinality.MANDATORY_UNARY)
@@ -409,6 +422,50 @@ public class SlsNetManager extends ListenerRegistry<SlsNetEvent, SlsNetListener>
         return virtualGatewayIpAddresses.contains(ipAddress);
     }
 
+    @Override
+    public boolean requestMac(IpAddress ip) {
+        if (virtualGatewayMacAddress == null) {
+            log.warn("slsnet request mac failed for unknown virtualGatewayMacAddress: {}", ip);
+            return false;
+        }
+        IpSubnet ipSubnet = findIpSubnet(ip);
+        if (ipSubnet == null) {
+            log.warn("slsnet request mac failed for unknown IpSubnet: {}", ip);
+            return false;
+        }
+        L2Network l2Network = findL2Network(ipSubnet.l2NetworkName());
+        if (l2Network == null) {
+            log.warn("slsnet request mac failed for unknown l2Network name {}: {}",
+                     ipSubnet.l2NetworkName(), ip);
+            return false;
+        }
+        log.info("slsnet send request mac L2Network {}: {}", l2Network.name(), ip);
+        for (Interface iface : l2Network.interfaces()) {
+            Ethernet neighbourReq;
+            if (ip.isIp4()) {
+                neighbourReq = ARP.buildArpRequest(virtualGatewayMacAddress.toBytes(),
+                                                   ipSubnet.gatewayIp().toOctets(),
+                                                   ip.toOctets(),
+                                                   iface.vlan().toShort());
+            } else {
+                byte[] soliciteIp = IPv6.getSolicitNodeAddress(ip.toOctets());
+                neighbourReq = NeighborSolicitation.buildNdpSolicit(
+                                                   ip.toOctets(),
+                                                   ipSubnet.gatewayIp().toOctets(),
+                                                   soliciteIp,
+                                                   virtualGatewayMacAddress.toBytes(),
+                                                   IPv6.getMCastMacAddress(soliciteIp),
+                                                   iface.vlan());
+            }
+            TrafficTreatment treatment = DefaultTrafficTreatment.builder()
+                                               .setOutput(iface.connectPoint().port()).build();
+            OutboundPacket packet = new DefaultOutboundPacket(iface.connectPoint().deviceId(),
+                                               treatment, ByteBuffer.wrap(neighbourReq.serialize()));
+            packetService.emit(packet);
+        }
+        return true;
+    }
+
     // Service Listeners
 
     private class InternalNetworkConfigListener implements NetworkConfigListener {
@@ -465,6 +522,7 @@ public class SlsNetManager extends ListenerRegistry<SlsNetEvent, SlsNetListener>
             }
         }
     }
+
 
 }
 

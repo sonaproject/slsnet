@@ -172,4 +172,12 @@ public interface SlsNetService
      */
     boolean isIpPrefixLocal(IpPrefix ipPrefix);
 
+    /**
+     * Send Neighbour Query (ARP or NDP) to Find Host Location.
+     *
+     * @param ip the ip address to resolve
+     * @return true if request mac packets are emitted. otherwise false
+     */
+    boolean requestMac(IpAddress ip);
+
 }

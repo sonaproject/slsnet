@@ -20,18 +20,15 @@ import org.apache.felix.scr.annotations.Component;
 import org.apache.felix.scr.annotations.Deactivate;
 import org.apache.felix.scr.annotations.Reference;
 import org.apache.felix.scr.annotations.ReferenceCardinality;
-import org.onlab.packet.ARP;
 import org.onlab.packet.EthType;
 import org.onlab.packet.Ethernet;
 import org.onlab.packet.ICMP;
 import org.onlab.packet.IPv4;
 import org.onlab.packet.Ip4Address;
-import org.onlab.packet.IPv6;
 import org.onlab.packet.Ip6Address;
 import org.onlab.packet.IpAddress;
 import org.onlab.packet.IpPrefix;
 import org.onlab.packet.MacAddress;
-import org.onlab.packet.ndp.NeighborSolicitation;
 import org.onosproject.core.ApplicationId;
 import org.onosproject.incubator.net.intf.Interface;
 import org.onosproject.incubator.net.intf.InterfaceService;
@@ -39,11 +36,11 @@ import org.onosproject.incubator.net.routing.Route;
 import org.onosproject.incubator.net.routing.RouteService;
 import org.onosproject.net.ConnectPoint;
 import org.onosproject.net.device.DeviceService;
-import org.onosproject.net.Host;
 import org.onosproject.net.flow.DefaultTrafficSelector;
 import org.onosproject.net.flow.DefaultTrafficTreatment;
 import org.onosproject.net.flow.TrafficSelector;
 import org.onosproject.net.flow.TrafficTreatment;
+import org.onosproject.net.Host;
 import org.onosproject.net.host.HostService;
 import org.onosproject.net.intent.IntentService;
 import org.onosproject.net.packet.DefaultOutboundPacket;
@@ -55,9 +52,9 @@ import org.onosproject.net.packet.PacketService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.nio.ByteBuffer;
 import java.util.Optional;
 import java.util.Set;
-import java.nio.ByteBuffer;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import static org.onlab.packet.Ethernet.TYPE_IPV4;
@@ -412,7 +409,7 @@ public class SlsNetReactiveRouting {
             // NOTE: hostService.requestMac(dstIp); NOT IMPLEMENTED in ONOS HostManager.java
             log.warn("slsnet reactive routing forward packet dstIp host_mac unknown: dstIp={}", dstIp);
             hostService.startMonitoringIp(dstIp);
-            requestMac(dstIp);
+            slsnet.requestMac(dstIp);
             return;
         }
         log.info("slsnet reactive routing forward packet: dstHost={} packet={}", dstHost, context);
@@ -423,49 +420,6 @@ public class SlsNetReactiveRouting {
                 new DefaultOutboundPacket(dstHost.location().deviceId(), treatment,
                                           context.inPacket().unparsed());
         packetService.emit(packet);
-    }
-
-    /**
-     * Send Neighbour Query to Find Host Location.
-     *
-     * @param ip    the ip address to resolve
-     */
-    private void requestMac(IpAddress ip) {
-        IpSubnet ipSubnet = slsnet.findIpSubnet(ip);
-        if (ipSubnet == null) {
-            log.warn("slsnet reactive routing request mac failed for unknown IpSubnet: {}", ip);
-            return;
-        }
-        L2Network l2Network = slsnet.findL2Network(ipSubnet.l2NetworkName());
-        if (l2Network == null) {
-            log.warn("slsnet reactive routing request mac failed for unknown l2Network name {}: {}",
-                     ipSubnet.l2NetworkName(), ip);
-            return;
-        }
-        log.info("slsnet reactive routing send neighbor mac requests to L2Network {}: {}", l2Network.name(), ip);
-        for (Interface iface : l2Network.interfaces()) {
-            Ethernet neighbourReq;
-            if (ip.isIp4()) {
-                neighbourReq = ARP.buildArpRequest(slsnet.getVirtualGatewayMacAddress().toBytes(),
-                                                   ipSubnet.gatewayIp().toOctets(),
-                                                   ip.toOctets(),
-                                                   iface.vlan().toShort());
-            } else {
-                byte[] soliciteIp = IPv6.getSolicitNodeAddress(ip.toOctets());
-                neighbourReq = NeighborSolicitation.buildNdpSolicit(
-                                                   ip.toOctets(),
-                                                   ipSubnet.gatewayIp().toOctets(),
-                                                   soliciteIp,
-                                                   slsnet.getVirtualGatewayMacAddress().toBytes(),
-                                                   IPv6.getMCastMacAddress(soliciteIp),
-                                                   iface.vlan());
-            }
-            TrafficTreatment treatment = DefaultTrafficTreatment.builder()
-                                               .setOutput(iface.connectPoint().port()).build();
-            OutboundPacket packet = new DefaultOutboundPacket(iface.connectPoint().deviceId(),
-                                               treatment, ByteBuffer.wrap(neighbourReq.serialize()));
-            packetService.emit(packet);
-        }
     }
 
     private class InternalSlsNetListener implements SlsNetListener {

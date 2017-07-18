@@ -118,6 +118,7 @@ public class SlsNetReactiveRoutingIntent {
         }
         if (hostMac == null) {
             hostService.startMonitoringIp(hostIpAddress);
+            slsnet.requestMac(hostIpAddress);
             return;
         }
 
@@ -257,6 +258,7 @@ public class SlsNetReactiveRoutingIntent {
         }
         if (dstMacAddress == null) {
             hostService.startMonitoringIp(dstIpAddress);
+            slsnet.requestMac(dstIpAddress);
             return;
         }
 
