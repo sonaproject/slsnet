@@ -40,6 +40,7 @@ public class SlsNetConfig extends Config<ApplicationId> {
     private static final String L2NETWORKS = "l2Networks";
     private static final String NAME = "name";
     private static final String INTERFACES = "interfaces";
+    private static final String L2FORWARDING = "l2Forwarding";
     private static final String IP4SUBNETS = "ip4Subnets";
     private static final String IP6SUBNETS = "ip6Subnets";
     private static final String BORDERROUTES = "borderRoutes";
@@ -72,7 +73,13 @@ public class SlsNetConfig extends Config<ApplicationId> {
                 l2NetworkIfaces.forEach(ifacesNode -> ifaces.add(new String(ifacesNode.asText())));
             }
 
-            l2Networks.add(new L2Network(name, ifaces, EncapsulationType.NONE));
+            boolean l2Forwarding = true;
+            JsonNode l2ForwardingNode = jsonNode.get(L2FORWARDING);
+            if (l2ForwardingNode != null) {
+                l2Forwarding = l2ForwardingNode.asBoolean();
+            }
+
+            l2Networks.add(new L2Network(name, ifaces, EncapsulationType.NONE, l2Forwarding));
         });
         return l2Networks;
     }

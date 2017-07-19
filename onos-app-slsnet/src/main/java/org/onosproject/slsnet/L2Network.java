@@ -38,6 +38,7 @@ public final class L2Network {
     private String name;                  // also for network configuration
     private Set<String> interfaceNames;   // also for network configuration
     private EncapsulationType encapsulationType;  // also for network configuration
+    private boolean l2Forwarding;         // do l2Forwarding (default:true) or not
     private Set<Interface> interfaces;
     private Set<HostId> hostIds;
     private boolean dirty;
@@ -48,11 +49,13 @@ public final class L2Network {
      * @param name the given name
      * @param ifaceNames the interface names
      * @param encapType the encapsulation type
+     * @param l2Forwarding flag for l2Forwarding intents to be installed or not
      */
-    L2Network(String name, Collection<String> ifaceNames, EncapsulationType encapType) {
+    L2Network(String name, Collection<String> ifaceNames, EncapsulationType encapType, boolean l2Forwarding) {
         this.name = name;
         this.interfaceNames = Sets.newHashSet();
         this.encapsulationType = encapType;
+        this.l2Forwarding = l2Forwarding;
         this.interfaces = Sets.newHashSet();
         this.hostIds = Sets.newHashSet();
         this.dirty = false;
@@ -69,6 +72,7 @@ public final class L2Network {
         this.name = name;
         this.interfaceNames = Sets.newHashSet();
         this.encapsulationType = encapType;
+        this.l2Forwarding = true;
         this.interfaces = Sets.newHashSet();
         this.hostIds = Sets.newHashSet();
         this.dirty = false;
@@ -87,22 +91,6 @@ public final class L2Network {
     }
 
     /**
-     * Creates a L2Network data by given name and encapsulation type.
-     *
-     * @param name the given name
-     * @param encapType the encapsulation type
-     * @return the L2Network data
-     */
-    public static L2Network of(String name, EncapsulationType encapType) {
-        Objects.requireNonNull(name);
-        if (encapType == null) {
-            return new L2Network(name, EncapsulationType.NONE);
-        } else {
-            return new L2Network(name, encapType);
-        }
-    }
-
-    /**
      * Creates a copy of L2Network data.
      *
      * @param l2Network the L2Network data
@@ -112,6 +100,7 @@ public final class L2Network {
         Objects.requireNonNull(l2Network);
         L2Network l2NetworkCopy = new L2Network(l2Network.name(), l2Network.encapsulationType());
         l2NetworkCopy.addInterfaceNames(l2Network.interfaceNames());
+        l2NetworkCopy.setL2Forwarding(l2Network.l2Forwarding());
         l2NetworkCopy.addInterfaces(l2Network.interfaces());
         l2NetworkCopy.setDirty(l2Network.dirty());
         return l2NetworkCopy;
@@ -129,6 +118,10 @@ public final class L2Network {
 
     public EncapsulationType encapsulationType() {
         return encapsulationType;
+    }
+
+    public boolean l2Forwarding() {
+        return l2Forwarding;
     }
 
     public Set<Interface> interfaces() {
@@ -180,6 +173,11 @@ public final class L2Network {
         if (interfaceNames.add(ifaceName)) {
             setDirty(true);
         }
+    }
+
+    // set l2Forwarding flag
+    public void setL2Forwarding(boolean l2Forwarding) {
+        this.l2Forwarding = l2Forwarding;
     }
 
     // add and remove interfaces from port configuration for each interfaceName */
@@ -244,9 +242,10 @@ public final class L2Network {
         return MoreObjects.toStringHelper(getClass())
                 .add("name", name)
                 .add("interfaceNames", interfaceNames)
+                .add("encap type", encapsulationType)
+                .add("l2Forwarding", l2Forwarding)
                 .add("interfaces", interfaces)
                 .add("hostIds", hostIds)
-                .add("encap type", encapsulationType)
                 .add("dirty", dirty)
                 .toString();
     }
@@ -261,14 +260,15 @@ public final class L2Network {
         }
         L2Network other = (L2Network) obj;
         return Objects.equals(other.name, this.name)
-               && Objects.equals(other.encapsulationType, this.encapsulationType)
                && Objects.equals(other.interfaceNames, this.interfaceNames)
+               && Objects.equals(other.encapsulationType, this.encapsulationType)
+               && Objects.equals(other.l2Forwarding, this.l2Forwarding)
                && Objects.equals(other.interfaces, this.interfaces)
                && Objects.equals(other.hostIds, this.hostIds);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(name, interfaces, encapsulationType);
+        return Objects.hash(name, interfaces, encapsulationType, l2Forwarding);
     }
 }

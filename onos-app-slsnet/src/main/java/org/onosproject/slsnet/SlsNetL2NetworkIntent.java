@@ -75,9 +75,7 @@ public final class SlsNetL2NetworkIntent {
      */
     public static Set<Intent> buildBrcIntents(L2Network l2Network, ApplicationId appId) {
         Set<Interface> interfaces = l2Network.interfaces();
-
-        // At least two or more network interfaces to build broadcast Intents
-        if (interfaces.size() < 2) {
+        if (!l2Network.l2Forwarding() || interfaces.size() < 2) {
             return ImmutableSet.of();
         }
         Set<Intent> brcIntents = Sets.newHashSet();
@@ -159,7 +157,7 @@ public final class SlsNetL2NetworkIntent {
      */
     public static Set<Intent> buildUniIntents(L2Network l2Network, Set<Host> hosts, ApplicationId appId) {
         Set<Interface> interfaces = l2Network.interfaces();
-        if (interfaces.size() < 2) {
+        if (!l2Network.l2Forwarding() || interfaces.size() < 2) {
             return ImmutableSet.of();
         }
         Set<Intent> uniIntents = Sets.newHashSet();

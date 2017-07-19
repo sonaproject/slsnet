@@ -209,8 +209,7 @@ public class SlsNetManager extends ListenerRegistry<SlsNetEvent, SlsNetListener>
         Set<Interface> newL2NetworkInterfaces = new HashSet<>();
         newL2Networks = config.getL2Networks().stream()
                 .map(l2NetworkConfig -> {
-                    L2Network l2Network = L2Network.of(l2NetworkConfig.name(), l2NetworkConfig.encapsulationType());
-                    l2Network.addInterfaceNames(l2NetworkConfig.interfaceNames());
+                    L2Network l2Network = L2Network.of(l2NetworkConfig);
                     // fill up interfaces and Hosts
                     for (String ifaceName : l2NetworkConfig.interfaceNames()) {
                          Interface iface = getInterfaceByName(ifaceName);
