@@ -118,8 +118,7 @@ public class SlsNetManager extends ListenerRegistry<SlsNetEvent, SlsNetListener>
     private final List<String> components = ImmutableList.of(
         SlsNetNeighbour.class.getName(),
         SlsNetL2NetworkRouting.class.getName(),
-        SlsNetReactiveRouting.class.getName(),
-        SlsNetBorderRouting.class.getName()
+        SlsNetReactiveRouting.class.getName()
     );
 
     // SlsNet variables

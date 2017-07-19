@@ -103,7 +103,9 @@ public class SlsNetReactiveRoutingIntent {
 
         // Match the destination IP prefix at the first hop
         IpPrefix ipPrefix = hostIpAddress.toIpPrefix();
-        selector.matchIPDst(ipPrefix);
+        if (ipPrefix.prefixLength() > 0) {
+            selector.matchIPDst(ipPrefix);
+        }
 
         // Rewrite the destination MAC address
         MacAddress hostMac = null;
@@ -205,10 +207,14 @@ public class SlsNetReactiveRoutingIntent {
         TrafficSelector.Builder selector = DefaultTrafficSelector.builder();
         if (prefix.isIp4()) {
             selector.matchEthType(Ethernet.TYPE_IPV4);
-            selector.matchIPDst(prefix);
+            if (prefix.prefixLength() > 0) {
+                selector.matchIPDst(prefix);
+            }
         } else {
             selector.matchEthType(Ethernet.TYPE_IPV6);
-            selector.matchIPv6Dst(prefix);
+            if (prefix.prefixLength() > 0) {
+                selector.matchIPv6Dst(prefix);
+            }
         }
 
         // Rewrite the destination MAC address
@@ -323,10 +329,14 @@ public class SlsNetReactiveRoutingIntent {
         TrafficSelector.Builder selector = DefaultTrafficSelector.builder();
         if (dstIpAddress.isIp4()) {
             selector.matchEthType(Ethernet.TYPE_IPV4);
-            selector.matchIPDst(dstIpPrefix);
+            if (dstIpPrefix.prefixLength() > 0) {
+                selector.matchIPDst(dstIpPrefix);
+            }
         } else {
             selector.matchEthType(Ethernet.TYPE_IPV6);
-            selector.matchIPv6Dst(dstIpPrefix);
+            if (dstIpPrefix.prefixLength() > 0) {
+                selector.matchIPv6Dst(dstIpPrefix);
+            }
         }
 
         // Rewrite the destination MAC address
