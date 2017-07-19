@@ -22,9 +22,9 @@ import org.onlab.packet.Ethernet;
 import org.onlab.packet.IpAddress;
 import org.onlab.packet.IpPrefix;
 import org.onlab.packet.MacAddress;
-import org.onlab.packet.VlanId;
+//import org.onlab.packet.VlanId;
 import org.onosproject.core.ApplicationId;
-import org.onosproject.incubator.net.intf.Interface;
+//import org.onosproject.incubator.net.intf.Interface;
 import org.onosproject.incubator.net.intf.InterfaceService;
 import org.onosproject.net.ConnectPoint;
 import org.onosproject.net.Host;
@@ -163,6 +163,7 @@ public class SlsNetReactiveRoutingIntent {
 
     public void setUpConnectivityHostToInternet(IpAddress hostIp, IpPrefix prefix,
                                                 IpAddress nextHopIpAddress) {
+/*
         // Find the attachment point (egress interface) of the next hop
         Interface egressInterface =
                 interfaceService.getMatchingInterface(nextHopIpAddress);
@@ -171,16 +172,21 @@ public class SlsNetReactiveRoutingIntent {
                     nextHopIpAddress);
             return;
         }
+*/
 
         Set<Host> hosts = hostService.getHostsByIp(nextHopIpAddress);
         if (hosts.isEmpty()) {
             log.warn("No host found for next hop IP address");
             return;
         }
+        ConnectPoint egressPort = null;
         MacAddress nextHopMacAddress = null;
         for (Host host : hosts) {
-            nextHopMacAddress = host.mac();
-            break;
+            if (host.mac() != null) {
+                egressPort = host.location();
+                nextHopMacAddress = host.mac();
+                break;
+            }
         }
 
         hosts = hostService.getHostsByIp(hostIp);
@@ -192,7 +198,6 @@ public class SlsNetReactiveRoutingIntent {
         ConnectPoint ingressPoint = host.location();
 
         // Generate the intent itself
-        ConnectPoint egressPort = egressInterface.connectPoint();
         log.debug("Generating intent for prefix {}, next hop mac {}",
                 prefix, nextHopMacAddress);
 
@@ -209,12 +214,15 @@ public class SlsNetReactiveRoutingIntent {
         // Rewrite the destination MAC address
         TrafficTreatment.Builder treatment = DefaultTrafficTreatment.builder()
                 .setEthDst(nextHopMacAddress);
+/*
+ * TODO: need to resolve vlan attach case
         if (!egressInterface.vlan().equals(VlanId.NONE)) {
             treatment.setVlanId(egressInterface.vlan());
             // If we set VLAN ID, we have to make sure a VLAN tag exists.
             // TODO support no VLAN -> VLAN routing
             selector.matchVlanId(VlanId.ANY);
         }
+*/
 
         Key key = Key.of(prefix.toString() + "-reactive", appId);
         int priority = slsnet.PRI_REACTIVE_BASE

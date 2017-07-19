@@ -360,12 +360,13 @@ public class SlsNetReactiveRouting {
         }
         log.info("slsnet reactive routing forward packet: dstHost={} packet={}", dstHost, context);
         TrafficTreatment treatment = DefaultTrafficTreatment.builder()
-                .setEthSrc(slsnet.getVirtualGatewayMacAddress())
-                .setEthDst(dstHost.mac())
                 .setOutput(dstHost.location().port()).build();
+        // NOTE: eth address update treatment is NOT effective
         OutboundPacket packet =
                 new DefaultOutboundPacket(dstHost.location().deviceId(), treatment,
-                                          context.inPacket().unparsed());
+                                          ByteBuffer.wrap(context.inPacket().parsed()
+                                              .setSourceMACAddress(slsnet.getVirtualGatewayMacAddress())
+                                              .setDestinationMACAddress(dstHost.mac()).serialize()));
         packetService.emit(packet);
     }
 
