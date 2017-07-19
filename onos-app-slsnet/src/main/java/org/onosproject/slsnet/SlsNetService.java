@@ -37,18 +37,20 @@ public interface SlsNetService
 
     static final String APP_ID = "org.onosproject.slsnet";
 
-    // priority for l2Network: L2NETWORK_UNICAST or L2NETWORK_BROADCAST
-    static final int PRI_L2NETWORK_UNICAST   = 602;
-    static final int PRI_L2NETWORK_BROADCAST = 601;
-    // priority for ipReactiveRoutes: REACTIVE_ROUTE_BASE + ipPrefix * REACTIVE_ROUTE_STEP
-    static final int PRI_REACTIVE_ROUTE_BASE = 400;
-    static final int PRI_REACTIVE_ROUTE_STEP = 1;
-    // priority for ipPrefixRoutes:   PREFIX_BASE + ipPrefix * PREFIX_STEP + PREFIX_ROUTE
-    // priority for ipPrefixReact:    RREFIX_BASE + ipPrefix * PREFIX_STEP + PREFIX_REACT
-    static final int PRI_PREFIX_BASE  = 100;
-    static final int PRI_PREFIX_STEP  = 2;
-    static final int PRI_PREFIX_ROUTE = 1;
-    static final int PRI_PREFIX_REACT = 0;
+    // priority for l2NetworkRouting: L2NETWORK_UNICAST or L2NETWORK_BROADCAST
+    static final int PRI_L2NETWORK_UNICAST   = 701;
+    static final int PRI_L2NETWORK_BROADCAST = 700;
+
+    // priority for reactiveRouting: REACTIVE_BASE + ipPrefix * REACTIVE_STEP
+    //                               + REACTIVE_ACTION or REACTIVE_INTERCEPT
+    static final int PRI_REACTIVE_BASE = 400;
+    static final int PRI_REACTIVE_STEP = 2;
+    static final int PRI_REACTIVE_ACTION = 1;
+    static final int PRI_REACTIVE_INTERCEPT = 0;
+
+    // priority for borderRouting: BORDER_ROUTE_BBASE + ipPrefix * BORDER_ROUTE_STEP
+    static final int PRI_BORDER_ROUTE_BASE  = 100;
+    static final int PRI_BORDER_ROUTE_STEP  = 1;
 
     /**
      * Gets appId.

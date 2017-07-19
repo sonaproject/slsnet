@@ -123,6 +123,7 @@ public class SlsNetBorderRouting {
 
     private void update(ResolvedRoute route) {
         synchronized (this) {
+            log.info("slsnet border route update: route={}", route);
             IpPrefix prefix = route.prefix();
             EncapsulationType encap = encap();
             MultiPointToSinglePointIntent intent =
@@ -143,6 +144,7 @@ public class SlsNetBorderRouting {
 
     private void withdraw(ResolvedRoute route) {
         synchronized (this) {
+            log.info("slsnet border route withdraw: route={}", route);
             IpPrefix prefix = route.prefix();
             MultiPointToSinglePointIntent intent = routeIntents.remove(prefix);
             if (intent == null) {
@@ -212,8 +214,8 @@ public class SlsNetBorderRouting {
                 new FilteredConnectPoint(egressPort, selector.build());
 
         // Set priority
-        int priority = slsnet.PRI_PREFIX_BASE + slsnet.PRI_PREFIX_ROUTE
-                       + prefix.prefixLength() * slsnet.PRI_PREFIX_STEP;
+        int priority = slsnet.PRI_BORDER_ROUTE_BASE
+                       + prefix.prefixLength() * slsnet.PRI_BORDER_ROUTE_STEP;
 
         // Set key
         Key key = Key.of(prefix.toString(), appId);

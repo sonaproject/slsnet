@@ -61,10 +61,11 @@ import static org.onlab.util.Tools.groupedThreads;
 @Component(immediate = true, enabled = false)
 public class SlsNetL2NetworkRouting {
 
+    private static final String L2NET_APP_ID = "org.onosproject.slsnet.l2net";
     private static final int COMPLETE_TIMEOUT_SEC = 5;
 
     private final Logger log = LoggerFactory.getLogger(getClass());
-    protected ApplicationId appId;
+    protected ApplicationId l2NetAppId;
 
     @Reference(cardinality = ReferenceCardinality.MANDATORY_UNARY)
     protected CoreService coreService;
@@ -82,7 +83,8 @@ public class SlsNetL2NetworkRouting {
 
     @Activate
     public void activate() {
-        appId = slsnet.getAppId();
+        l2NetAppId = coreService.registerApplication(L2NET_APP_ID);
+        log.info("slsnet l2network routing starting with l2net app id {}", l2NetAppId.toString());
 
         // A single thread pool for L2NetworkOperationScheduler
         schedulerExecutor = Executors.newScheduledThreadPool(1,
@@ -90,16 +92,28 @@ public class SlsNetL2NetworkRouting {
         // Start the scheduler
         schedulerExecutor.scheduleAtFixedRate(new L2NetworkUpdate(),
                                             0, 500, TimeUnit.MILLISECONDS);
+
+        log.info("slsnet l2network started");
     }
 
     @Deactivate
     public void deactivate() {
+        log.info("slsnet l2network routing stopping");
+
         schedulerExecutor.shutdown();
 
-        // remove all intents from VPLS application when deactivated
-        Tools.stream(intentService.getIntents())
-                .filter(intent -> intent.appId().equals(appId))
-                .forEach(intentService::withdraw);
+        for (Intent intent : intentService.getIntents()) {
+            if (intent.appId().equals(l2NetAppId)) {
+                intentService.withdraw(intent);
+            }
+        }
+        for (Intent intent : intentService.getIntents()) {
+            if (intent.appId().equals(l2NetAppId)) {
+                intentService.purge(intent);
+            }
+        }
+
+        log.info("slsnet l2network routing stopped");
     }
 
     /**
@@ -134,7 +148,7 @@ public class SlsNetL2NetworkRouting {
             Set<Intent> currentBrcIntents = currentIntents.stream()
                     .filter(intent -> intent instanceof SinglePointToMultiPointIntent)
                     .collect(Collectors.toSet());
-            Set<Intent> targetBrcIntents = SlsNetL2NetworkIntent.buildBrcIntents(l2Network, appId);
+            Set<Intent> targetBrcIntents = SlsNetL2NetworkIntent.buildBrcIntents(l2Network, l2NetAppId);
             if (!intentSetEquals(currentBrcIntents, targetBrcIntents)) {
                 // If broadcast Intents changes, it means some network
                 // interfaces or encapsulation constraint changed; Need to
@@ -151,7 +165,7 @@ public class SlsNetL2NetworkRouting {
                     .filter(intent -> intent instanceof MultiPointToSinglePointIntent)
                     .collect(Collectors.toSet());
             Set<Intent> targetUniIntents = SlsNetL2NetworkIntent.buildUniIntents(l2Network,
-                                                                     hostsFromL2Network(l2Network), appId);
+                                                                     hostsFromL2Network(l2Network), l2NetAppId);
 
             // New unicast Intents to install
             targetUniIntents.forEach(intent -> {
@@ -263,9 +277,9 @@ public class SlsNetL2NetworkRouting {
          * @return Intents for the L2 Network
          */
         private Set<Intent> generateL2NetworkIntents(L2Network l2Network) {
-            Set<Intent> brcIntents = SlsNetL2NetworkIntent.buildBrcIntents(l2Network, appId);
+            Set<Intent> brcIntents = SlsNetL2NetworkIntent.buildBrcIntents(l2Network, l2NetAppId);
             Set<Intent> uniIntent = SlsNetL2NetworkIntent.buildUniIntents(l2Network,
-                                                             hostsFromL2Network(l2Network), appId);
+                                                             hostsFromL2Network(l2Network), l2NetAppId);
 
             return Stream.concat(brcIntents.stream(), uniIntent.stream())
                     .collect(Collectors.toSet());

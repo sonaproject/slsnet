@@ -196,6 +196,7 @@ public class SlsNetManager extends ListenerRegistry<SlsNetEvent, SlsNetListener>
     // Set up from configuration
     private void refreshNetworkConfig(NetworkConfigEvent event) {
         log.info("slsnet refresh network config: {}", event);
+        boolean dirty = false;
 
         SlsNetConfig config = configService.getConfig(coreService.registerApplication(APP_ID), SlsNetConfig.class);
         if (config == null) {
@@ -235,9 +236,11 @@ public class SlsNetManager extends ListenerRegistry<SlsNetEvent, SlsNetListener>
                 }).collect(Collectors.toSet());
         if (!l2Networks.equals(newL2Networks)) {
             l2Networks = newL2Networks;
+            dirty = true;
         }
         if (!l2NetworkInterfaces.equals(newL2NetworkInterfaces)) {
             l2NetworkInterfaces = newL2NetworkInterfaces;
+            dirty = true;
         }
 
         // ipSubnets
@@ -248,24 +251,27 @@ public class SlsNetManager extends ListenerRegistry<SlsNetEvent, SlsNetListener>
         InvertedRadixTree<IpSubnet> newIp6SubnetTable =
                  new ConcurrentInvertedRadixTree<>(new DefaultByteArrayNodeFactory());
         Set<IpAddress> newVirtualGatewayIpAddresses = new HashSet<>();
-        for (IpSubnet subnet : ip4Subnets) {
+        for (IpSubnet subnet : newIp4Subnets) {
             newIp4SubnetTable.put(createBinaryString(subnet.ipPrefix()), subnet);
             newVirtualGatewayIpAddresses.add(subnet.gatewayIp());
         }
-        for (IpSubnet subnet : ip6Subnets) {
+        for (IpSubnet subnet : newIp6Subnets) {
             newIp6SubnetTable.put(createBinaryString(subnet.ipPrefix()), subnet);
             newVirtualGatewayIpAddresses.add(subnet.gatewayIp());
         }
         if (!ip4Subnets.equals(newIp4Subnets)) {
             ip4Subnets = newIp4Subnets;
             ip4SubnetTable = newIp4SubnetTable;
+            dirty = true;
         }
         if (!ip6Subnets.equals(newIp6Subnets)) {
             ip6Subnets = newIp6Subnets;
             ip6SubnetTable = newIp6SubnetTable;
+            dirty = true;
         }
         if (!virtualGatewayIpAddresses.equals(newVirtualGatewayIpAddresses)) {
             virtualGatewayIpAddresses = newVirtualGatewayIpAddresses;
+            dirty = true;
         }
 
         // borderRoutes config handling
@@ -290,6 +296,7 @@ public class SlsNetManager extends ListenerRegistry<SlsNetEvent, SlsNetListener>
                 routeService.update(updateSet);
             }
             borderRoutes = newBorderRoutes;
+            dirty = true;
         }
 
         // virtual gateway MAC
@@ -297,11 +304,14 @@ public class SlsNetManager extends ListenerRegistry<SlsNetEvent, SlsNetListener>
         if (virtualGatewayMacAddress == null
             || !virtualGatewayMacAddress.equals(newVirtualGatewayMacAddress)) {
             virtualGatewayMacAddress = newVirtualGatewayMacAddress;
+            dirty = true;
         }
 
         // notify to SlsNet listeners
-        log.info("slsnet refresh; notify events");
-        process(new SlsNetEvent(SlsNetEvent.Type.SLSNET_UPDATED, this));
+        if (dirty) {
+            log.info("slsnet refresh; notify events");
+            process(new SlsNetEvent(SlsNetEvent.Type.SLSNET_UPDATED, this));
+        }
     }
 
     private Interface getInterfaceByName(String interfaceName) {
