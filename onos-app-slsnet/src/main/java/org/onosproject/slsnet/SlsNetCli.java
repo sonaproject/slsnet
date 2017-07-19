@@ -77,14 +77,12 @@ public class SlsNetCli extends AbstractShellCommand {
             print("    %s\n", ipSubnet);
         }
 
-        print("borderInterfaces:\n");
-        print("    %s\n", slsnet.getBorderInterfaces());
-
         print("borderRoutes:\n");
+        // do not show slsnet.getBorderRoutes() directly
         for (RouteTableId routeTableId : routeService.getRouteTables()) {
             if (routeTableId.name() == "ipv4") {
                 for (RouteInfo routeInfo : routeService.getRoutes(routeTableId)) {
-                    print("    %s %s\n", routeInfo.prefix(), routeInfo.bestRoute());
+                    print("    %s %s\n", routeInfo.prefix(), routeInfo.allRoutes().toString());
                 }
             }
         }

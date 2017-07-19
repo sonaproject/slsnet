@@ -48,9 +48,8 @@
            { "ipPrefix" : "10.0.2.0/24", "gatewayIp" : "10.0.2.1", "l2NetworkName" : "LEAF2" },
            { "ipPrefix" : "10.0.0.0/24", "gatewayIp" : "10.0.0.1", "l2NetworkName" : "BORDER" }
         ],
-        "borderInterfaces" : ["SS1_h31", "SS1_h32"],
         "borderRoutes" : [
-          { "ipPrefix" : "0.0.0.0/0",   "gatewayIp" : "10.0.0.31" }
+           { "ipPrefix" : "0.0.0.0/0", "gatewayIp" : "10.0.0.31" }
         ],
         "virtualGatewayMacAddress" : "00:00:00:00:00:01"
       }

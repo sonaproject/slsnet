@@ -42,7 +42,6 @@ public class SlsNetConfig extends Config<ApplicationId> {
     private static final String INTERFACES = "interfaces";
     private static final String IP4SUBNETS = "ip4Subnets";
     private static final String IP6SUBNETS = "ip6Subnets";
-    private static final String BORDERINTERFACES = "borderInterfaces";
     private static final String BORDERROUTES = "borderRoutes";
     private static final String IPPREFIX = "ipPrefix";
     private static final String GATEWAYIP = "gatewayIp";
@@ -67,7 +66,9 @@ public class SlsNetConfig extends Config<ApplicationId> {
 
             Set<String> ifaces = Sets.newHashSet();
             JsonNode l2NetworkIfaces = jsonNode.path(INTERFACES);
-            if (!l2NetworkIfaces.toString().isEmpty()) {
+            if (l2NetworkIfaces == null) {
+                log.warn("slsnet network config cannot find {}; skip: {}", INTERFACES, jsonNode);
+            } else if (!l2NetworkIfaces.toString().isEmpty()) {
                 l2NetworkIfaces.forEach(ifacesNode -> ifaces.add(new String(ifacesNode.asText())));
             }
 
@@ -82,22 +83,26 @@ public class SlsNetConfig extends Config<ApplicationId> {
      * @return IPv4 prefixes
      */
     public Set<IpSubnet> ip4Subnets() {
-        Set<IpSubnet> prefixes = Sets.newHashSet();
+        Set<IpSubnet> subnets = Sets.newHashSet();
 
-        JsonNode prefixesNode = object.get(IP4SUBNETS);
-        if (prefixesNode == null) {
-            log.warn("ip4Subnets is null!");
-            return prefixes;
+        JsonNode subnetsNode = object.get(IP4SUBNETS);
+        if (subnetsNode == null) {
+            log.warn("slsnet network config ip4Subnets is null!");
+            return subnets;
         }
 
-        prefixesNode.forEach(jsonNode -> {
-            prefixes.add(new IpSubnet(
-                    IpPrefix.valueOf(jsonNode.get(IPPREFIX).asText()),
-                    IpAddress.valueOf(jsonNode.get(GATEWAYIP).asText()),
-                    jsonNode.get(L2NETWORKNAME).asText()));
+        subnetsNode.forEach(jsonNode -> {
+            try {
+                subnets.add(new IpSubnet(
+                        IpPrefix.valueOf(jsonNode.get(IPPREFIX).asText()),
+                        IpAddress.valueOf(jsonNode.get(GATEWAYIP).asText()),
+                        jsonNode.get(L2NETWORKNAME).asText()));
+            } catch (IllegalArgumentException e) {
+                log.warn("slsnet network config parse error; skip: {}", jsonNode);
+            }
         });
 
-        return prefixes;
+        return subnets;
     }
 
     /**
@@ -106,40 +111,27 @@ public class SlsNetConfig extends Config<ApplicationId> {
      * @return IPv6 prefixes
      */
     public Set<IpSubnet> ip6Subnets() {
-        Set<IpSubnet> prefixes = Sets.newHashSet();
+        Set<IpSubnet> subnets = Sets.newHashSet();
 
-        JsonNode prefixesNode = object.get(IP6SUBNETS);
-        if (prefixesNode == null) {
-            /* no warning for ip6 case is not implemented */
+        JsonNode subnetsNode = object.get(IP6SUBNETS);
+        if (subnetsNode == null) {
+            /* NOTE: no warning for ip6 case is not implemented */
             /*log.warn("ip6LocalPrefixes is null!"); */
-            return prefixes;
+            return subnets;
         }
 
-        prefixesNode.forEach(jsonNode -> {
-            prefixes.add(new IpSubnet(
-                    IpPrefix.valueOf(jsonNode.get(IPPREFIX).asText()),
-                    IpAddress.valueOf(jsonNode.get(GATEWAYIP).asText()),
-                    jsonNode.get(L2NETWORKNAME).asText()));
+        subnetsNode.forEach(jsonNode -> {
+            try {
+                subnets.add(new IpSubnet(
+                        IpPrefix.valueOf(jsonNode.get(IPPREFIX).asText()),
+                        IpAddress.valueOf(jsonNode.get(GATEWAYIP).asText()),
+                        jsonNode.get(L2NETWORKNAME).asText()));
+            } catch (IllegalArgumentException e) {
+                log.warn("slsnet network config parse error; skip: {}", jsonNode);
+            }
         });
 
-        return prefixes;
-    }
-
-    /**
-     *  Gets of the external gateway interfaces.
-     *
-     * @return interface names
-     */
-    public Set<String> getBorderInterfaces() {
-        Set<String> ifaces = Sets.newHashSet();
-
-        JsonNode routeIfaces = object.get(BORDERINTERFACES);
-        if (routeIfaces == null) {
-            return ifaces;
-        }
-        routeIfaces.forEach(ifacesNode -> ifaces.add(ifacesNode.asText()));
-
-        return ifaces;
+        return subnets;
     }
 
     /**
@@ -147,23 +139,23 @@ public class SlsNetConfig extends Config<ApplicationId> {
      *
      * @return A set of route.
      */
-    public Set<Route> getBorderRoutes() {
+    public Set<Route> borderRoutes() {
         Set<Route> routes = Sets.newHashSet();
 
         JsonNode routesNode = object.get(BORDERROUTES);
         if (routesNode == null) {
-            /* no warning for ip6 case is not implemented */
-            /*log.warn("ip6LocalPrefixes is null!"); */
+            log.warn("slsnet network config borderRoutes is null!");
             return routes;
         }
 
         routesNode.forEach(jsonNode -> {
             try {
-                routes.add(new Route(Route.Source.STATIC,
+                routes.add(new Route(
+                      Route.Source.STATIC,
                       IpPrefix.valueOf(jsonNode.path(IPPREFIX).asText()),
                       IpAddress.valueOf(jsonNode.path(GATEWAYIP).asText())));
             } catch (IllegalArgumentException e) {
-                // Ignores routes that cannot be parsed correctly
+                log.warn("slsnet network config parse error; skip: {}", jsonNode);
             }
         });
 

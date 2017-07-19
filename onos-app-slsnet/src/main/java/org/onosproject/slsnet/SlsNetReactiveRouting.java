@@ -31,7 +31,6 @@ import org.onlab.packet.IpPrefix;
 import org.onlab.packet.MacAddress;
 import org.onosproject.core.ApplicationId;
 import org.onosproject.core.CoreService;
-import org.onosproject.incubator.net.intf.Interface;
 import org.onosproject.incubator.net.intf.InterfaceService;
 import org.onosproject.incubator.net.routing.Route;
 import org.onosproject.incubator.net.routing.RouteService;
@@ -60,7 +59,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.nio.ByteBuffer;
-import java.util.Optional;
 import java.util.Set;
 
 import static com.google.common.base.Preconditions.checkNotNull;
@@ -142,7 +140,7 @@ public class SlsNetReactiveRouting {
     @Activate
     public void activate() {
         reactAppId = coreService.registerApplication(REACT_APP_ID);
-        log.info("slsnet reactive routing starting with react app id {}", reactAppId);
+        log.info("slsnet reactive routing starting with react app id {}", reactAppId.toString());
 
         intentRequest = new SlsNetReactiveRoutingIntent(slsnet, hostService,
                                                         interfaceService, intentService);
@@ -204,7 +202,7 @@ public class SlsNetReactiveRouting {
         // clean all previous flow rules
         flowRuleService.removeFlowRulesById(reactAppId);
         for (Device device : deviceService.getAvailableDevices()) {
-            // install new flow rules
+            // install new flow rules for local subnet
             for (IpSubnet ipSubnet : slsnet.getIp4Subnets()) {
                 int priority = slsnet.PRI_REACTIVE_ROUTE_BASE +
                                ipSubnet.ipPrefix().prefixLength() * slsnet.PRI_REACTIVE_ROUTE_STEP +
@@ -227,6 +225,7 @@ public class SlsNetReactiveRouting {
                 log.debug("slsnet reactive routing install FlowRule: deviceId={} {}",
                           device.id(), rule);
             }
+            // install new flow rules for border routes
             // MAY NEED TO ADD IPv6 CASE
         }
     }
@@ -331,76 +330,19 @@ public class SlsNetReactiveRouting {
         // Step2: There is no existing intent for the destination IP address.
         // Check whether it is necessary to create a new one. If necessary then
         // create a new one.
-        //
-        TrafficType trafficType = trafficTypeClassifier(srcCp, dstIp);
-
-        switch (trafficType) {
-        case HOST_TO_INTERNET:
-            // If the destination IP address is outside the local SDN network.
-            // The Step 1 has already handled it. We do not need to do anything here.
-            intentRequest.setUpConnectivityHostToInternet(srcIp,
-                    ipPrefix, route.nextHop());
-            break;
-        case INTERNET_TO_HOST:
-            intentRequest.setUpConnectivityInternetToHost(dstIp);
-            break;
-        case HOST_TO_HOST:
-            intentRequest.setUpConnectivityHostToHost(dstIp, srcIp, srcMacAddress, srcCp);
-            break;
-        case INTERNET_TO_INTERNET:
-            log.trace("This is transit traffic, "
-                    + "the intent should be preinstalled already");
-            break;
-        case DROP:
-            // TODO here should setUpDropPacketIntent(...);
-            // We need a new type of intent here.
-            break;
-        case UNKNOWN:
-            log.trace("This is unknown traffic, so we do nothing");
-            break;
-        default:
-            break;
-        }
-    }
-
-    /**
-     * Classifies the traffic and return the traffic type.
-     *
-     * @param srcCp the connect point where the packet comes from
-     * @param dstIp the destination IP address in packet
-     * @return the traffic type which this packet belongs to
-     */
-    private TrafficType trafficTypeClassifier(ConnectPoint srcCp, IpAddress dstIp) {
-        LocationType dstIpLocationType = getLocationType(dstIp);
-
-        Optional<Interface> srcInterface =
-                interfaceService.getInterfacesByPort(srcCp).stream().findFirst();
-
-        Set<String> borderInterfaces = slsnet.getBorderInterfaces();
-
-        switch (dstIpLocationType) {
-        case INTERNET:
-            if (srcInterface.isPresent() &&
-                    (!borderInterfaces.contains(srcInterface.get().name()))) {
-                return TrafficType.HOST_TO_INTERNET;
+        if (slsnet.isIpAddressLocal(srcIp)) {
+            if (slsnet.isIpAddressLocal(dstIp)) {
+                intentRequest.setUpConnectivityHostToHost(dstIp, srcIp, srcMacAddress, srcCp);
             } else {
-                return TrafficType.INTERNET_TO_INTERNET;
+                intentRequest.setUpConnectivityHostToInternet(srcIp, ipPrefix, route.nextHop());
             }
-        case LOCAL:
-            if (srcInterface.isPresent() &&
-                    (!borderInterfaces.contains(srcInterface.get().name()))) {
-                return TrafficType.HOST_TO_HOST;
+        } else {
+            if (slsnet.isIpAddressLocal(dstIp)) {
+                intentRequest.setUpConnectivityInternetToHost(dstIp, srcCp);
             } else {
-                // TODO Currently we only consider local public prefixes.
-                // In the future, we will consider the local private prefixes.
-                // If dstIpLocationType is a local private, we should return
-                // TrafficType.DROP.
-                return TrafficType.INTERNET_TO_HOST;
+                log.warn("slsnet external traffic; ignore: srcCp={} srcIp={} dstIp={}",
+                         srcCp, srcIp, dstIp);
             }
-        case NO_ROUTE:
-            return TrafficType.DROP;
-        default:
-            return TrafficType.UNKNOWN;
         }
     }
 
@@ -448,6 +390,7 @@ public class SlsNetReactiveRouting {
         }
         log.info("slsnet reactive routing forward packet: dstHost={} packet={}", dstHost, context);
         TrafficTreatment treatment = DefaultTrafficTreatment.builder()
+                .setEthSrc(slsnet.getVirtualGatewayMacAddress())
                 .setEthDst(dstHost.mac())
                 .setOutput(dstHost.location().port()).build();
         OutboundPacket packet =

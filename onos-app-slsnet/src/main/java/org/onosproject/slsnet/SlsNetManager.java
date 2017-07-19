@@ -108,6 +108,10 @@ public class SlsNetManager extends ListenerRegistry<SlsNetEvent, SlsNetListener>
     @Reference(cardinality = ReferenceCardinality.MANDATORY_UNARY)
     protected PacketService packetService;
 
+    // Route table
+    @Reference(cardinality = ReferenceCardinality.MANDATORY_UNARY)
+    private RouteAdminService routeService;
+
     // compoents to be activated within SlsNet
     @Reference(cardinality = ReferenceCardinality.MANDATORY_UNARY)
     protected ComponentService componentService;
@@ -128,19 +132,13 @@ public class SlsNetManager extends ListenerRegistry<SlsNetEvent, SlsNetListener>
     // Subnet table
     private Set<IpSubnet> ip4Subnets = new HashSet<>();
     private Set<IpSubnet> ip6Subnets = new HashSet<>();
-    private InvertedRadixTree<IpSubnet>
-            localPrefixTable4 = new ConcurrentInvertedRadixTree<>(
-                    new DefaultByteArrayNodeFactory());
-    private InvertedRadixTree<IpSubnet>
-            localPrefixTable6 = new ConcurrentInvertedRadixTree<>(
-                    new DefaultByteArrayNodeFactory());
+    private InvertedRadixTree<IpSubnet> ip4SubnetTable =
+                 new ConcurrentInvertedRadixTree<>(new DefaultByteArrayNodeFactory());
+    private InvertedRadixTree<IpSubnet> ip6SubnetTable =
+                 new ConcurrentInvertedRadixTree<>(new DefaultByteArrayNodeFactory());
 
-    // External router connectPoint from ipRouteInterface
-    private Set<String> borderInterfaces = new HashSet<>();
-
-    // Route table
-    @Reference(cardinality = ReferenceCardinality.MANDATORY_UNARY)
-    private RouteAdminService routeService;
+    // Border Route table
+    private Set<Route> borderRoutes = new HashSet<>();
 
     // VirtialGateway
     private MacAddress virtualGatewayMacAddress;
@@ -235,48 +233,71 @@ public class SlsNetManager extends ListenerRegistry<SlsNetEvent, SlsNetListener>
                     }
                     return l2Network;
                 }).collect(Collectors.toSet());
-        l2Networks = newL2Networks;
-        l2NetworkInterfaces = newL2NetworkInterfaces;
+        if (!l2Networks.equals(newL2Networks)) {
+            l2Networks = newL2Networks;
+        }
+        if (!l2NetworkInterfaces.equals(newL2NetworkInterfaces)) {
+            l2NetworkInterfaces = newL2NetworkInterfaces;
+        }
 
         // ipSubnets
-        ip4Subnets = config.ip4Subnets();
-        for (IpSubnet entry : ip4Subnets) {
-            localPrefixTable4.put(createBinaryString(entry.ipPrefix()), entry);
-            virtualGatewayIpAddresses.add(entry.gatewayIp());
+        Set<IpSubnet> newIp4Subnets = config.ip4Subnets();
+        Set<IpSubnet> newIp6Subnets = config.ip6Subnets();
+        InvertedRadixTree<IpSubnet> newIp4SubnetTable =
+                 new ConcurrentInvertedRadixTree<>(new DefaultByteArrayNodeFactory());
+        InvertedRadixTree<IpSubnet> newIp6SubnetTable =
+                 new ConcurrentInvertedRadixTree<>(new DefaultByteArrayNodeFactory());
+        Set<IpAddress> newVirtualGatewayIpAddresses = new HashSet<>();
+        for (IpSubnet subnet : ip4Subnets) {
+            newIp4SubnetTable.put(createBinaryString(subnet.ipPrefix()), subnet);
+            newVirtualGatewayIpAddresses.add(subnet.gatewayIp());
         }
-        ip6Subnets = config.ip6Subnets();
-        for (IpSubnet entry : ip6Subnets) {
-            localPrefixTable6.put(createBinaryString(entry.ipPrefix()), entry);
-            virtualGatewayIpAddresses.add(entry.gatewayIp());
+        for (IpSubnet subnet : ip6Subnets) {
+            newIp6SubnetTable.put(createBinaryString(subnet.ipPrefix()), subnet);
+            newVirtualGatewayIpAddresses.add(subnet.gatewayIp());
+        }
+        if (!ip4Subnets.equals(newIp4Subnets)) {
+            ip4Subnets = newIp4Subnets;
+            ip4SubnetTable = newIp4SubnetTable;
+        }
+        if (!ip6Subnets.equals(newIp6Subnets)) {
+            ip6Subnets = newIp6Subnets;
+            ip6SubnetTable = newIp6SubnetTable;
+        }
+        if (!virtualGatewayIpAddresses.equals(newVirtualGatewayIpAddresses)) {
+            virtualGatewayIpAddresses = newVirtualGatewayIpAddresses;
         }
 
-        /* borderInterfaces */
-        borderInterfaces = config.getBorderInterfaces();
-
-        // ipRoutes config handling; TODO: USE LOCAL COPY OF ROUTE CONFIG AND APPLY DIFFERENCE
-        if (event == null) {
-            // do not handle route info
-        } else if (event.type() == NetworkConfigEvent.Type.CONFIG_ADDED) {
-            Set<Route> routes = ((SlsNetConfig) event.config().get()).getBorderRoutes();
-            routeService.update(routes);
-        } else if (event.type() == NetworkConfigEvent.Type.CONFIG_UPDATED) {
-            Set<Route> routes = ((SlsNetConfig) event.config().get()).getBorderRoutes();
-            Set<Route> prevRoutes = ((SlsNetConfig) event.prevConfig().get()).getBorderRoutes();
-            Set<Route> pendingRemove = prevRoutes.stream()
-                    .filter(prevRoute -> routes.stream()
-                            .noneMatch(route -> route.prefix().equals(prevRoute.prefix())))
-                    .collect(Collectors.toSet());
-            Set<Route> pendingUpdate = routes.stream()
-                    .filter(route -> !pendingRemove.contains(route)).collect(Collectors.toSet());
-            routeService.update(pendingUpdate);
-            routeService.withdraw(pendingRemove);
-        } else if (event.type() == NetworkConfigEvent.Type.CONFIG_REMOVED) {
-            Set<Route> prevRoutes = ((SlsNetConfig) event.prevConfig().get()).getBorderRoutes();
-            routeService.withdraw(prevRoutes);
+        // borderRoutes config handling
+        Set<Route> newBorderRoutes = config.borderRoutes();
+        if (!borderRoutes.equals(newBorderRoutes)) {
+            Set<Route> removeSet = new HashSet<>();
+            Set<Route> updateSet = new HashSet<>();
+            for (Route route : borderRoutes) {  // check old to be removed
+                if (!newBorderRoutes.contains(route)) {
+                    removeSet.add(route);
+                }
+            }
+            for (Route route : newBorderRoutes) {  // check old to be removed
+                if (!borderRoutes.contains(route)) {
+                    updateSet.add(route);
+                }
+            }
+            if (!removeSet.isEmpty()) {
+                routeService.withdraw(removeSet);
+            }
+            if (!updateSet.isEmpty()) {
+                routeService.update(updateSet);
+            }
+            borderRoutes = newBorderRoutes;
         }
 
         // virtual gateway MAC
-        virtualGatewayMacAddress = config.virtualGatewayMacAddress();
+        MacAddress newVirtualGatewayMacAddress = config.virtualGatewayMacAddress();
+        if (virtualGatewayMacAddress == null
+            || !virtualGatewayMacAddress.equals(newVirtualGatewayMacAddress)) {
+            virtualGatewayMacAddress = newVirtualGatewayMacAddress;
+        }
 
         // notify to SlsNet listeners
         log.info("slsnet refresh; notify events");
@@ -317,11 +338,9 @@ public class SlsNetManager extends ListenerRegistry<SlsNetEvent, SlsNetListener>
         return ImmutableSet.copyOf(ip6Subnets);
     }
 
-    // Border Route is queried via RouteService
-
     @Override
-    public Set<String> getBorderInterfaces() {
-        return ImmutableSet.copyOf(borderInterfaces);
+    public Set<Route> getBorderRoutes() {
+        return ImmutableSet.copyOf(borderRoutes);
     }
 
     @Override
@@ -337,11 +356,6 @@ public class SlsNetManager extends ListenerRegistry<SlsNetEvent, SlsNetListener>
     @Override
     public boolean isL2NetworkInterface(Interface intf) {
         return l2NetworkInterfaces.contains(intf);
-    }
-
-    @Override
-    public boolean isBorderInterface(Interface intf) {
-        return borderInterfaces.contains(intf);
     }
 
     @Override
@@ -367,11 +381,11 @@ public class SlsNetManager extends ListenerRegistry<SlsNetEvent, SlsNetListener>
     @Override
     public IpSubnet findIpSubnet(IpAddress ipAddress) {
         if (ipAddress.isIp4()) {
-            return (IpSubnet) localPrefixTable4.getValuesForKeysPrefixing(
+            return (IpSubnet) ip4SubnetTable.getValuesForKeysPrefixing(
                                   createBinaryString(IpPrefix.valueOf(ipAddress, Ip4Address.BIT_LENGTH)))
                               .iterator().next();
         } else {
-            return (IpSubnet) localPrefixTable6.getValuesForKeysPrefixing(
+            return (IpSubnet) ip6SubnetTable.getValuesForKeysPrefixing(
                                   createBinaryString(IpPrefix.valueOf(ipAddress, Ip6Address.BIT_LENGTH)))
                               .iterator().next();
         }
@@ -390,26 +404,23 @@ public class SlsNetManager extends ListenerRegistry<SlsNetEvent, SlsNetListener>
     public boolean isIpAddressLocal(IpAddress ipAddress) {
         boolean result;
         if (ipAddress.isIp4()) {
-            result = localPrefixTable4.getValuesForKeysPrefixing(
-                     createBinaryString(
-                     IpPrefix.valueOf(ipAddress, Ip4Address.BIT_LENGTH)))
+            return ip4SubnetTable.getValuesForKeysPrefixing(
+                     createBinaryString(IpPrefix.valueOf(ipAddress, Ip4Address.BIT_LENGTH)))
                      .iterator().hasNext();
         } else {
-            result = localPrefixTable6.getValuesForKeysPrefixing(
-                     createBinaryString(
-                     IpPrefix.valueOf(ipAddress, Ip6Address.BIT_LENGTH)))
+            return ip6SubnetTable.getValuesForKeysPrefixing(
+                     createBinaryString(IpPrefix.valueOf(ipAddress, Ip6Address.BIT_LENGTH)))
                      .iterator().hasNext();
         }
-        //log.info("slsnet local address match for " + ipAddress.toString() + " --> " + result);
-        return result;
     }
 
     @Override
     public boolean isIpPrefixLocal(IpPrefix ipPrefix) {
-        return (localPrefixTable4.getValueForExactKey(
-                createBinaryString(ipPrefix)) != null ||
-                localPrefixTable6.getValueForExactKey(
-                createBinaryString(ipPrefix)) != null);
+        if (ipPrefix.isIp4()) {
+            return (ip4SubnetTable.getValueForExactKey(createBinaryString(ipPrefix)) != null);
+        } else {
+            return (ip6SubnetTable.getValueForExactKey(createBinaryString(ipPrefix)) != null);
+        }
     }
 
     @Override

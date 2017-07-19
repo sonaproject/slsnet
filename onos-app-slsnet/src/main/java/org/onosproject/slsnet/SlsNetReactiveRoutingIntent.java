@@ -90,8 +90,7 @@ public class SlsNetReactiveRoutingIntent {
         routeIntents = Maps.newConcurrentMap();
     }
 
-    //@Override
-    public void setUpConnectivityInternetToHost(IpAddress hostIpAddress) {
+    public void setUpConnectivityInternetToHost(IpAddress hostIpAddress, ConnectPoint srcConnectPoint) {
         checkNotNull(hostIpAddress);
 
         TrafficSelector.Builder selector = DefaultTrafficSelector.builder();
@@ -162,7 +161,6 @@ public class SlsNetReactiveRoutingIntent {
         submitReactiveIntent(ipPrefix, intent);
     }
 
-    //@Override
     public void setUpConnectivityHostToInternet(IpAddress hostIp, IpPrefix prefix,
                                                 IpAddress nextHopIpAddress) {
         // Find the attachment point (egress interface) of the next hop
@@ -236,7 +234,6 @@ public class SlsNetReactiveRoutingIntent {
         submitReactiveIntent(prefix, intent);
     }
 
-    //@Override
     public void setUpConnectivityHostToHost(IpAddress dstIpAddress,
                                             IpAddress srcIpAddress,
                                             MacAddress srcMacAddress,
@@ -348,17 +345,17 @@ public class SlsNetReactiveRoutingIntent {
         return intent;
     }
 
-    //@Override
-    public void updateExistingMp2pIntent(IpPrefix ipPrefix,
-                                         ConnectPoint ingressConnectPoint) {
+    public synchronized void updateExistingMp2pIntent(IpPrefix ipPrefix, ConnectPoint ingressConnectPoint) {
         checkNotNull(ipPrefix);
         checkNotNull(ingressConnectPoint);
 
-        MultiPointToSinglePointIntent existingIntent = getExistingMp2pIntent(ipPrefix);
+        MultiPointToSinglePointIntent existingIntent = routeIntents.get(ipPrefix);
         if (existingIntent != null) {
             Set<ConnectPoint> ingressPoints = existingIntent.ingressPoints();
+
             // Add host connect point into ingressPoints of the existing intent
-            if (ingressPoints.add(ingressConnectPoint)) {
+            if (ingressPoints.contains(ingressConnectPoint)
+                || ingressPoints.add(ingressConnectPoint)) {
                 MultiPointToSinglePointIntent updatedMp2pIntent =
                         MultiPointToSinglePointIntent.builder()
                                 .appId(appId)
@@ -391,20 +388,7 @@ public class SlsNetReactiveRoutingIntent {
      */
     void submitReactiveIntent(IpPrefix ipPrefix, MultiPointToSinglePointIntent intent) {
         routeIntents.put(ipPrefix, intent);
-
         intentService.submit(intent);
-    }
-
-    /**
-     * Gets the existing MultiPointToSinglePointIntent from memory for a given
-     * IP prefix.
-     *
-     * @param ipPrefix the IP prefix used to find MultiPointToSinglePointIntent
-     * @return the MultiPointToSinglePointIntent if found, otherwise null
-     */
-    private MultiPointToSinglePointIntent getExistingMp2pIntent(IpPrefix ipPrefix) {
-        checkNotNull(ipPrefix);
-        return routeIntents.get(ipPrefix);
     }
 
     //@Override

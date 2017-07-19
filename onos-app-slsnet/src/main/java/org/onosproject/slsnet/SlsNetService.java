@@ -22,6 +22,7 @@ import org.onlab.packet.VlanId;
 import org.onosproject.core.ApplicationId;
 import org.onosproject.event.ListenerService;
 import org.onosproject.incubator.net.intf.Interface;
+import org.onosproject.incubator.net.routing.Route;
 import org.onosproject.net.ConnectPoint;
 import org.onosproject.net.Host;
 
@@ -83,7 +84,7 @@ public interface SlsNetService
      *
      * @return the set of connect points connected to BGP peers
      */
-    Set<String> getBorderInterfaces();
+    Set<Route> getBorderRoutes();
 
     /**
      * Get Virtual Gateway Mac Address for Local Subnet Virtual Gateway.
@@ -106,14 +107,6 @@ public interface SlsNetService
      * @return true if the inteface belongs to l2Networks configed, otherwise false
      */
     boolean isL2NetworkInterface(Interface intf);
-
-    /**
-     * Evaluates whether an Interface belongs to borderInterfaces.
-     *
-     * @param intf the interface to evaluate
-     * @return true if the inteface belongs to borderInterfaces configed, otherwise false
-     */
-    boolean isBorderInterface(Interface intf);
 
     /**
      * Finds the L2 Network with given port and vlanId.
