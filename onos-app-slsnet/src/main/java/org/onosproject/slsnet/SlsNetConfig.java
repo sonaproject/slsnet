@@ -40,6 +40,7 @@ public class SlsNetConfig extends Config<ApplicationId> {
     private static final String L2NETWORKS = "l2Networks";
     private static final String NAME = "name";
     private static final String INTERFACES = "interfaces";
+    private static final String ENCAPSULATION = "encapsulation";
     private static final String L2FORWARDING = "l2Forwarding";
     private static final String IP4SUBNETS = "ip4Subnets";
     private static final String IP6SUBNETS = "ip6Subnets";
@@ -73,13 +74,18 @@ public class SlsNetConfig extends Config<ApplicationId> {
                 l2NetworkIfaces.forEach(ifacesNode -> ifaces.add(new String(ifacesNode.asText())));
             }
 
-            boolean l2Forwarding = true;
-            JsonNode l2ForwardingNode = jsonNode.get(L2FORWARDING);
-            if (l2ForwardingNode != null) {
-                l2Forwarding = l2ForwardingNode.asBoolean();
+            EncapsulationType encap = EncapsulationType.NONE;
+            if (jsonNode.hasNonNull(ENCAPSULATION)) {
+                encap = EncapsulationType.enumFromString(jsonNode.get(ENCAPSULATION).asText());
             }
 
-            l2Networks.add(new L2Network(name, ifaces, EncapsulationType.NONE, l2Forwarding));
+            boolean l2Forwarding = true;
+            if (jsonNode.hasNonNull(L2FORWARDING)) {
+                l2Forwarding = jsonNode.get(L2FORWARDING).asBoolean();
+            }
+
+            //l2Networks.add(new L2Network(name, ifaces, EncapsulationType.NONE, l2Forwarding));
+            l2Networks.add(new L2Network(name, ifaces, encap, l2Forwarding));
         });
         return l2Networks;
     }
