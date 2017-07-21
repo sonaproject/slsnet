@@ -26,7 +26,6 @@ import org.apache.felix.scr.annotations.Reference;
 import org.apache.felix.scr.annotations.ReferenceCardinality;
 import org.onlab.packet.MacAddress;
 import org.onlab.packet.VlanId;
-import org.onlab.util.Tools;
 import org.onosproject.core.ApplicationId;
 import org.onosproject.core.CoreService;
 import org.onosproject.incubator.net.intf.Interface;
@@ -41,11 +40,7 @@ import org.onosproject.net.host.HostService;
 import org.onosproject.net.intent.ConnectivityIntent;
 import org.onosproject.net.intent.Constraint;
 import org.onosproject.net.intent.Intent;
-import org.onosproject.net.intent.IntentEvent;
-import org.onosproject.net.intent.IntentException;
-import org.onosproject.net.intent.IntentListener;
 import org.onosproject.net.intent.IntentService;
-import org.onosproject.net.intent.IntentUtils;
 import org.onosproject.net.intent.Key;
 import org.onosproject.net.intent.MultiPointToSinglePointIntent;
 import org.onosproject.net.intent.SinglePointToMultiPointIntent;
@@ -57,18 +52,10 @@ import org.slf4j.LoggerFactory;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Set;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
-
-import static org.onlab.util.Tools.groupedThreads;
 
 
 /**
@@ -103,19 +90,21 @@ public class SlsNetL2NetworkRouting {
     public static final ImmutableList<Constraint> PARTIAL_FAILURE_CONSTRAINT =
             ImmutableList.of(new PartialFailureConstraint());
 
-    protected ScheduledExecutorService schedulerExecutor;
+    private Set<Intent> l2NetworkIntents = new HashSet<>();
+    private Set<Key> toBePurgedIntentKeys = new HashSet<>();
+
+    private final InternalSlsNetListener slsnetListener =
+            new InternalSlsNetListener();
+
 
     @Activate
     public void activate() {
         l2NetAppId = coreService.registerApplication(slsnet.L2NETWORK_APP_ID);
         log.info("slsnet l2network routing starting with l2net app id {}", l2NetAppId.toString());
 
-        // A single thread pool for L2NetworkOperationScheduler
-        schedulerExecutor = Executors.newScheduledThreadPool(1,
-                                            groupedThreads("onos/apps/slsnet", "scheduler-%d", log));
-        // Start the scheduler
-        schedulerExecutor.scheduleAtFixedRate(new L2NetworkUpdate(),
-                                            0, 500, TimeUnit.MILLISECONDS);
+        slsnet.addListener(slsnetListener);
+
+        refresh();
 
         log.info("slsnet l2network started");
     }
@@ -124,18 +113,19 @@ public class SlsNetL2NetworkRouting {
     public void deactivate() {
         log.info("slsnet l2network routing stopping");
 
-        schedulerExecutor.shutdown();
+        slsnet.removeListener(slsnetListener);
 
-        for (Intent intent : intentService.getIntents()) {
-            if (intent.appId().equals(l2NetAppId)) {
-                intentService.withdraw(intent);
+        for (Intent intent : l2NetworkIntents) {
+            intentService.withdraw(intent);
+            toBePurgedIntentKeys.add(intent.key());
+        }
+        for (Key key : toBePurgedIntentKeys) {
+            Intent intentToPurge = intentService.getIntent(key);
+            if (intentToPurge != null) {
+                intentService.purge(intentToPurge);
             }
         }
-        for (Intent intent : intentService.getIntents()) {
-            if (intent.appId().equals(l2NetAppId)) {
-                intentService.purge(intent);
-            }
-        }
+        l2NetworkIntents.clear();
 
         log.info("slsnet l2network routing stopped");
     }
@@ -143,187 +133,94 @@ public class SlsNetL2NetworkRouting {
     /**
      * Scheduler for L2Network Refresh operation.
      */
-    class L2NetworkUpdate implements Runnable {
+    public void refresh() {
+        log.info("slsnet l2network routing refresh");
 
-        @Override
-        public void run() {
-            for (L2Network l2Network : slsnet.getL2Networks()) {
-                if (l2Network.dirty()) {
-                    log.info("slsnet l2network routing update for dirty flag: {}", l2Network.name());
-                    l2Network.setDirty(false);
-                    updateL2NetworkIntents(l2Network);
+        Set<Intent> newL2NetworkIntents = new HashSet<>();
+        for (L2Network l2Network : slsnet.getL2Networks()) {
+            // scans all l2network regardless of dirty flag
+            newL2NetworkIntents.addAll(generateL2NetworkIntents(l2Network));
+            if (l2Network.dirty()) {
+                l2Network.setDirty(false);
+            }
+        }
+
+        boolean updated = false;
+        for (Intent intent : l2NetworkIntents) {
+            if (!newL2NetworkIntents.contains(intent)) {
+                log.info("slsnet l2network routing withdraw intent: {}", intent);
+                intentService.withdraw(intent);
+                toBePurgedIntentKeys.add(intent.key());
+                updated = true;
+            }
+        }
+        for (Intent intent : newL2NetworkIntents) {
+            if (!l2NetworkIntents.contains(intent)) {
+                log.info("slsnet l2network routing submit intent: {}", intent);
+                intentService.submit(intent);
+                // remove form purge list
+                if (toBePurgedIntentKeys.contains(intent.key())) {
+                    toBePurgedIntentKeys.remove(intent.key());
+                }
+                updated = true;
+            }
+        }
+        if (updated) {
+            l2NetworkIntents = newL2NetworkIntents;
+        }
+
+        // check intents to be purge
+        if (!toBePurgedIntentKeys.isEmpty()) {
+            for (Key key : toBePurgedIntentKeys) {
+                Intent intentToPurge = intentService.getIntent(key);
+                if (intentToPurge == null) {
+                    log.info("slsnet l2network routing try purge intent: {}", intentToPurge);
+                    toBePurgedIntentKeys.remove(key);
+                } else {
+                    log.info("slsnet l2network routing purged intent: key={}", key);
+                    intentService.purge(intentToPurge);
                 }
             }
-            // TODO: MAY NEED TO DO REMOVES FIRST AND DO INSTALLS NEXT FOR ALL L2NETWORK INTENTS
         }
+    }
 
-        /**
-         * Updates Intents of the L2Networks.
-         */
-        private void updateL2NetworkIntents(L2Network l2Network) {
-            // check which part we need to update
-            // if we update host only, we don't need to reinstall
-            // every Intents
-            Set<Intent> intentsToInstall = Sets.newHashSet();
-            Set<Intent> intentsToUninstall = Sets.newHashSet();
-            Set<Intent> currentIntents = getCurrentIntents(l2Network);
+    /**
+     * Generates unicast Intents and broadcast Intents for the L2 Network.
+     */
+    private Set<Intent> generateL2NetworkIntents(L2Network l2Network) {
+        return new ImmutableSet.Builder<Intent>()
+            .addAll(buildBrcIntents(l2Network, l2NetAppId))
+            .addAll(buildUniIntents(l2Network, hostsFromL2Network(l2Network), l2NetAppId))
+            .build();
+    }
 
-            // Compares broadcast Intents
-            Set<Intent> currentBrcIntents = currentIntents.stream()
-                    .filter(intent -> intent instanceof SinglePointToMultiPointIntent)
-                    .collect(Collectors.toSet());
-            Set<Intent> targetBrcIntents = buildBrcIntents(l2Network, l2NetAppId);
-            if (!intentSetEquals(currentBrcIntents, targetBrcIntents)) {
-                // If broadcast Intents changes, it means some network
-                // interfaces or encapsulation constraint changed; Need to
-                // reinstall all intents
-                log.info("slsnet l2network routing reinistall all intents");
-                removeL2NetworkIntents(l2Network);
-                installL2NetworkIntents(l2Network);
-                return;
-            }
-           log.info("slsnet l2network routing update intents");
+    private Set<Host> hostsFromL2Network(L2Network l2Network) {
+        Set<Interface> interfaces = l2Network.interfaces();
+        return interfaces.stream()
+                .map(this::hostsFromInterface)
+                .flatMap(Collection::stream)
+                .collect(Collectors.toSet());
+    }
 
-            // Compares unicast Intents
-            Set<Intent> currentUniIntents = currentIntents.stream()
-                    .filter(intent -> intent instanceof MultiPointToSinglePointIntent)
-                    .collect(Collectors.toSet());
-            Set<Intent> targetUniIntents = buildUniIntents(l2Network, hostsFromL2Network(l2Network), l2NetAppId);
+    private Set<Host> hostsFromInterface(Interface iface) {
+        return hostService.getConnectedHosts(iface.connectPoint())
+                .stream()
+                .filter(host -> host.vlan().equals(iface.vlan()))
+                .collect(Collectors.toSet());
+    }
 
-            // New unicast Intents to install
-            targetUniIntents.forEach(intent -> {
-                if (!currentUniIntents.contains(intent)) {
-                    intentsToInstall.add(intent);
-                }
-            });
-
-            // Old unicast Intents to remove
-            currentUniIntents.forEach(intent -> {
-                if (!targetUniIntents.contains(intent)) {
-                    intentsToUninstall.add(intent);
-                }
-            });
-            applyIntentsRemoveSync(intentsToUninstall);
-            applyIntentsAddSync(intentsToInstall);
-        }
-
-        private Set<Host> hostsFromL2Network(L2Network l2Network) {
-            Set<Interface> interfaces = l2Network.interfaces();
-            return interfaces.stream()
-                    .map(this::hostsFromInterface)
-                    .flatMap(Collection::stream)
-                    .collect(Collectors.toSet());
-        }
-
-        private Set<Host> hostsFromInterface(Interface iface) {
-            return hostService.getConnectedHosts(iface.connectPoint())
-                    .stream()
-                    .filter(host -> host.vlan().equals(iface.vlan()))
-                    .collect(Collectors.toSet());
-        }
-
-        /**
-         * Applies Intents synchronously with a specific direction.
-         *
-         * @param intents the Intents
-         * @param direction the direction
-         */
-        private void applyIntentsAddSync(Set<Intent> intents) {
-            Set<Key> pendingIntentKeys = intents.stream()
-                    .map(Intent::key).collect(Collectors.toSet());
-            IntentCompleter completer;
-            completer = new IntentCompleter(pendingIntentKeys, IntentEvent.Type.INSTALLED);
-            intentService.addListener(completer);
-            intents.forEach(intentService::submit);
-            try {
-                // Wait until Intent operation completed
-                completer.complete();
-            } catch (Exception e) {
-                log.error("slsnet applyIntentsRemoveSync error: {}", e);
-            } finally {
-                intentService.removeListener(completer);
-            }
-        }
-        private void applyIntentsRemoveSync(Set<Intent> intents) {
-            Set<Key> pendingIntentKeys = intents.stream()
-                    .map(Intent::key).collect(Collectors.toSet());
-            IntentCompleter completer;
-            completer = new IntentCompleter(pendingIntentKeys, IntentEvent.Type.WITHDRAWN);
-            intentService.addListener(completer);
-            intents.forEach(intentService::withdraw);
-            try {
-                // Wait until Intent operation completed
-                completer.complete();
-            } catch (Exception e) {
-                log.error("slsnet applyIntentsRemoveSync error: {}", e);
-            } finally {
-                intentService.removeListener(completer);
-            }
-        }
-
-        /**
-         * Checks if two sets of Intents are equal.
-         *
-         * @param intentSet1 the first set of Intents
-         * @param intentSet2 the second set of Intents
-         * @return true if both set of Intents are equal; otherwise false
-         */
-        private boolean intentSetEquals(Set<Intent> intentSet1, Set<Intent> intentSet2) {
-            if (intentSet1.size() != intentSet2.size()) {
-                return false;
-            }
-            for (Intent intent1 : intentSet1) {
-                if (intentSet2.stream()
-                        .noneMatch(intent2 -> IntentUtils.intentsAreEqual(intent1, intent2))) {
-                    return false;
-                }
-            }
-            return true;
-        }
-
-        /**
-         * Retrieves installed Intents from IntentService which related to
-         * specific L2 Network.
-         *
-         * @return the Intents which related to the L2 Network
-         */
-        private Set<Intent> getCurrentIntents(L2Network l2Network) {
-            String l2NetworkName = l2Network.name();
-            return Tools.stream(intentService.getIntents())
-                    .filter(intent -> intent.key().toString().startsWith(l2NetworkName))
-                    .collect(Collectors.toSet());
-        }
-
-        /**
-         * Generates unicast Intents and broadcast Intents for the L2 Network.
-         *
-         * @return Intents for the L2 Network
-         */
-        private Set<Intent> generateL2NetworkIntents(L2Network l2Network) {
-            Set<Intent> brcIntents = buildBrcIntents(l2Network, l2NetAppId);
-            Set<Intent> uniIntent = buildUniIntents(l2Network, hostsFromL2Network(l2Network), l2NetAppId);
-
-            return Stream.concat(brcIntents.stream(), uniIntent.stream())
-                    .collect(Collectors.toSet());
-        }
-
-        /**
-         * Removes all Intents from the L2 Network.
-         */
-        private void removeL2NetworkIntents(L2Network l2Network) {
-            Set<Intent> intentsToWithdraw = getCurrentIntents(l2Network);
-            applyIntentsRemoveSync(intentsToWithdraw);
-            intentsToWithdraw.forEach(intentService::purge);
-        }
-
-        /**
-         * Installs Intents of the L2 Network.
-         */
-        private void installL2NetworkIntents(L2Network l2Network) {
-            Set<Intent> intentsToInstall = generateL2NetworkIntents(l2Network);
-            applyIntentsAddSync(intentsToInstall);
-        }
-
+    /**
+     * Retrieves installed Intents from IntentService which related to
+     * specific L2 Network.
+     */
+/*
+    private Set<Intent> getCurrentIntents(L2Network l2Network) {
+        String l2NetworkName = l2Network.name();
+        return Tools.stream(intentService.getIntents())
+                .filter(intent -> intent.key().toString().startsWith(l2NetworkName))
+                .collect(Collectors.toSet());
+    }
+*/
 
     /**
      * Builds broadcast Intents for a L2 Network.
@@ -425,7 +322,7 @@ public class SlsNetL2NetworkRouting {
     private Key buildKey(String prefix, ConnectPoint cPoint, String l2NetworkName,
                          MacAddress hostMac, ApplicationId appId) {
         return Key.of(l2NetworkName + SEPARATOR + prefix + SEPARATOR
-                          + cPoint.deviceId() + SEPARATOR + cPoint.port() + SEPARATOR + hostMac,
+                      + cPoint.deviceId() + SEPARATOR + cPoint.port() + SEPARATOR + hostMac,
                       appId);
     }
 
@@ -449,14 +346,13 @@ public class SlsNetL2NetworkRouting {
     /**
      * Builds filtered connected point by a given network interface.
      */
-   private FilteredConnectPoint buildFilteredConnectedPoint(Interface iface) {
+    private FilteredConnectPoint buildFilteredConnectedPoint(Interface iface) {
         Objects.requireNonNull(iface);
         TrafficSelector.Builder trafficSelector = DefaultTrafficSelector.builder();
 
         if (iface.vlan() != null && !iface.vlan().equals(VlanId.NONE)) {
             trafficSelector.matchVlanId(iface.vlan());
         }
-
         return new FilteredConnectPoint(iface.connectPoint(), trafficSelector.build());
     }
 
@@ -477,67 +373,15 @@ public class SlsNetL2NetworkRouting {
     }
 
 
-
-        /**
-         * Helper class which monitors if all Intent operations are completed.
-         */
-        class IntentCompleter implements IntentListener {
-            private static final String INTENT_COMPILE_ERR = "Got {} from intent completer";
-            private CompletableFuture<Void> completableFuture;
-            private Set<Key> pendingIntentKeys;
-            private IntentEvent.Type expectedEventType;
-
-            /**
-             * Initialize completer with given Intent keys and expect Intent
-             * event type.
-             *
-             * @param pendingIntentKeys the Intent keys to wait
-             * @param expectedEventType expect Intent event type
-             */
-            public IntentCompleter(Set<Key> pendingIntentKeys,
-                                   IntentEvent.Type expectedEventType) {
-                this.completableFuture = new CompletableFuture<>();
-                this.pendingIntentKeys = Sets.newConcurrentHashSet(pendingIntentKeys);
-                this.expectedEventType = expectedEventType;
-            }
-
-            @Override
-            public void event(IntentEvent event) {
-                Intent intent = event.subject();
-                Key key = intent.key();
-                if (!pendingIntentKeys.contains(key)) {
-                    // ignore Intent events from other L2 Network
-                    return;
-                }
-                // Intent failed, throw an exception to completable future
-                if (event.type() == IntentEvent.Type.CORRUPT ||
-                        event.type() == IntentEvent.Type.FAILED) {
-                    completableFuture.completeExceptionally(new IntentException(intent.toString()));
-                    return;
-                }
-                // If event type matched to expected type, remove from pending
-                if (event.type() == expectedEventType) {
-                    pendingIntentKeys.remove(key);
-                }
-                if (pendingIntentKeys.isEmpty()) {
-                    completableFuture.complete(null);
-                }
-            }
-
-            /**
-             * Waits until all pending Intents completed ot timeout.
-             */
-            public void complete() {
-                // If no pending Intent keys, complete directly
-                if (pendingIntentKeys.isEmpty()) {
-                    return;
-                }
-                try {
-                    completableFuture.get(COMPLETE_TIMEOUT_SEC, TimeUnit.SECONDS);
-                } catch (TimeoutException | InterruptedException |
-                         ExecutionException | IntentException e) {
-                    log.warn(INTENT_COMPILE_ERR, e.toString());
-                }
+    private class InternalSlsNetListener implements SlsNetListener {
+        @Override
+        public void event(SlsNetEvent event) {
+            switch (event.type()) {
+            case SLSNET_UPDATED:
+                refresh();
+                break;
+            default:
+                break;
             }
         }
     }

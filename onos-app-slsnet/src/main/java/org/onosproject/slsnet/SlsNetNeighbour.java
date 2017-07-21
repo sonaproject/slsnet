@@ -89,7 +89,7 @@ public class SlsNetNeighbour {
      */
     protected void refresh() {
         neighbourService.unregisterNeighbourHandlers(appId);
-        log.info("slsnet neighbour register handler");
+        log.info("slsnet neighbour refresh");
         interfaceService
                 .getInterfaces()
                 .forEach(intf -> {

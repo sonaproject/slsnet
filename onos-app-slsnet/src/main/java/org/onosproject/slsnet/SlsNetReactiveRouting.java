@@ -351,7 +351,13 @@ public class SlsNetReactiveRouting {
         log.trace("slsnet reactive routing ip packet: srcCp={} srcIp={} dstIp={} srcCp={}", srcCp, srcIp, dstIp);
         // NOTE: do not check source ip for source is recognized as ConnectPoint only
         if (slsnet.isIpAddressLocal(dstIp)) {
-            setUpConnectivity(srcCp, dstIp.toIpPrefix(), dstIp);
+            if (slsnet.findIpSubnet(dstIp).equals(slsnet.findIpSubnet(srcIp))) {
+                // within same subnet; to be handled by l2NetworkRouting
+                // no reactive route action but try to forward packet
+                return true;
+            } else {
+                setUpConnectivity(srcCp, dstIp.toIpPrefix(), dstIp);
+            }
         } else {
             Route route = routeService.longestPrefixMatch(dstIp);
             if (route == null) {
