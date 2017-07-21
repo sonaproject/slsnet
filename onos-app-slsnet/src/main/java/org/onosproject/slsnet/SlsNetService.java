@@ -36,21 +36,20 @@ public interface SlsNetService
         extends ListenerService<SlsNetEvent, SlsNetListener> {
 
     static final String APP_ID = "org.onosproject.slsnet";
+    static final String L2NETWORK_APP_ID = "org.onosproject.slsnet.l2network";
+    static final String REACTIVE_ROUTE_APP_ID = "org.onosproject.slsnet.intercept";
+    static final String REACTIVE_INTERCEPT_APP_ID = "org.onosproject.slsnet.route";
 
     // priority for l2NetworkRouting: L2NETWORK_UNICAST or L2NETWORK_BROADCAST
-    static final int PRI_L2NETWORK_UNICAST   = 701;
-    static final int PRI_L2NETWORK_BROADCAST = 700;
+    static final int PRI_L2NETWORK_UNICAST   = 401;
+    static final int PRI_L2NETWORK_BROADCAST = 400;
 
     // priority for reactiveRouting: REACTIVE_BASE + ipPrefix * REACTIVE_STEP
-    //                               + REACTIVE_ACTION or REACTIVE_INTERCEPT
-    static final int PRI_REACTIVE_BASE = 400;
+    //                               + REACTIVE_ROUTE or REACTIVE_INTERCEPT
+    static final int PRI_REACTIVE_BASE = 100;
     static final int PRI_REACTIVE_STEP = 2;
-    static final int PRI_REACTIVE_ACTION = 1;
+    static final int PRI_REACTIVE_ROUTE = 1;
     static final int PRI_REACTIVE_INTERCEPT = 0;
-
-    // priority for borderRouting: BORDER_ROUTE_BBASE + ipPrefix * BORDER_ROUTE_STEP
-    static final int PRI_BORDER_ROUTE_BASE  = 100;
-    static final int PRI_BORDER_ROUTE_STEP  = 1;
 
     /**
      * Gets appId.

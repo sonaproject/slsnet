@@ -71,21 +71,15 @@ import java.util.Map;
 import java.util.Set;
 
 
-
 /**
- * This is reactive routing to handle 3 cases:
- * (1) one host wants to talk to another host, both two hosts are in
- * SDN network.
- * (2) one host in SDN network wants to talk to another host in Internet.
- * (3) one host from Internet wants to talk to another host in SDN network.
+ * SlsNetReactiveRouting handles L3 Reactive Routing.
  */
 @Component(immediate = true, enabled = false)
 public class SlsNetReactiveRouting {
 
-    private static final String REACT_APP_ID = "org.onosproject.slsnet.react";
-
     private final Logger log = LoggerFactory.getLogger(getClass());
-    private ApplicationId reactAppId;
+    private ApplicationId routeAppId;
+    private ApplicationId interceptAppId;
 
     @Reference(cardinality = ReferenceCardinality.MANDATORY_UNARY)
     protected CoreService coreService;
@@ -119,6 +113,8 @@ public class SlsNetReactiveRouting {
            // = ImmutableList.of(new PartialFailureConstraint(),
            //                    new HashedPathSelectionConstraint());
 
+    private Set<FlowRule> interceptRules = new HashSet<>();
+
     private final Map<IpPrefix, MultiPointToSinglePointIntent> routeIntents
             = Maps.newConcurrentMap();
 
@@ -128,14 +124,17 @@ public class SlsNetReactiveRouting {
 
     @Activate
     public void activate() {
-        reactAppId = coreService.registerApplication(REACT_APP_ID);
-        log.info("slsnet reactive routing starting with react app id {}", reactAppId.toString());
+        routeAppId = coreService.registerApplication(slsnet.REACTIVE_ROUTE_APP_ID);
+        interceptAppId = coreService.registerApplication(slsnet.REACTIVE_INTERCEPT_APP_ID);
+        log.info("slsnet reactive routing starting with app id {} and {}",
+                 routeAppId.toString(), interceptAppId.toString());
 
-        slsnet.addListener(slsnetListener);
+        processor = new ReactiveRoutingProcessor();
         packetService.addProcessor(processor, PacketProcessor.director(2));
-        registerIntercepts();
-
         deviceService.addListener(deviceListener);
+        slsnet.addListener(slsnetListener);
+
+        registerIntercepts();
         refreshIntercepts();
 
         log.info("slsnet reactive routing started");
@@ -145,14 +144,17 @@ public class SlsNetReactiveRouting {
     public void deactivate() {
         log.info("slsnet reactive routing stopping");
 
-        deviceService.removeListener(deviceListener);
-        withdrawIntercepts();
-
         packetService.removeProcessor(processor);
+        deviceService.removeListener(deviceListener);
         slsnet.removeListener(slsnetListener);
-        processor = null;
 
-        flowRuleService.removeFlowRulesById(reactAppId);
+        withdrawIntercepts();
+        flowRuleService.removeFlowRulesById(routeAppId);
+        flowRuleService.removeFlowRulesById(interceptAppId);
+
+        routeIntents.clear();
+        interceptRules.clear();
+        processor = null;
 
         log.info("slsnet reactive routing stopped");
     }
@@ -161,12 +163,17 @@ public class SlsNetReactiveRouting {
      * Request packet in via the PacketService.
      */
     private void registerIntercepts() {
-        // register default intercepts on packetService
-        TrafficSelector.Builder selector = DefaultTrafficSelector.builder();
-        selector.matchEthType(Ethernet.TYPE_IPV4);
-        packetService.requestPackets(selector.build(), PacketPriority.REACTIVE, slsnet.getAppId());
-        log.info("slsnet reactive routing IPV4 intercepts packet started");
-        // NEED TO REQUEST IPV6 PACKETS
+        // register default intercepts on packetService for broder routing intercepts
+
+        packetService.requestPackets(
+            DefaultTrafficSelector.builder().matchEthType(Ethernet.TYPE_IPV4).build(),
+            PacketPriority.REACTIVE, interceptAppId);
+
+        packetService.requestPackets(
+            DefaultTrafficSelector.builder().matchEthType(Ethernet.TYPE_IPV6).build(),
+            PacketPriority.REACTIVE, interceptAppId);
+
+        log.info("slsnet reactive routing ip packet intercepts started");
     }
 
     /**
@@ -174,11 +181,16 @@ public class SlsNetReactiveRouting {
      */
     private void withdrawIntercepts() {
         // unregister default intercepts on packetService
-        TrafficSelector.Builder selector = DefaultTrafficSelector.builder();
-        selector.matchEthType(Ethernet.TYPE_IPV4);
-        packetService.cancelPackets(selector.build(), PacketPriority.REACTIVE, slsnet.getAppId());
-        log.info("slsnet reactive routing IPV4 intercepts packet stopped");
-        // NEED TO CANCEL IPV6 PACKETS
+
+        packetService.cancelPackets(
+            DefaultTrafficSelector.builder().matchEthType(Ethernet.TYPE_IPV4).build(),
+            PacketPriority.REACTIVE, interceptAppId);
+
+        packetService.cancelPackets(
+            DefaultTrafficSelector.builder().matchEthType(Ethernet.TYPE_IPV6).build(),
+            PacketPriority.REACTIVE, interceptAppId);
+
+        log.info("slsnet reactive routing ip packet intercepts stopped");
     }
 
     /**
@@ -189,18 +201,20 @@ public class SlsNetReactiveRouting {
             log.warn("slsnet reactive routing refresh intercepts skipped "
                      + "for virtual gateway mac address unknown");
         }
-        // clean all previous flow rules
-        flowRuleService.removeFlowRulesById(reactAppId);
+
+        Set<FlowRule> newInterceptRules = new HashSet<>();
         for (Device device : deviceService.getAvailableDevices()) {
             // install new flow rules for local subnet
-            for (IpSubnet ipSubnet : slsnet.getIp4Subnets()) {
+            for (IpSubnet subnet : new ImmutableList.Builder<IpSubnet>()
+                                           .addAll(slsnet.getIp4Subnets())
+                                           .addAll(slsnet.getIp6Subnets()).build()) {
                 int priority = slsnet.PRI_REACTIVE_BASE +
-                               ipSubnet.ipPrefix().prefixLength() * slsnet.PRI_REACTIVE_STEP +
+                               subnet.ipPrefix().prefixLength() * slsnet.PRI_REACTIVE_STEP +
                                slsnet.PRI_REACTIVE_INTERCEPT;
                 TrafficSelector selector = DefaultTrafficSelector.builder()
                         .matchEthType(Ethernet.TYPE_IPV4)
                         .matchEthDst(slsnet.getVirtualGatewayMacAddress())
-                        .matchIPDst(ipSubnet.ipPrefix()).build();
+                        .matchIPDst(subnet.ipPrefix()).build();
                 TrafficTreatment treatment = DefaultTrafficTreatment.builder()
                         .punt().build();
                 FlowRule rule = DefaultFlowRule.builder()
@@ -208,15 +222,29 @@ public class SlsNetReactiveRouting {
                         .withPriority(priority)
                         .withSelector(selector)
                         .withTreatment(treatment)
-                        .fromApp(reactAppId)
+                        .fromApp(interceptAppId)
                         .makePermanent()
                         .forTable(0).build();
-                flowRuleService.applyFlowRules(rule);
-                log.debug("slsnet reactive routing install FlowRule: deviceId={} {}",
-                          device.id(), rule);
+                newInterceptRules.add(rule);
+                //log.debug("slsnet reactive routing install intercept flow rule: deviceId={} {}",
+                //          device.id(), rule);
             }
-            // install new flow rules for border routes
-            // MAY NEED TO ADD IPv6 CASE
+        }
+
+        if (!newInterceptRules.equals(interceptRules)) {
+            interceptRules.stream()
+                .filter(rule -> !newInterceptRules.contains(rule))
+                .forEach(rule -> {
+                    flowRuleService.removeFlowRules(rule);
+                    log.info("slsnet reactive routing remove intercept flow rule: {}", rule);
+                });
+            newInterceptRules.stream()
+                .filter(rule -> !interceptRules.contains(rule))
+                .forEach(rule -> {
+                    flowRuleService.applyFlowRules(rule);
+                    log.info("slsnet reactive routing apply intercept flow rule: {}", rule);
+                });
+            interceptRules = newInterceptRules;
         }
     }
 
@@ -400,7 +428,7 @@ public class SlsNetReactiveRouting {
             if (ingressPoints.contains(srcCp) || ingressPoints.add(srcCp)) {
                 MultiPointToSinglePointIntent updatedIntent =
                         MultiPointToSinglePointIntent.builder()
-                                .appId(reactAppId)
+                                .appId(routeAppId)
                                 .key(existingIntent.key())
                                 .selector(existingIntent.selector())
                                 .treatment(existingIntent.treatment())
@@ -421,10 +449,10 @@ public class SlsNetReactiveRouting {
             // packet-in and the new intent also includes the
             // ingressConnectPoint. This will not affect reactive routing.
         } else {
-            Key key = Key.of(prefix.toString(), reactAppId);
+            Key key = Key.of(prefix.toString(), routeAppId);
             int priority = slsnet.PRI_REACTIVE_BASE
                            + prefix.prefixLength() * slsnet.PRI_REACTIVE_STEP
-                           + slsnet.PRI_REACTIVE_ACTION;
+                           + slsnet.PRI_REACTIVE_ROUTE;
             TrafficSelector.Builder selector = DefaultTrafficSelector.builder();
             // select.matchEthDst(slsnet.getVirtualGatewayMacAddress());
             if (prefix.isIp4()) {
@@ -444,7 +472,7 @@ public class SlsNetReactiveRouting {
             Set<ConnectPoint> ingressPoints = new HashSet<>();
             ingressPoints.add(srcCp);
             MultiPointToSinglePointIntent newIntent = MultiPointToSinglePointIntent.builder()
-                    .appId(reactAppId)
+                    .appId(routeAppId)
                     .key(key)
                     .selector(selector.build())
                     .treatment(treatment.build())

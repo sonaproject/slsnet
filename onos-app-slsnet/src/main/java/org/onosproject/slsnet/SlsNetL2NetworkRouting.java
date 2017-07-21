@@ -61,7 +61,6 @@ import static org.onlab.util.Tools.groupedThreads;
 @Component(immediate = true, enabled = false)
 public class SlsNetL2NetworkRouting {
 
-    private static final String L2NET_APP_ID = "org.onosproject.slsnet.l2net";
     private static final int COMPLETE_TIMEOUT_SEC = 5;
 
     private final Logger log = LoggerFactory.getLogger(getClass());
@@ -83,7 +82,7 @@ public class SlsNetL2NetworkRouting {
 
     @Activate
     public void activate() {
-        l2NetAppId = coreService.registerApplication(L2NET_APP_ID);
+        l2NetAppId = coreService.registerApplication(slsnet.L2NETWORK_APP_ID);
         log.info("slsnet l2network routing starting with l2net app id {}", l2NetAppId.toString());
 
         // A single thread pool for L2NetworkOperationScheduler
