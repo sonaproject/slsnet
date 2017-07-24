@@ -148,6 +148,11 @@ public class SlsNetManager extends ListenerRegistry<SlsNetEvent, SlsNetListener>
     private MacAddress virtualGatewayMacAddress;
     private Set<IpAddress> virtualGatewayIpAddresses = new HashSet<>();
 
+    // Refresh monitor thread
+    private Object refreshMonitor = new Object();
+    private boolean doRefresh = false;
+    private InternalRefreshThread refreshThread;
+
     // Listener for Service Events
     private final InternalNetworkConfigListener configListener = new InternalNetworkConfigListener();
     private final InternalDeviceListener deviceListener = new InternalDeviceListener();
@@ -173,15 +178,18 @@ public class SlsNetManager extends ListenerRegistry<SlsNetEvent, SlsNetListener>
             appId = coreService.registerApplication(APP_ID);
         }
 
-        refreshNetworkConfig(null);
+        // initial refresh
+        refresh();
 
         configService.addListener(configListener);
         registry.registerConfigFactory(reactiveRoutingConfigFactory);
         deviceService.addListener(deviceListener);
         hostService.addListener(hostListener);
 
-        // delay activation until first CONFIG_REGISTERED event */
         components.forEach(name -> componentService.activate(appId, name));
+
+        refreshThread = new InternalRefreshThread();
+        refreshThread.start();
 
         log.info("slsnet started");
     }
@@ -197,12 +205,15 @@ public class SlsNetManager extends ListenerRegistry<SlsNetEvent, SlsNetListener>
         registry.unregisterConfigFactory(reactiveRoutingConfigFactory);
         configService.removeListener(configListener);
 
+        refreshThread.stop();
+        refreshThread = null;
+
         log.info("slsnet stopped");
     }
 
     // Set up from configuration
-    private void refreshNetworkConfig(NetworkConfigEvent event) {
-        log.info("slsnet refresh network config: {}", event);
+    private void refresh() {
+        log.info("slsnet refresh");
         boolean dirty = false;
 
         SlsNetConfig config = configService.getConfig(coreService.registerApplication(APP_ID), SlsNetConfig.class);
@@ -504,6 +515,36 @@ public class SlsNetManager extends ListenerRegistry<SlsNetEvent, SlsNetListener>
         process(new SlsNetEvent(SlsNetEvent.Type.SLSNET_DUMP, subject));
     }
 
+    // Refresh action thread and notifier
+
+    private class InternalRefreshThread extends Thread {
+        public void run() {
+            while (true) {
+                boolean doRefreshMarked = false;
+                synchronized (refreshMonitor) {
+                    if (!doRefresh) {
+                        try {
+                            refreshMonitor.wait(30000);   // 30 seconds
+                        } catch (InterruptedException e) {
+                        }
+                    }
+                    doRefreshMarked = doRefresh;
+                    doRefresh = false;
+                }
+                if (doRefreshMarked) {
+                    refresh();
+                }
+            }
+        }
+    }
+
+    private void notiToRefresh() {
+        synchronized (refreshMonitor) {
+            doRefresh = true;
+            refreshMonitor.notifyAll();
+        }
+    }
+
     // Service Listeners
 
     private class InternalNetworkConfigListener implements NetworkConfigListener {
@@ -516,7 +557,7 @@ public class SlsNetManager extends ListenerRegistry<SlsNetEvent, SlsNetListener>
             case CONFIG_UPDATED:
             case CONFIG_REMOVED:
                 if (event.configClass().equals(SlsNetConfig.class)) {
-                    refreshNetworkConfig(event);
+                    notiToRefresh();
                 }
                 break;
             default:
@@ -538,7 +579,7 @@ public class SlsNetManager extends ListenerRegistry<SlsNetEvent, SlsNetListener>
             case PORT_REMOVED:
             case PORT_UPDATED:
             // case PORT_STATS_UPDATED:  IGNORED
-                refreshNetworkConfig(null);
+                notiToRefresh();
                 break;
             default:
                 break;
@@ -556,7 +597,7 @@ public class SlsNetManager extends ListenerRegistry<SlsNetEvent, SlsNetListener>
             case HOST_REMOVED:
             case HOST_ADDED:
             case HOST_UPDATED:
-                refreshNetworkConfig(null);
+                notiToRefresh();
                 break;
             default:
                 break;
@@ -574,14 +615,13 @@ public class SlsNetManager extends ListenerRegistry<SlsNetEvent, SlsNetListener>
             case INTERFACE_REMOVED:
             case INTERFACE_UPDATED:
                 // target interfaces are static from netcfg
-                //refreshNetworkConfig(null);
+                //notToRefresh();
                 break;
             default:
                 break;
             }
         }
     }
-
 
 }
 

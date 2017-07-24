@@ -167,16 +167,18 @@ public class SlsNetL2NetworkRouting {
 
         // check intents to be purge
         if (!toBePurgedIntentKeys.isEmpty()) {
+            Set<Key> purgedKeys = new HashSet<>();
             for (Key key : toBePurgedIntentKeys) {
                 Intent intentToPurge = intentService.getIntent(key);
                 if (intentToPurge == null) {
-                    log.info("slsnet l2network routing try purge intent: {}", intentToPurge);
-                    toBePurgedIntentKeys.remove(key);
-                } else {
                     log.info("slsnet l2network routing purged intent: key={}", key);
+                    purgedKeys.add(key);
+                } else {
+                    log.info("slsnet l2network routing try to purge intent: key={}", key);
                     intentService.purge(intentToPurge);
                 }
             }
+            toBePurgedIntentKeys.removeAll(purgedKeys);
         }
     }
 
