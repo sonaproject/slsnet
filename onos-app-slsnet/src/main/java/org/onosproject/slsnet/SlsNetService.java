@@ -53,7 +53,7 @@ public interface SlsNetService
     static final int PRI_REACTIVE_INTERCEPT = 0;
 
     // slsnet event related timers
-    static final long IDLE_INTERVAL_MSEC = 10000;
+    static final long IDLE_INTERVAL_MSEC = 5000;
 
     /**
      * Gets appId.
