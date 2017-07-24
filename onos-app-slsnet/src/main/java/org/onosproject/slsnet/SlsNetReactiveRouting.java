@@ -50,6 +50,7 @@ import org.onosproject.net.Host;
 import org.onosproject.net.host.HostService;
 import org.onosproject.net.intent.Constraint;
 import org.onosproject.net.intent.constraint.PartialFailureConstraint;
+import org.onosproject.net.intent.constraint.HashedPathSelectionConstraint;
 import org.onosproject.net.intent.IntentService;
 import org.onosproject.net.intent.Key;
 import org.onosproject.net.intent.MultiPointToSinglePointIntent;
@@ -107,9 +108,8 @@ public class SlsNetReactiveRouting {
     protected SlsNetService slsnet;
 
     private static final ImmutableList<Constraint> CONSTRAINTS
-            = ImmutableList.of(new PartialFailureConstraint());
-           // = ImmutableList.of(new PartialFailureConstraint(),
-           //                    new HashedPathSelectionConstraint());
+            = ImmutableList.of(new PartialFailureConstraint(),
+                               new HashedPathSelectionConstraint());
 
     private Set<FlowRule> interceptRules = new HashSet<>();
 
@@ -356,8 +356,12 @@ public class SlsNetReactiveRouting {
         } else {
             Route route = routeService.longestPrefixMatch(dstIp);
             if (route == null) {
-                log.warn("slsnet reactive routing route unknown: dstIp={}", dstIp);
-                return false;
+                log.warn("slsnet reactive routing route unknown in routeServce: dstIp={}", dstIp);
+                route = slsnet.findBorderRoute(dstIp);
+                if (route == null) {
+                    log.warn("slsnet reactive routing route unknown in slsnet.findBorderRoute(): dstIp={}", dstIp);
+                    return false;
+                }
             }
             setUpConnectivity(srcCp, route.prefix(), route.nextHop());
         }
@@ -490,14 +494,44 @@ public class SlsNetReactiveRouting {
        }
     }
 
-    // Service Listeners
+    // monitor border peers for routeService lookup to be effective
+    private void monitorBorderPeers() {
+        for (Route route : slsnet.getBorderRoutes()) {
+            hostService.startMonitoringIp(route.nextHop());
+            slsnet.requestMac(route.nextHop());
+        }
+    }
 
+    // Dump Cli Handler
+    private void dump(String subject) {
+        if (subject == "intents") {
+            System.out.println("Reactive Routing Route Intents:\n");
+            for (Map.Entry<IpPrefix, MultiPointToSinglePointIntent> entry: routeIntents.entrySet()) {
+                System.out.println("    " + entry.getKey().toString() + ": " + entry.getValue().toString());
+            }
+            System.out.println("");
+
+            System.out.println("Reactive Routing Intercep Flow Rules:\n");
+            for (FlowRule rule : interceptRules) {
+                System.out.println("    " + rule.toString());
+            }
+            System.out.println("");
+        }
+    }
+
+    // Listener
     private class InternalSlsNetListener implements SlsNetListener {
         @Override
         public void event(SlsNetEvent event) {
             switch (event.type()) {
             case SLSNET_UPDATED:
                 refreshIntercepts();
+                break;
+            case SLSNET_IDLE:
+                monitorBorderPeers();
+                break;
+            case SLSNET_DUMP:
+                dump(event.subject());
                 break;
             default:
                 break;

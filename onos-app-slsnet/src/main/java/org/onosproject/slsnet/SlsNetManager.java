@@ -142,6 +142,10 @@ public class SlsNetManager extends ListenerRegistry<SlsNetEvent, SlsNetListener>
 
     // Border Route table
     private Set<Route> borderRoutes = new HashSet<>();
+    private InvertedRadixTree<Route> ip4BorderRouteTable =
+                 new ConcurrentInvertedRadixTree<>(new DefaultByteArrayNodeFactory());
+    private InvertedRadixTree<Route> ip6BorderRouteTable =
+                 new ConcurrentInvertedRadixTree<>(new DefaultByteArrayNodeFactory());
 
     // VirtialGateway
     private MacAddress virtualGatewayMacAddress;
@@ -295,8 +299,21 @@ public class SlsNetManager extends ListenerRegistry<SlsNetEvent, SlsNetListener>
         // borderRoutes config handling
         Set<Route> newBorderRoutes = config.borderRoutes();
         if (!borderRoutes.equals(newBorderRoutes)) {
+            InvertedRadixTree<Route> newIp4BorderRouteTable =
+                    new ConcurrentInvertedRadixTree<>(new DefaultByteArrayNodeFactory());
+            InvertedRadixTree<Route> newIp6BorderRouteTable =
+                    new ConcurrentInvertedRadixTree<>(new DefaultByteArrayNodeFactory());
+            for (Route route : newBorderRoutes) {
+                if (route.prefix().isIp4()) {
+                    newIp4BorderRouteTable.put(createBinaryString(route.prefix()), route);
+                } else {
+                    newIp6BorderRouteTable.put(createBinaryString(route.prefix()), route);
+                }
+            }
+
             Set<Route> removeSet = new HashSet<>();
             Set<Route> updateSet = new HashSet<>();
+            boolean isChanged = false;
             for (Route route : borderRoutes) {  // check old to be removed
                 if (!newBorderRoutes.contains(route)) {
                     removeSet.add(route);
@@ -309,12 +326,18 @@ public class SlsNetManager extends ListenerRegistry<SlsNetEvent, SlsNetListener>
             }
             if (!removeSet.isEmpty()) {
                 routeService.withdraw(removeSet);
+                isChanged = true;
             }
             if (!updateSet.isEmpty()) {
                 routeService.update(updateSet);
+                isChanged = true;
             }
-            borderRoutes = newBorderRoutes;
-            dirty = true;
+            if (isChanged) {
+                borderRoutes = newBorderRoutes;
+                ip4BorderRouteTable = newIp4BorderRouteTable;
+                ip6BorderRouteTable = newIp6BorderRouteTable;
+                dirty = true;
+            }
         }
 
         // virtual gateway MAC
@@ -407,17 +430,32 @@ public class SlsNetManager extends ListenerRegistry<SlsNetEvent, SlsNetListener>
     }
 
     @Override
-    public IpSubnet findIpSubnet(IpAddress ipAddress) {
-        if (ipAddress.isIp4()) {
+    public IpSubnet findIpSubnet(IpAddress ip) {
+        if (ip.isIp4()) {
             return (IpSubnet) ip4SubnetTable.getValuesForKeysPrefixing(
-                                  createBinaryString(IpPrefix.valueOf(ipAddress, Ip4Address.BIT_LENGTH)))
+                                  createBinaryString(IpPrefix.valueOf(ip, Ip4Address.BIT_LENGTH)))
                               .iterator().next();
         } else {
             return (IpSubnet) ip6SubnetTable.getValuesForKeysPrefixing(
-                                  createBinaryString(IpPrefix.valueOf(ipAddress, Ip6Address.BIT_LENGTH)))
+                                  createBinaryString(IpPrefix.valueOf(ip, Ip6Address.BIT_LENGTH)))
                               .iterator().next();
         }
     }
+
+    @Override
+    public Route findBorderRoute(IpAddress ip) {
+        // ASSUME: ipAddress is out of ipSubnet
+        if (ip.isIp4()) {
+            return (Route) ip4BorderRouteTable.getValuesForKeysPrefixing(
+                               createBinaryString(IpPrefix.valueOf(ip, Ip4Address.BIT_LENGTH)))
+                           .iterator().next();
+        } else {
+            return (Route) ip6BorderRouteTable.getValuesForKeysPrefixing(
+                               createBinaryString(IpPrefix.valueOf(ip, Ip6Address.BIT_LENGTH)))
+                           .iterator().next();
+        }
+    }
+
 
     @Override
     public Interface getHostInterface(Host host) {
@@ -524,11 +562,8 @@ public class SlsNetManager extends ListenerRegistry<SlsNetEvent, SlsNetListener>
                 synchronized (refreshMonitor) {
                     if (!doRefresh) {
                         try {
-                            log.info("slsnet refresh before wait");
                             refreshMonitor.wait(IDLE_INTERVAL_MSEC);
-                            log.info("slsnet refresh after wait");
                         } catch (InterruptedException e) {
-                            log.info("slsnet refresh interrupted wait");
                         }
                     }
                     doRefreshMarked = doRefresh;

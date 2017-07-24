@@ -139,6 +139,15 @@ public interface SlsNetService
     IpSubnet findIpSubnet(IpAddress ipAddress);
 
     /**
+     * Finds the Border Route containing the ipAddress.
+     * ASSUME: ipAddress is out of ipSubnets
+     *
+     * @param ipAddress the ipAddress to be matched
+     * @return the IpSubnet for specific ipAddress
+     */
+    Route findBorderRoute(IpAddress ipAddress);
+
+    /**
      * Finds the network interface related to the host.
      *
      * @param host the host

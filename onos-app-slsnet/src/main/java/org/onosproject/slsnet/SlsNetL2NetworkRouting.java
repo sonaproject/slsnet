@@ -323,12 +323,12 @@ public class SlsNetL2NetworkRouting {
     // Dump command handler
     private void dump(String subject) {
         if (subject == "intents") {
-            System.out.println("l2NetworkIntents:\n");
+            System.out.println("L2Network Intents:\n");
             for (Intent intent: l2NetworkIntents) {
                 System.out.println("    " + intent.key().toString());
             }
             System.out.println("");
-            System.out.println("toBePurgedIntentKeys:\n");
+            System.out.println("L2Network Intents to Be Purged:\n");
             for (Key key: toBePurgedIntentKeys) {
                 System.out.println("    " + key.toString());
             }
