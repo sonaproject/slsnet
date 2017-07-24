@@ -25,6 +25,7 @@ public class SlsNetEvent extends AbstractEvent<SlsNetEvent.Type, String> {
 
     public enum Type {
         SLSNET_UPDATED,  // Indicates an slsnet has been updated.
+        SLSNET_IDLE,     // Indicates an slsnet idle loop
         SLSNET_DUMP      // request to dump internal info on the subject
     }
 

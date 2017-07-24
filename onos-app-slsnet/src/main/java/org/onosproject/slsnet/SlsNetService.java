@@ -35,6 +35,7 @@ import java.util.Collection;
 public interface SlsNetService
         extends ListenerService<SlsNetEvent, SlsNetListener> {
 
+    // App symbols
     static final String APP_ID = "org.onosproject.slsnet";
     static final String L2NETWORK_APP_ID = "org.onosproject.slsnet.l2network";
     static final String REACTIVE_ROUTE_APP_ID = "org.onosproject.slsnet.intercept";
@@ -50,6 +51,9 @@ public interface SlsNetService
     static final int PRI_REACTIVE_STEP = 2;
     static final int PRI_REACTIVE_ROUTE = 1;
     static final int PRI_REACTIVE_INTERCEPT = 0;
+
+    // slsnet event related timers
+    static final long IDLE_INTERVAL_MSEC = 5000;
 
     /**
      * Gets appId.

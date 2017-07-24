@@ -126,9 +126,6 @@ public class SlsNetL2NetworkRouting {
         log.info("slsnet l2network routing stopped");
     }
 
-    /**
-     * Scheduler for L2Network Refresh operation.
-     */
     public void refresh() {
         log.info("slsnet l2network routing refresh");
 
@@ -164,7 +161,10 @@ public class SlsNetL2NetworkRouting {
         if (updated) {
             l2NetworkIntents = newL2NetworkIntents;
         }
+        checkIntentsPurge();
+    }
 
+    public void checkIntentsPurge() {
         // check intents to be purge
         if (!toBePurgedIntentKeys.isEmpty()) {
             Set<Key> purgedKeys = new HashSet<>();
@@ -182,9 +182,8 @@ public class SlsNetL2NetworkRouting {
         }
     }
 
-    /**
-     * Generates unicast Intents and broadcast Intents for the L2 Network.
-     */
+    // Generates Unicast Intents and broadcast Intents for the L2 Network.
+
     private Set<Intent> generateL2NetworkIntents(L2Network l2Network) {
         return new ImmutableSet.Builder<Intent>()
             .addAll(buildBrcIntents(l2Network, l2NetAppId))
@@ -207,26 +206,7 @@ public class SlsNetL2NetworkRouting {
                 .collect(Collectors.toSet());
     }
 
-    /**
-     * Retrieves installed Intents from IntentService which related to
-     * specific L2 Network.
-     */
-/*
-    private Set<Intent> getCurrentIntents(L2Network l2Network) {
-        String l2NetworkName = l2Network.name();
-        return Tools.stream(intentService.getIntents())
-                .filter(intent -> intent.key().toString().startsWith(l2NetworkName))
-                .collect(Collectors.toSet());
-    }
-*/
-
-    /**
-     * Builds broadcast Intents for a L2 Network.
-     *
-     * @param l2Network the L2 Network
-     * @param appId the application id for Intents
-     * @return broadcast Intents for the L2 Network
-     */
+    // Build Boadcast Intents for a L2 Network.
     private Set<Intent> buildBrcIntents(L2Network l2Network, ApplicationId appId) {
         Set<Interface> interfaces = l2Network.interfaces();
         if (!l2Network.l2Forwarding() || interfaces.size() < 2) {
@@ -264,14 +244,7 @@ public class SlsNetL2NetworkRouting {
         return brcIntents;
     }
 
-    /**
-     * Builds unicast Intents for a L2 Network.
-     *
-     * @param l2Network the L2 Network
-     * @param hosts the hosts of the L2 Network
-     * @param appId application ID for Intents
-     * @return unicast Intents for the L2 Network
-     */
+    // Builds unicast Intents for a L2 Network.
     private Set<Intent> buildUniIntents(L2Network l2Network, Set<Host> hosts, ApplicationId appId) {
         Set<Interface> interfaces = l2Network.interfaces();
         if (!l2Network.l2Forwarding() || interfaces.size() < 2) {
@@ -304,20 +277,8 @@ public class SlsNetL2NetworkRouting {
         return uniIntents;
     }
 
-    /**
-     * Builds an intent key either for single-point to multi-point or
-     * multi-point to single-point intents, based on a prefix that defines
-     * the type of intent, the single connect point representing the single
-     * source or destination for that intent, the name of the L2Network the intent
-     * belongs to, and the destination host MAC address the intent reaches.
-     *
-     * @param prefix the key prefix
-     * @param cPoint the connect point identifying the source/destination
-     * @param l2NetworkName the name of the L2 Network
-     * @param hostMac the source/destination MAC address
-     * @param appId application ID for the key
-     * @return the key to identify the intent
-     */
+    // Intent generate utilities
+
     private Key buildKey(String prefix, ConnectPoint cPoint, String l2NetworkName,
                          MacAddress hostMac, ApplicationId appId) {
         return Key.of(l2NetworkName + SEPARATOR + prefix + SEPARATOR
@@ -325,9 +286,6 @@ public class SlsNetL2NetworkRouting {
                       appId);
     }
 
-    /**
-     * Sets one or more encapsulation constraints on the intent builder given.
-     */
     private void setEncap(ConnectivityIntent.Builder builder,
                                  List<Constraint> constraints, EncapsulationType encap) {
         // Constraints might be an immutable list, so a new modifiable list is created
@@ -342,9 +300,6 @@ public class SlsNetL2NetworkRouting {
         builder.constraints(ImmutableList.copyOf(newConstraints));
     }
 
-    /**
-     * Builds filtered connected point by a given network interface.
-     */
     private FilteredConnectPoint buildFilteredConnectedPoint(Interface iface) {
         Objects.requireNonNull(iface);
         TrafficSelector.Builder trafficSelector = DefaultTrafficSelector.builder();
@@ -355,12 +310,6 @@ public class SlsNetL2NetworkRouting {
         return new FilteredConnectPoint(iface.connectPoint(), trafficSelector.build());
     }
 
-    /**
-     * Builds filtered connected point by a given host.
-     *
-     * @param host the host
-     * @return the filtered connected point of the given host
-     */
     protected FilteredConnectPoint buildFilteredConnectedPoint(Host host) {
         Objects.requireNonNull(host);
         TrafficSelector.Builder trafficSelector = DefaultTrafficSelector.builder();
@@ -371,7 +320,23 @@ public class SlsNetL2NetworkRouting {
         return new FilteredConnectPoint(host.location(), trafficSelector.build());
     }
 
+    // Dump command handler
+    private void dump(String subject) {
+        if (subject == "intents") {
+            System.out.println("l2NetworkIntents:\n");
+            for (Intent intent: l2NetworkIntents) {
+                System.out.println("    " + intent.key().toString());
+            }
+            System.out.println("");
+            System.out.println("toBePurgedIntentKeys:\n");
+            for (Key key: toBePurgedIntentKeys) {
+                System.out.println("    " + key.toString());
+            }
+            System.out.println("");
+        }
+    }
 
+    // Listener
     private class InternalSlsNetListener implements SlsNetListener {
         @Override
         public void event(SlsNetEvent event) {
@@ -379,20 +344,11 @@ public class SlsNetL2NetworkRouting {
             case SLSNET_UPDATED:
                 refresh();
                 break;
+            case SLSNET_IDLE:
+                checkIntentsPurge();
+                break;
             case SLSNET_DUMP:
-                if (event.subject() == "intents") {
-                    System.out.println("l2NetworkIntents:\n");
-                    for (Intent intent: l2NetworkIntents) {
-                        //System.out.println("    " + intent.key().toString() + ": " + intent.toString() + "\n");
-                        System.out.println("    " + intent.key().toString());
-                    }
-                    System.out.println("");
-                    System.out.println("toBePurgedIntentKeys:\n");
-                    for (Key key: toBePurgedIntentKeys) {
-                        System.out.println("    " + key.toString());
-                    }
-                    System.out.println("");
-                }
+                dump(event.subject());
                 break;
             default:
                 break;

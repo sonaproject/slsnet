@@ -75,7 +75,6 @@ import java.util.HashSet;
 import java.util.Collection;
 import java.util.List;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 import static org.onosproject.incubator.net.routing.RouteTools.createBinaryString;
 
@@ -225,33 +224,34 @@ public class SlsNetManager extends ListenerRegistry<SlsNetEvent, SlsNetListener>
         // l2Networks
         Set<L2Network> newL2Networks = new HashSet<>();
         Set<Interface> newL2NetworkInterfaces = new HashSet<>();
-        newL2Networks = config.getL2Networks().stream()
-                .map(l2NetworkConfig -> {
-                    L2Network l2Network = L2Network.of(l2NetworkConfig);
-                    // fill up interfaces and Hosts with active port only
-                    for (String ifaceName : l2NetworkConfig.interfaceNames()) {
-                         Interface iface = getInterfaceByName(ifaceName);
-                         if (iface != null && deviceService.getPort(iface.connectPoint()).isEnabled()) {
-                             l2Network.addInterface(iface);
-                             newL2NetworkInterfaces.add(iface);
-                         }
-                    }
-                    for (Host host : hostService.getHosts()) {
-                         Interface iface = getActiveHostInterface(host);
-                         if (iface != null && l2Network.contains(iface)) {
-                             l2Network.addHost(host);
-                         }
-                    }
-                    l2Network.setDirty(true);
-                    // update l2Network's dirty flags if same entry already exists
-                    for (L2Network prevL2Network : l2Networks) {
-                        if (prevL2Network.equals(l2Network)) {
-                            l2Network.setDirty(prevL2Network.dirty());
-                            break;
-                        }
-                    }
-                    return l2Network;
-                }).collect(Collectors.toSet());
+        for (L2Network newL2NetworkConfig : config.getL2Networks()) {
+            L2Network newL2Network = L2Network.of(newL2NetworkConfig);
+
+            // fill up interfaces and Hosts with active port only
+            for (String ifaceName : newL2NetworkConfig.interfaceNames()) {
+                Interface iface = getInterfaceByName(ifaceName);
+                if (iface != null && deviceService.isAvailable(iface.connectPoint().deviceId())) {
+                     newL2Network.addInterface(iface);
+                     newL2NetworkInterfaces.add(iface);
+                }
+            }
+            for (Host host : hostService.getHosts()) {
+                Interface iface = getAvailableDeviceHostInterface(host);
+                if (iface != null && newL2Network.contains(iface)) {
+                    newL2Network.addHost(host);
+                }
+            }
+            newL2Network.setDirty(true);
+
+            // update newL2Network's dirty flags if same entry already exists
+            for (L2Network prevL2Network : l2Networks) {
+                if (prevL2Network.equals(newL2Network)) {
+                    newL2Network.setDirty(prevL2Network.dirty());
+                    break;
+                }
+            }
+            newL2Networks.add(newL2Network);
+        }
         if (!l2Networks.equals(newL2Networks)) {
             l2Networks = newL2Networks;
             dirty = true;
@@ -328,7 +328,7 @@ public class SlsNetManager extends ListenerRegistry<SlsNetEvent, SlsNetListener>
         // notify to SlsNet listeners
         if (dirty) {
             log.info("slsnet refresh; notify events");
-            process(new SlsNetEvent(SlsNetEvent.Type.SLSNET_UPDATED, "update"));
+            process(new SlsNetEvent(SlsNetEvent.Type.SLSNET_UPDATED, "updated"));
         }
     }
 
@@ -428,11 +428,11 @@ public class SlsNetManager extends ListenerRegistry<SlsNetEvent, SlsNetListener>
                 .orElse(null);
     }
 
-    private Interface getActiveHostInterface(Host host) {
+    private Interface getAvailableDeviceHostInterface(Host host) {
         return interfaceService.getInterfaces().stream()
                 .filter(iface -> iface.connectPoint().equals(host.location()) &&
                                  iface.vlan().equals(host.vlan()))
-                .filter(iface -> deviceService.getPort(iface.connectPoint()).isEnabled())
+                .filter(iface -> deviceService.isAvailable(iface.connectPoint().deviceId()))
                 .findFirst()
                 .orElse(null);
     }
@@ -524,15 +524,28 @@ public class SlsNetManager extends ListenerRegistry<SlsNetEvent, SlsNetListener>
                 synchronized (refreshMonitor) {
                     if (!doRefresh) {
                         try {
-                            refreshMonitor.wait(30000);   // 30 seconds
+                            log.info("slsnet refresh before wait");
+                            refreshMonitor.wait(IDLE_INTERVAL_MSEC);
+                            log.info("slsnet refresh after wait");
                         } catch (InterruptedException e) {
+                            log.info("slsnet refresh interrupted wait");
                         }
                     }
                     doRefreshMarked = doRefresh;
                     doRefresh = false;
                 }
                 if (doRefreshMarked) {
-                    refresh();
+                    try {
+                        refresh();
+                    } catch (Exception e) {
+                        log.warn("slsnet refresh failed: exception={}", e);
+                    }
+                } else {
+                    try {
+                        process(new SlsNetEvent(SlsNetEvent.Type.SLSNET_IDLE, "idle"));
+                    } catch (Exception e) {
+                        log.warn("slsnet idle failed: exception={}", e);
+                    }
                 }
             }
         }
@@ -614,8 +627,7 @@ public class SlsNetManager extends ListenerRegistry<SlsNetEvent, SlsNetListener>
             case INTERFACE_ADDED:
             case INTERFACE_REMOVED:
             case INTERFACE_UPDATED:
-                // target interfaces are static from netcfg
-                //notToRefresh();
+                notiToRefresh();
                 break;
             default:
                 break;

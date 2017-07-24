@@ -39,8 +39,8 @@ public final class L2Network {
     private Set<String> interfaceNames;   // also for network configuration
     private EncapsulationType encapsulationType;  // also for network configuration
     private boolean l2Forwarding;         // do l2Forwarding (default:true) or not
-    private Set<Interface> interfaces;
-    private Set<HostId> hostIds;
+    private Set<Interface> interfaces;    // available interfaces from interfaceNames
+    private Set<HostId> hostIds;          // available hosts from interfaces
     private boolean dirty;
 
     /**
