@@ -142,19 +142,16 @@ public class SlsNetL2NetworkRouting {
         for (Intent intent : l2NetworkIntents) {
             if (!newL2NetworkIntents.contains(intent)) {
                 log.info("slsnet l2network routing withdraw intent: {}", intent);
-                intentService.withdraw(intent);
                 toBePurgedIntentKeys.add(intent.key());
+                intentService.withdraw(intent);
                 updated = true;
             }
         }
         for (Intent intent : newL2NetworkIntents) {
             if (!l2NetworkIntents.contains(intent)) {
                 log.info("slsnet l2network routing submit intent: {}", intent);
+                toBePurgedIntentKeys.remove(intent.key());
                 intentService.submit(intent);
-                // remove form purge list
-                if (toBePurgedIntentKeys.contains(intent.key())) {
-                    toBePurgedIntentKeys.remove(intent.key());
-                }
                 updated = true;
             }
         }
