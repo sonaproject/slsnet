@@ -68,12 +68,12 @@ public class SlsNetCli extends AbstractShellCommand {
     // Shows configuraions
     protected void show() {
         print("SlsNetAppId:");
-        print("   %s", slsnet.getAppId());
+        print("    %s", slsnet.getAppId());
         print("");
 
         print("l2Networks:");
         for (L2Network l2Network : slsnet.getL2Networks()) {
-            print("   %s", l2Network);
+            print("    %s", l2Network);
         }
         print("");
 

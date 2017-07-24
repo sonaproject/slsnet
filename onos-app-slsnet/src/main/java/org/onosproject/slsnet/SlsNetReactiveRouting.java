@@ -509,7 +509,7 @@ public class SlsNetReactiveRouting {
             }
             System.out.println("");
 
-            System.out.println("Reactive Routing Intercep Flow Rules:\n");
+            System.out.println("Reactive Routing Intercept Flow Rules:\n");
             for (FlowRule rule : interceptRules) {
                 System.out.println("    " + rule.toString());
             }
