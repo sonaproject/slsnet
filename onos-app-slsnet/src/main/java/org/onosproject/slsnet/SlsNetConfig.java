@@ -42,8 +42,7 @@ public class SlsNetConfig extends Config<ApplicationId> {
     private static final String INTERFACES = "interfaces";
     private static final String ENCAPSULATION = "encapsulation";
     private static final String L2FORWARDING = "l2Forwarding";
-    private static final String IP4SUBNETS = "ip4Subnets";
-    private static final String IP6SUBNETS = "ip6Subnets";
+    private static final String IPSUBNETS = "ipSubnets";
     private static final String BORDERROUTES = "borderRoutes";
     private static final String IPPREFIX = "ipPrefix";
     private static final String GATEWAYIP = "gatewayIp";
@@ -91,45 +90,16 @@ public class SlsNetConfig extends Config<ApplicationId> {
     }
 
     /**
-     * Gets the set of configured local IPv4 prefixes.
+     * Gets the set of configured local IP subnets.
      *
-     * @return IPv4 prefixes
+     * @return IP Subnets
      */
-    public Set<IpSubnet> ip4Subnets() {
+    public Set<IpSubnet> ipSubnets() {
         Set<IpSubnet> subnets = Sets.newHashSet();
 
-        JsonNode subnetsNode = object.get(IP4SUBNETS);
+        JsonNode subnetsNode = object.get(IPSUBNETS);
         if (subnetsNode == null) {
-            log.warn("slsnet network config ip4Subnets is null!");
-            return subnets;
-        }
-
-        subnetsNode.forEach(jsonNode -> {
-            try {
-                subnets.add(new IpSubnet(
-                        IpPrefix.valueOf(jsonNode.get(IPPREFIX).asText()),
-                        IpAddress.valueOf(jsonNode.get(GATEWAYIP).asText()),
-                        jsonNode.get(L2NETWORKNAME).asText()));
-            } catch (IllegalArgumentException e) {
-                log.warn("slsnet network config parse error; skip: {}", jsonNode);
-            }
-        });
-
-        return subnets;
-    }
-
-    /**
-     * Gets the set of configured local IPv6 prefixes.
-     *
-     * @return IPv6 prefixes
-     */
-    public Set<IpSubnet> ip6Subnets() {
-        Set<IpSubnet> subnets = Sets.newHashSet();
-
-        JsonNode subnetsNode = object.get(IP6SUBNETS);
-        if (subnetsNode == null) {
-            /* NOTE: no warning for ip6 case is not implemented */
-            /*log.warn("ip6LocalPrefixes is null!"); */
+            log.warn("slsnet network config ipSubnets is null!");
             return subnets;
         }
 

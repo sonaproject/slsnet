@@ -70,18 +70,11 @@ public interface SlsNetService
     Collection<L2Network> getL2Networks();
 
     /**
-     * Retrieves the entire set of ip4Subnets configuration.
+     * Retrieves the entire set of ipSubnets configuration.
      *
-     * @return the set of IpSubnet for ip4Subnets
+     * @return all the ipSubnets
      */
-    Set<IpSubnet> getIp4Subnets();
-
-    /**
-     * Retrieves the entire set of ip6Subnets configuration.
-     *
-     * @return the set of IpSubnet for ip6Subnets
-     */
-    Set<IpSubnet> getIp6Subnets();
+    Set<IpSubnet> getIpSubnets();
 
     /**
      * Retrieves the entire set of Interface names connected to BGP peers in the

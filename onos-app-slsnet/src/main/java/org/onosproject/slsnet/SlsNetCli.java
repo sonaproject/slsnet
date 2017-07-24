@@ -18,9 +18,10 @@ package org.onosproject.slsnet;
 import org.apache.karaf.shell.commands.Argument;
 import org.apache.karaf.shell.commands.Command;
 import org.onosproject.cli.AbstractShellCommand;
-import org.onosproject.incubator.net.routing.RouteInfo;
-import org.onosproject.incubator.net.routing.RouteAdminService;
-import org.onosproject.incubator.net.routing.RouteTableId;
+import org.onosproject.incubator.net.routing.Route;
+//import org.onosproject.incubator.net.routing.RouteInfo;
+//import org.onosproject.incubator.net.routing.RouteAdminService;
+//import org.onosproject.incubator.net.routing.RouteTableId;
 
 
 /**
@@ -31,7 +32,8 @@ import org.onosproject.incubator.net.routing.RouteTableId;
 public class SlsNetCli extends AbstractShellCommand {
 
     protected static SlsNetService slsnet;
-    protected static RouteAdminService routeService;
+
+//    protected static RouteAdminService routeService;
 
     @Argument(index = 0, name = "command", description = "Command name: show, intents",
               required = true, multiValued = false)
@@ -42,9 +44,9 @@ public class SlsNetCli extends AbstractShellCommand {
         if (slsnet == null) {
             slsnet = get(SlsNetService.class);
         }
-        if (routeService == null) {
-            routeService = get(RouteAdminService.class);
-        }
+//        if (routeService == null) {
+//            routeService = get(RouteAdminService.class);
+//        }
 
         if (command == null) {
             print("command not found", command);
@@ -65,34 +67,46 @@ public class SlsNetCli extends AbstractShellCommand {
 
     // Shows configuraions
     protected void show() {
-        print("SlsNetAppId:\n");
-        print("   %s\n", slsnet.getAppId());
+        print("SlsNetAppId:");
+        print("   %s", slsnet.getAppId());
+        print("");
 
-        print("l2Networks:\n");
+        print("l2Networks:");
         for (L2Network l2Network : slsnet.getL2Networks()) {
-            print("   %s\n", l2Network);
+            print("   %s", l2Network);
         }
+        print("");
 
-        print("ip4Subnets:\n");
-        for (IpSubnet ipSubnet : slsnet.getIp4Subnets()) {
-            print("    %s\n", ipSubnet);
+        print("ipSubnets:");
+        for (IpSubnet ipSubnet : slsnet.getIpSubnets()) {
+            print("    %s", ipSubnet);
         }
+        print("");
 
-        print("borderRoutes:\n");
-        // do not show slsnet.getBorderRoutes() directly
+        print("borderRoutes:");
+        // directly show slsnet's borderRoute info
+        for (Route route : slsnet.getBorderRoutes()) {
+            print("    %s", route);
+        }
+        print("");
+
+        /* OLD: use routeService's routeTable info
         for (RouteTableId routeTableId : routeService.getRouteTables()) {
-            if (routeTableId.name() == "ipv4") {
+            if (routeTableId.name() == "ipv4" || routeTableId.name() == "ipv6") {
                 for (RouteInfo routeInfo : routeService.getRoutes(routeTableId)) {
                     print("    %s %s\n", routeInfo.prefix(), routeInfo.allRoutes().toString());
                 }
             }
         }
+        */
 
-        print("virtualGatewayMacAddress:\n");
-        print("    %s\n", slsnet.getVirtualGatewayMacAddress());
+        print("virtualGatewayMacAddress:");
+        print("    %s", slsnet.getVirtualGatewayMacAddress());
+        print("");
 
-        print("virtualGatewayIpAddressed:\n");
-        print("    %s\n", slsnet.getVirtualGatewayIpAddresses());
+        print("virtualGatewayIpAddressed:");
+        print("    %s", slsnet.getVirtualGatewayIpAddresses());
+        print("");
     }
 
 }

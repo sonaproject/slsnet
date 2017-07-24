@@ -133,8 +133,7 @@ public class SlsNetManager extends ListenerRegistry<SlsNetEvent, SlsNetListener>
     private Set<Interface> l2NetworkInterfaces = new HashSet<>();
 
     // Subnet table
-    private Set<IpSubnet> ip4Subnets = new HashSet<>();
-    private Set<IpSubnet> ip6Subnets = new HashSet<>();
+    private Set<IpSubnet> ipSubnets = new HashSet<>();
     private InvertedRadixTree<IpSubnet> ip4SubnetTable =
                  new ConcurrentInvertedRadixTree<>(new DefaultByteArrayNodeFactory());
     private InvertedRadixTree<IpSubnet> ip6SubnetTable =
@@ -266,28 +265,23 @@ public class SlsNetManager extends ListenerRegistry<SlsNetEvent, SlsNetListener>
         }
 
         // ipSubnets
-        Set<IpSubnet> newIp4Subnets = config.ip4Subnets();
-        Set<IpSubnet> newIp6Subnets = config.ip6Subnets();
+        Set<IpSubnet> newIpSubnets = config.ipSubnets();
         InvertedRadixTree<IpSubnet> newIp4SubnetTable =
                  new ConcurrentInvertedRadixTree<>(new DefaultByteArrayNodeFactory());
         InvertedRadixTree<IpSubnet> newIp6SubnetTable =
                  new ConcurrentInvertedRadixTree<>(new DefaultByteArrayNodeFactory());
         Set<IpAddress> newVirtualGatewayIpAddresses = new HashSet<>();
-        for (IpSubnet subnet : newIp4Subnets) {
-            newIp4SubnetTable.put(createBinaryString(subnet.ipPrefix()), subnet);
+        for (IpSubnet subnet : newIpSubnets) {
+            if (subnet.ipPrefix().isIp4()) {
+                newIp4SubnetTable.put(createBinaryString(subnet.ipPrefix()), subnet);
+            } else {
+                newIp6SubnetTable.put(createBinaryString(subnet.ipPrefix()), subnet);
+            }
             newVirtualGatewayIpAddresses.add(subnet.gatewayIp());
         }
-        for (IpSubnet subnet : newIp6Subnets) {
-            newIp6SubnetTable.put(createBinaryString(subnet.ipPrefix()), subnet);
-            newVirtualGatewayIpAddresses.add(subnet.gatewayIp());
-        }
-        if (!ip4Subnets.equals(newIp4Subnets)) {
-            ip4Subnets = newIp4Subnets;
+        if (!ipSubnets.equals(newIpSubnets)) {
+            ipSubnets = newIpSubnets;
             ip4SubnetTable = newIp4SubnetTable;
-            dirty = true;
-        }
-        if (!ip6Subnets.equals(newIp6Subnets)) {
-            ip6Subnets = newIp6Subnets;
             ip6SubnetTable = newIp6SubnetTable;
             dirty = true;
         }
@@ -310,7 +304,6 @@ public class SlsNetManager extends ListenerRegistry<SlsNetEvent, SlsNetListener>
                     newIp6BorderRouteTable.put(createBinaryString(route.prefix()), route);
                 }
             }
-
             Set<Route> removeSet = new HashSet<>();
             Set<Route> updateSet = new HashSet<>();
             boolean isChanged = false;
@@ -380,13 +373,8 @@ public class SlsNetManager extends ListenerRegistry<SlsNetEvent, SlsNetListener>
     }
 
     @Override
-    public Set<IpSubnet> getIp4Subnets() {
-        return ImmutableSet.copyOf(ip4Subnets);
-    }
-
-    @Override
-    public Set<IpSubnet> getIp6Subnets() {
-        return ImmutableSet.copyOf(ip6Subnets);
+    public Set<IpSubnet> getIpSubnets() {
+        return ImmutableSet.copyOf(ipSubnets);
     }
 
     @Override

@@ -200,9 +200,7 @@ public class SlsNetReactiveRouting {
         Set<FlowRule> newInterceptRules = new HashSet<>();
         for (Device device : deviceService.getAvailableDevices()) {
             // install new flow rules for local subnet
-            for (IpSubnet subnet : new ImmutableList.Builder<IpSubnet>()
-                                           .addAll(slsnet.getIp4Subnets())
-                                           .addAll(slsnet.getIp6Subnets()).build()) {
+            for (IpSubnet subnet : slsnet.getIpSubnets()) {
                 int priority = slsnet.PRI_REACTIVE_BASE +
                                subnet.ipPrefix().prefixLength() * slsnet.PRI_REACTIVE_STEP +
                                slsnet.PRI_REACTIVE_INTERCEPT;

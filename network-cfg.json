@@ -43,7 +43,7 @@
           { "name" : "LEAF2", "interfaces" : ["h21", "h22", "h23", "h24", "d21", "d22" ] },
           { "name" : "BORDER", "interfaces" : ["SS1_h31", "SS2_h32"], "encapsulation" : "VLAN", "l2Forwarding" : false }
         ],
-        "ip4Subnets" : [
+        "ipSubnets" : [
            { "ipPrefix" : "10.0.1.0/24", "gatewayIp" : "10.0.1.1", "l2NetworkName" : "LEAF1" },
            { "ipPrefix" : "10.0.2.0/24", "gatewayIp" : "10.0.2.1", "l2NetworkName" : "LEAF2" },
            { "ipPrefix" : "10.0.0.0/24", "gatewayIp" : "10.0.0.1", "l2NetworkName" : "BORDER" }
