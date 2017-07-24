@@ -55,6 +55,9 @@ import org.onosproject.net.config.NetworkConfigRegistry;
 import org.onosproject.net.config.NetworkConfigService;
 import org.onosproject.net.config.basics.SubjectFactories;
 import org.onosproject.net.ConnectPoint;
+import org.onosproject.net.device.DeviceEvent;
+import org.onosproject.net.device.DeviceListener;
+import org.onosproject.net.device.DeviceService;
 import org.onosproject.net.flow.DefaultTrafficTreatment;
 import org.onosproject.net.flow.TrafficTreatment;
 import org.onosproject.net.Host;
@@ -100,6 +103,9 @@ public class SlsNetManager extends ListenerRegistry<SlsNetEvent, SlsNetListener>
     protected NetworkConfigRegistry registry;
 
     @Reference(cardinality = ReferenceCardinality.MANDATORY_UNARY)
+    protected DeviceService deviceService;
+
+    @Reference(cardinality = ReferenceCardinality.MANDATORY_UNARY)
     protected InterfaceService interfaceService;
 
     @Reference(cardinality = ReferenceCardinality.MANDATORY_UNARY)
@@ -108,9 +114,8 @@ public class SlsNetManager extends ListenerRegistry<SlsNetEvent, SlsNetListener>
     @Reference(cardinality = ReferenceCardinality.MANDATORY_UNARY)
     protected PacketService packetService;
 
-    // Route table
     @Reference(cardinality = ReferenceCardinality.MANDATORY_UNARY)
-    private RouteAdminService routeService;
+    protected RouteAdminService routeService;
 
     // compoents to be activated within SlsNet
     @Reference(cardinality = ReferenceCardinality.MANDATORY_UNARY)
@@ -145,6 +150,7 @@ public class SlsNetManager extends ListenerRegistry<SlsNetEvent, SlsNetListener>
 
     // Listener for Service Events
     private final InternalNetworkConfigListener configListener = new InternalNetworkConfigListener();
+    private final InternalDeviceListener deviceListener = new InternalDeviceListener();
     private final InternalHostListener hostListener = new InternalHostListener();
     private final InternalInterfaceListener interfaceListener = new InternalInterfaceListener();
 
@@ -171,6 +177,7 @@ public class SlsNetManager extends ListenerRegistry<SlsNetEvent, SlsNetListener>
 
         configService.addListener(configListener);
         registry.registerConfigFactory(reactiveRoutingConfigFactory);
+        deviceService.addListener(deviceListener);
         hostService.addListener(hostListener);
 
         // delay activation until first CONFIG_REGISTERED event */
@@ -185,6 +192,7 @@ public class SlsNetManager extends ListenerRegistry<SlsNetEvent, SlsNetListener>
 
         components.forEach(name -> componentService.deactivate(appId, name));
 
+        deviceService.removeListener(deviceListener);
         hostService.removeListener(hostListener);
         registry.unregisterConfigFactory(reactiveRoutingConfigFactory);
         configService.removeListener(configListener);
@@ -209,16 +217,17 @@ public class SlsNetManager extends ListenerRegistry<SlsNetEvent, SlsNetListener>
         newL2Networks = config.getL2Networks().stream()
                 .map(l2NetworkConfig -> {
                     L2Network l2Network = L2Network.of(l2NetworkConfig);
-                    // fill up interfaces and Hosts
+                    // fill up interfaces and Hosts with active port only
                     for (String ifaceName : l2NetworkConfig.interfaceNames()) {
                          Interface iface = getInterfaceByName(ifaceName);
-                         if (iface != null) {
+                         if (iface != null && deviceService.getPort(iface.connectPoint()).isEnabled()) {
                              l2Network.addInterface(iface);
                              newL2NetworkInterfaces.add(iface);
                          }
                     }
                     for (Host host : hostService.getHosts()) {
-                         if (l2Network.contains((Interface) getHostInterface(host))) {
+                         Interface iface = getActiveHostInterface(host);
+                         if (iface != null && l2Network.contains(iface)) {
                              l2Network.addHost(host);
                          }
                     }
@@ -308,7 +317,7 @@ public class SlsNetManager extends ListenerRegistry<SlsNetEvent, SlsNetListener>
         // notify to SlsNet listeners
         if (dirty) {
             log.info("slsnet refresh; notify events");
-            process(new SlsNetEvent(SlsNetEvent.Type.SLSNET_UPDATED, this));
+            process(new SlsNetEvent(SlsNetEvent.Type.SLSNET_UPDATED, "update"));
         }
     }
 
@@ -408,6 +417,15 @@ public class SlsNetManager extends ListenerRegistry<SlsNetEvent, SlsNetListener>
                 .orElse(null);
     }
 
+    private Interface getActiveHostInterface(Host host) {
+        return interfaceService.getInterfaces().stream()
+                .filter(iface -> iface.connectPoint().equals(host.location()) &&
+                                 iface.vlan().equals(host.vlan()))
+                .filter(iface -> deviceService.getPort(iface.connectPoint()).isEnabled())
+                .findFirst()
+                .orElse(null);
+    }
+
     @Override
     public boolean isIpAddressLocal(IpAddress ipAddress) {
         boolean result;
@@ -480,6 +498,12 @@ public class SlsNetManager extends ListenerRegistry<SlsNetEvent, SlsNetListener>
         return true;
     }
 
+    @Override
+    public void dump(String subject) {
+        log.info("slsnet dump: subject={}", subject);
+        process(new SlsNetEvent(SlsNetEvent.Type.SLSNET_DUMP, subject));
+    }
+
     // Service Listeners
 
     private class InternalNetworkConfigListener implements NetworkConfigListener {
@@ -494,6 +518,27 @@ public class SlsNetManager extends ListenerRegistry<SlsNetEvent, SlsNetListener>
                 if (event.configClass().equals(SlsNetConfig.class)) {
                     refreshNetworkConfig(event);
                 }
+                break;
+            default:
+                break;
+            }
+        }
+    }
+
+    private class InternalDeviceListener implements DeviceListener {
+        @Override
+        public void event(DeviceEvent event) {
+            switch (event.type()) {
+            case DEVICE_ADDED:
+            case DEVICE_AVAILABILITY_CHANGED:
+            case DEVICE_REMOVED:
+            case DEVICE_SUSPENDED:
+            case DEVICE_UPDATED:
+            case PORT_ADDED:
+            case PORT_REMOVED:
+            case PORT_UPDATED:
+            // case PORT_STATS_UPDATED:  IGNORED
+                refreshNetworkConfig(null);
                 break;
             default:
                 break;

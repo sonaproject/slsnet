@@ -21,13 +21,11 @@ import org.onosproject.event.AbstractEvent;
 /**
  * Describes an interface event.
  */
-public class SlsNetEvent extends AbstractEvent<SlsNetEvent.Type, SlsNetService> {
+public class SlsNetEvent extends AbstractEvent<SlsNetEvent.Type, String> {
 
     public enum Type {
-        /**
-         * Indicates an slsnet has been updated.
-         */
-        SLSNET_UPDATED
+        SLSNET_UPDATED,  // Indicates an slsnet has been updated.
+        SLSNET_DUMP      // request to dump internal info on the subject
     }
 
     /**
@@ -36,7 +34,7 @@ public class SlsNetEvent extends AbstractEvent<SlsNetEvent.Type, SlsNetService> 
      * @param type event type
      * @param subject dummy subject interface
      */
-    public SlsNetEvent(Type type, SlsNetService subject) {
+    public SlsNetEvent(Type type, String subject) {
         super(type, subject);   /* subject is dummy */
     }
 }

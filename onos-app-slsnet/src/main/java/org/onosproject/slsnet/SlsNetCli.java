@@ -27,13 +27,13 @@ import org.onosproject.incubator.net.routing.RouteTableId;
  * CLI to interact with the SLSNET application.
  */
 @Command(scope = "onos", name = "slsnet",
-        description = "Manages the SLSNET application")
+         description = "Manages the SLSNET application")
 public class SlsNetCli extends AbstractShellCommand {
 
     protected static SlsNetService slsnet;
     protected static RouteAdminService routeService;
 
-    @Argument(index = 0, name = "command", description = "Command name (show)",
+    @Argument(index = 0, name = "command", description = "Command name: show, intents",
               required = true, multiValued = false)
     String command = null;
 
@@ -54,15 +54,16 @@ public class SlsNetCli extends AbstractShellCommand {
         case "show":
             show();
             break;
+        case "intents":
+            slsnet.dump("intents");
+            break;
         default:
             print("unknown command: {}", command);
             break;
         }
     }
 
-    /**
-     * Shows the details of one or more VPLSs.
-     */
+    // Shows configuraions
     protected void show() {
         print("SlsNetAppId:\n");
         print("   %s\n", slsnet.getAppId());

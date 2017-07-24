@@ -38,8 +38,6 @@ import org.onosproject.incubator.net.routing.Route;
 import org.onosproject.incubator.net.routing.RouteService;
 import org.onosproject.net.ConnectPoint;
 import org.onosproject.net.Device;
-import org.onosproject.net.device.DeviceEvent;
-import org.onosproject.net.device.DeviceListener;
 import org.onosproject.net.device.DeviceService;
 import org.onosproject.net.flow.DefaultFlowRule;
 import org.onosproject.net.flow.DefaultTrafficSelector;
@@ -118,7 +116,6 @@ public class SlsNetReactiveRouting {
     private final Map<IpPrefix, MultiPointToSinglePointIntent> routeIntents
             = Maps.newConcurrentMap();
 
-    private final InternalDeviceListener deviceListener = new InternalDeviceListener();
     private final InternalSlsNetListener slsnetListener = new InternalSlsNetListener();
     private ReactiveRoutingProcessor processor = new ReactiveRoutingProcessor();
 
@@ -131,7 +128,6 @@ public class SlsNetReactiveRouting {
 
         processor = new ReactiveRoutingProcessor();
         packetService.addProcessor(processor, PacketProcessor.director(2));
-        deviceService.addListener(deviceListener);
         slsnet.addListener(slsnetListener);
 
         registerIntercepts();
@@ -145,7 +141,6 @@ public class SlsNetReactiveRouting {
         log.info("slsnet reactive routing stopping");
 
         packetService.removeProcessor(processor);
-        deviceService.removeListener(deviceListener);
         slsnet.removeListener(slsnetListener);
 
         withdrawIntercepts();
@@ -496,23 +491,6 @@ public class SlsNetReactiveRouting {
     }
 
     // Service Listeners
-
-    private class InternalDeviceListener implements DeviceListener {
-        @Override
-        public void event(DeviceEvent event) {
-            switch (event.type()) {
-            case DEVICE_ADDED:
-            case DEVICE_AVAILABILITY_CHANGED:
-            case DEVICE_REMOVED:
-            case DEVICE_SUSPENDED:
-            case DEVICE_UPDATED:
-                refreshIntercepts();
-                break;
-            default:
-                break;
-            }
-        }
-    }
 
     private class InternalSlsNetListener implements SlsNetListener {
         @Override

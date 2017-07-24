@@ -66,10 +66,8 @@ import java.util.stream.Collectors;
 @Component(immediate = true, enabled = false)
 public class SlsNetL2NetworkRouting {
 
-    private static final int COMPLETE_TIMEOUT_SEC = 5;
-
-    public static final String PREFIX_BROADCAST = "brc";
-    public static final String PREFIX_UNICAST = "uni";
+    public static final String PREFIX_BROADCAST = "BCAST";
+    public static final String PREFIX_UNICAST = "UNI";
     private static final String SEPARATOR = "-";
 
     private final Logger log = LoggerFactory.getLogger(getClass());
@@ -93,9 +91,7 @@ public class SlsNetL2NetworkRouting {
     private Set<Intent> l2NetworkIntents = new HashSet<>();
     private Set<Key> toBePurgedIntentKeys = new HashSet<>();
 
-    private final InternalSlsNetListener slsnetListener =
-            new InternalSlsNetListener();
-
+    private final InternalSlsNetListener slsnetListener = new InternalSlsNetListener();
 
     @Activate
     public void activate() {
@@ -239,7 +235,8 @@ public class SlsNetL2NetworkRouting {
 
         // Generates broadcast Intents from any network interface to other
         // network interface from the L2 Network.
-        interfaces.forEach(src -> {
+        interfaces
+            .forEach(src -> {
             FilteredConnectPoint srcFcp = buildFilteredConnectedPoint(src);
             Set<FilteredConnectPoint> dstFcps = interfaces.stream()
                     .filter(iface -> !iface.equals(src))
@@ -379,6 +376,21 @@ public class SlsNetL2NetworkRouting {
             switch (event.type()) {
             case SLSNET_UPDATED:
                 refresh();
+                break;
+            case SLSNET_DUMP:
+                if (event.subject() == "intents") {
+                    System.out.println("l2NetworkIntents:\n");
+                    for (Intent intent: l2NetworkIntents) {
+                        //System.out.println("    " + intent.key().toString() + ": " + intent.toString() + "\n");
+                        System.out.println("    " + intent.key().toString());
+                    }
+                    System.out.println("");
+                    System.out.println("toBePurgedIntentKeys:\n");
+                    for (Key key: toBePurgedIntentKeys) {
+                        System.out.println("    " + key.toString());
+                    }
+                    System.out.println("");
+                }
                 break;
             default:
                 break;

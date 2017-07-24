@@ -174,4 +174,11 @@ public interface SlsNetService
      */
     boolean requestMac(IpAddress ip);
 
+    /**
+     * Send Dump Event to all SlsNetListeners to Dump Listner Modules Info on the Subject.
+     *
+     * @param subject the subject to dump
+     */
+    void dump(String subject);
+
 }
