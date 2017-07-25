@@ -39,6 +39,7 @@ import org.onosproject.incubator.net.routing.Route;
 import org.onosproject.incubator.net.routing.RouteService;
 import org.onosproject.net.ConnectPoint;
 import org.onosproject.net.Device;
+import org.onosproject.net.DeviceId;
 import org.onosproject.net.device.DeviceService;
 import org.onosproject.net.flow.DefaultFlowRule;
 import org.onosproject.net.flow.DefaultTrafficSelector;
@@ -114,7 +115,7 @@ public class SlsNetReactiveRouting {
             = ImmutableList.of(new PartialFailureConstraint(),
                                new HashedPathSelectionConstraint());
 
-    private Set<FlowRule> interceptRules = new HashSet<>();
+    private Set<FlowRule> interceptFlowRules = new HashSet<>();
     private Map<IpPrefix, MultiPointToSinglePointIntent> routeIntents = Maps.newConcurrentMap();
     private Set<Key> toBePurgedIntentKeys = new HashSet<>();
             // NOTE: manage purged intents by key for intentService.getIntent() supports key only
@@ -151,7 +152,7 @@ public class SlsNetReactiveRouting {
         flowRuleService.removeFlowRulesById(interceptAppId);
 
         routeIntents.clear();
-        interceptRules.clear();
+        interceptFlowRules.clear();
         processor = null;
 
         log.info("slsnet reactive routing stopped");
@@ -200,48 +201,52 @@ public class SlsNetReactiveRouting {
                      + "for virtual gateway mac address unknown");
         }
 
-        Set<FlowRule> newInterceptRules = new HashSet<>();
+        Set<FlowRule> newInterceptFlowRules = new HashSet<>();
         for (Device device : deviceService.getAvailableDevices()) {
-            // install new flow rules for local subnet
             for (IpSubnet subnet : slsnet.getIpSubnets()) {
-                int priority = slsnet.PRI_REACTIVE_BASE +
-                               subnet.ipPrefix().prefixLength() * slsnet.PRI_REACTIVE_STEP +
-                               slsnet.PRI_REACTIVE_INTERCEPT;
-                TrafficSelector selector = DefaultTrafficSelector.builder()
-                        .matchEthType(Ethernet.TYPE_IPV4)
-                        .matchEthDst(slsnet.getVirtualGatewayMacAddress())
-                        .matchIPDst(subnet.ipPrefix()).build();
-                TrafficTreatment treatment = DefaultTrafficTreatment.builder()
-                        .punt().build();
-                FlowRule rule = DefaultFlowRule.builder()
-                        .forDevice(device.id())
-                        .withPriority(priority)
-                        .withSelector(selector)
-                        .withTreatment(treatment)
-                        .fromApp(interceptAppId)
-                        .makePermanent()
-                        .forTable(0).build();
-                newInterceptRules.add(rule);
-                //log.debug("slsnet reactive routing install intercept flow rule: deviceId={} {}",
-                //          device.id(), rule);
+                newInterceptFlowRules.add(generateInterceptFlowRule(device.id(), subnet.ipPrefix()));
+            }
+            for (Route route : slsnet.getBorderRoutes()) {
+                newInterceptFlowRules.add(generateInterceptFlowRule(device.id(), route.prefix()));
             }
         }
 
-        if (!newInterceptRules.equals(interceptRules)) {
-            interceptRules.stream()
-                .filter(rule -> !newInterceptRules.contains(rule))
+        if (!newInterceptFlowRules.equals(interceptFlowRules)) {
+            interceptFlowRules.stream()
+                .filter(rule -> !newInterceptFlowRules.contains(rule))
                 .forEach(rule -> {
                     flowRuleService.removeFlowRules(rule);
                     log.info("slsnet reactive routing remove intercept flow rule: {}", rule);
                 });
-            newInterceptRules.stream()
-                .filter(rule -> !interceptRules.contains(rule))
+            newInterceptFlowRules.stream()
+                .filter(rule -> !interceptFlowRules.contains(rule))
                 .forEach(rule -> {
                     flowRuleService.applyFlowRules(rule);
                     log.info("slsnet reactive routing apply intercept flow rule: {}", rule);
                 });
-            interceptRules = newInterceptRules;
+            interceptFlowRules = newInterceptFlowRules;
         }
+    }
+
+    private FlowRule generateInterceptFlowRule(DeviceId deviceId, IpPrefix prefix) {
+        int priority = slsnet.PRI_REACTIVE_BASE +
+                       prefix.prefixLength() * slsnet.PRI_REACTIVE_STEP +
+                       slsnet.PRI_REACTIVE_INTERCEPT;
+        TrafficSelector selector = DefaultTrafficSelector.builder()
+                .matchEthType(prefix.isIp4() ? Ethernet.TYPE_IPV4 : Ethernet.TYPE_IPV6)
+                .matchEthDst(slsnet.getVirtualGatewayMacAddress())
+                .matchIPDst(prefix).build();
+        TrafficTreatment treatment = DefaultTrafficTreatment.builder()
+                .punt().build();
+        FlowRule rule = DefaultFlowRule.builder()
+                .forDevice(deviceId)
+                .withPriority(priority)
+                .withSelector(selector)
+                .withTreatment(treatment)
+                .fromApp(interceptAppId)
+                .makePermanent()
+                .forTable(0).build();
+        return rule;
     }
 
     /**
@@ -581,7 +586,7 @@ public class SlsNetReactiveRouting {
             System.out.println("");
 
             System.out.println("Reactive Routing Intercept Flow Rules:\n");
-            for (FlowRule rule : interceptRules) {
+            for (FlowRule rule : interceptFlowRules) {
                 System.out.println("    " + rule.toString());
             }
             System.out.println("");

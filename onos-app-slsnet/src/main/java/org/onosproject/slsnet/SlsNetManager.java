@@ -71,6 +71,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.nio.ByteBuffer;
+import java.util.Iterator;
 import java.util.HashSet;
 import java.util.Collection;
 import java.util.List;
@@ -419,29 +420,29 @@ public class SlsNetManager extends ListenerRegistry<SlsNetEvent, SlsNetListener>
 
     @Override
     public IpSubnet findIpSubnet(IpAddress ip) {
+        Iterator<IpSubnet> it;
         if (ip.isIp4()) {
-            return (IpSubnet) ip4SubnetTable.getValuesForKeysPrefixing(
-                                  createBinaryString(IpPrefix.valueOf(ip, Ip4Address.BIT_LENGTH)))
-                              .iterator().next();
+            it = ip4SubnetTable.getValuesForKeysPrefixing(
+                     createBinaryString(IpPrefix.valueOf(ip, Ip4Address.BIT_LENGTH))).iterator();
         } else {
-            return (IpSubnet) ip6SubnetTable.getValuesForKeysPrefixing(
-                                  createBinaryString(IpPrefix.valueOf(ip, Ip6Address.BIT_LENGTH)))
-                              .iterator().next();
+            it = ip6SubnetTable.getValuesForKeysPrefixing(
+                     createBinaryString(IpPrefix.valueOf(ip, Ip6Address.BIT_LENGTH))) .iterator();
         }
+        return (it.hasNext()) ? it.next() : null;
     }
 
     @Override
     public Route findBorderRoute(IpAddress ip) {
         // ASSUME: ipAddress is out of ipSubnet
+        Iterator<Route> it;
         if (ip.isIp4()) {
-            return (Route) ip4BorderRouteTable.getValuesForKeysPrefixing(
-                               createBinaryString(IpPrefix.valueOf(ip, Ip4Address.BIT_LENGTH)))
-                           .iterator().next();
+            it = ip4BorderRouteTable.getValuesForKeysPrefixing(
+                     createBinaryString(IpPrefix.valueOf(ip, Ip4Address.BIT_LENGTH))) .iterator();
         } else {
-            return (Route) ip6BorderRouteTable.getValuesForKeysPrefixing(
-                               createBinaryString(IpPrefix.valueOf(ip, Ip6Address.BIT_LENGTH)))
-                           .iterator().next();
+            it = ip6BorderRouteTable.getValuesForKeysPrefixing(
+                     createBinaryString(IpPrefix.valueOf(ip, Ip6Address.BIT_LENGTH))) .iterator();
         }
+        return (it.hasNext()) ? it.next() : null;
     }
 
 
@@ -464,15 +465,15 @@ public class SlsNetManager extends ListenerRegistry<SlsNetEvent, SlsNetListener>
     }
 
     @Override
-    public boolean isIpAddressLocal(IpAddress ipAddress) {
+    public boolean isIpAddressLocal(IpAddress ip) {
         boolean result;
-        if (ipAddress.isIp4()) {
+        if (ip.isIp4()) {
             return ip4SubnetTable.getValuesForKeysPrefixing(
-                     createBinaryString(IpPrefix.valueOf(ipAddress, Ip4Address.BIT_LENGTH)))
+                     createBinaryString(IpPrefix.valueOf(ip, Ip4Address.BIT_LENGTH)))
                      .iterator().hasNext();
         } else {
             return ip6SubnetTable.getValuesForKeysPrefixing(
-                     createBinaryString(IpPrefix.valueOf(ipAddress, Ip6Address.BIT_LENGTH)))
+                     createBinaryString(IpPrefix.valueOf(ip, Ip6Address.BIT_LENGTH)))
                      .iterator().hasNext();
         }
     }

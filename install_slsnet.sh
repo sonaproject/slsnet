@@ -12,7 +12,8 @@ onos-app localhost reinstall! org.onosproject.slsnet target/onos-app-slsnet-1.11
 onos-app localhost activate org.onosproject.slsnet
 
 # reinstall network config
-sudo cp ../network-cfg.json /opt/onos/config/
+#sudo cp ../network-cfg.json /opt/onos/config/
+sudo cp ../cisco-cfg.json /opt/onos/config/
 
 # restart onos service
 sudo service onos restart

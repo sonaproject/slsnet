@@ -1,0 +1,32 @@
+{
+
+  "devices":{
+    "of:of:0000000000111111":{ "basic":{ "name":"LEAF", "latitude":37.5, "longitude":127.0 } }
+  },
+
+  "ports" : {
+    "of:0000000000111111/1" : { "interfaces" : [ { "name" : "s1p1" } ] },
+    "of:0000000000111111/2" : { "interfaces" : [ { "name" : "s1p2" } ] },
+    "of:0000000000111111/3" : { "interfaces" : [ { "name" : "s1p3" } ] },
+    "of:0000000000111111/4" : { "interfaces" : [ { "name" : "s1p4" } ] }
+  },
+
+  "apps" : {
+    "org.onosproject.slsnet" : {
+      "slsnet" : {
+        "l2Networks" : [
+          { "name" : "LEAF1", "interfaces" : ["s1p1", "s1p2", "s1p3", "s1p4" ] }
+        ],
+        "ipSubnets" : [
+           { "ipPrefix" : "10.0.1.0/24", "gatewayIp" : "10.0.1.1", "l2NetworkName" : "LEAF1" }
+        ],
+        "borderRoutes" : [
+           { "ipPrefix" : "0.0.0.0/0", "gatewayIp" : "10.0.0.31" }
+        ],
+        "virtualGatewayMacAddress" : "00:00:00:00:00:01"
+      }
+    }
+  }
+
+}
+
