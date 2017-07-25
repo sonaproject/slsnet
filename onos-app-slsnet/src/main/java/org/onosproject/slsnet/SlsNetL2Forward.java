@@ -18,6 +18,7 @@ package org.onosproject.slsnet;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import org.apache.felix.scr.annotations.Activate;
 import org.apache.felix.scr.annotations.Component;
@@ -49,12 +50,14 @@ import org.onosproject.net.intent.constraint.PartialFailureConstraint;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Set;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 
@@ -66,9 +69,8 @@ import java.util.stream.Collectors;
 @Component(immediate = true, enabled = false)
 public class SlsNetL2Forward {
 
-    public static final String PREFIX_BROADCAST = "BCAST";
-    public static final String PREFIX_UNICAST = "UNI";
-    private static final String SEPARATOR = "-";
+    public static final String BROADCAST = "BCAST";
+    public static final String UNICAST = "UNI";
 
     private final Logger log = LoggerFactory.getLogger(getClass());
     protected ApplicationId l2ForwardAppId;
@@ -88,9 +90,8 @@ public class SlsNetL2Forward {
     public static final ImmutableList<Constraint> PARTIAL_FAILURE_CONSTRAINT =
             ImmutableList.of(new PartialFailureConstraint());
 
-    //private Map<Key,SinglePointToMultiPointIntent> bcastIntentsMap = Maps.newConcurrentMap();
-    //private Map<Key,MultiPointToSinglePointIntent> uniIntentsMap = Maps.newConcurrentMap();
-    private Set<Intent> l2NetworkIntents = new HashSet<>();
+    private Map<Key, SinglePointToMultiPointIntent> bctIntentsMap = Maps.newConcurrentMap();
+    private Map<Key, MultiPointToSinglePointIntent> uniIntentsMap = Maps.newConcurrentMap();
     private Set<Key> toBePurgedIntentKeys = new HashSet<>();
 
     private final InternalSlsNetListener slsnetListener = new InternalSlsNetListener();
@@ -113,7 +114,11 @@ public class SlsNetL2Forward {
 
         slsnet.removeListener(slsnetListener);
 
-        for (Intent intent : l2NetworkIntents) {
+        for (Intent intent : bctIntentsMap.values()) {
+            intentService.withdraw(intent);
+            toBePurgedIntentKeys.add(intent.key());
+        }
+        for (Intent intent : uniIntentsMap.values()) {
             intentService.withdraw(intent);
             toBePurgedIntentKeys.add(intent.key());
         }
@@ -123,7 +128,8 @@ public class SlsNetL2Forward {
                 intentService.purge(intentToPurge);
             }
         }
-        l2NetworkIntents.clear();
+        bctIntentsMap.clear();
+        uniIntentsMap.clear();
 
         log.info("slsnet l2forward stopped");
     }
@@ -131,34 +137,78 @@ public class SlsNetL2Forward {
     public void refresh() {
         log.info("slsnet l2forward refresh");
 
-        Set<Intent> newL2NetworkIntents = new HashSet<>();
+        Map<Key, SinglePointToMultiPointIntent> newBctIntentsMap = Maps.newConcurrentMap();
+        Map<Key, MultiPointToSinglePointIntent> newUniIntentsMap = Maps.newConcurrentMap();
+
         for (L2Network l2Network : slsnet.getL2Networks()) {
             // scans all l2network regardless of dirty flag
-            newL2NetworkIntents.addAll(generateL2NetworkIntents(l2Network));
+            for (SinglePointToMultiPointIntent intent : buildBrcIntents(l2Network)) {
+                newBctIntentsMap.put(intent.key(), intent);
+            }
+            for (MultiPointToSinglePointIntent intent : buildUniIntents(l2Network,
+                                                            hostsFromL2Network(l2Network))) {
+                newUniIntentsMap.put(intent.key(), intent);
+            }
             if (l2Network.dirty()) {
                 l2Network.setDirty(false);
             }
         }
 
-        boolean updated = false;
-        for (Intent intent : l2NetworkIntents) {
-            if (!newL2NetworkIntents.contains(intent)) {
-                log.info("slsnet l2forward withdraw intent: {}", intent);
+        boolean bctUpdated = false;
+        for (SinglePointToMultiPointIntent intent : bctIntentsMap.values()) {
+            SinglePointToMultiPointIntent newIntent = newBctIntentsMap.get(intent.key());
+            if (newIntent == null) {
+                log.info("slsnet l2forward withdraw broadcast intent: {}", intent);
                 toBePurgedIntentKeys.add(intent.key());
                 intentService.withdraw(intent);
-                updated = true;
+                bctUpdated = true;
             }
         }
-        for (Intent intent : newL2NetworkIntents) {
-            if (!l2NetworkIntents.contains(intent)) {
-                log.info("slsnet l2forward submit intent: {}", intent);
+        for (SinglePointToMultiPointIntent intent : newBctIntentsMap.values()) {
+            SinglePointToMultiPointIntent oldIntent = bctIntentsMap.get(intent.key());
+            if (oldIntent == null ||
+                    !oldIntent.filteredEgressPoints().equals(intent.filteredEgressPoints()) ||
+                    !oldIntent.filteredIngressPoint().equals(intent.filteredIngressPoint()) ||
+                    !oldIntent.selector().equals(intent.selector()) ||
+                    !oldIntent.treatment().equals(intent.treatment()) ||
+                    !oldIntent.constraints().equals(intent.constraints())) {
+                log.info("slsnet l2forward submit broadcast intent: {}", intent);
                 toBePurgedIntentKeys.remove(intent.key());
                 intentService.submit(intent);
-                updated = true;
+                bctUpdated = true;
             }
         }
-        if (updated) {
-            l2NetworkIntents = newL2NetworkIntents;
+
+        boolean uniUpdated = false;
+        for (MultiPointToSinglePointIntent intent : uniIntentsMap.values()) {
+            MultiPointToSinglePointIntent newIntent = newUniIntentsMap.get(intent.key());
+            if (newIntent == null) {
+                log.info("slsnet l2forward withdraw unicast intent: {}", intent);
+                toBePurgedIntentKeys.add(intent.key());
+                intentService.withdraw(intent);
+                uniUpdated = true;
+            }
+        }
+        for (MultiPointToSinglePointIntent intent : newUniIntentsMap.values()) {
+            MultiPointToSinglePointIntent oldIntent = uniIntentsMap.get(intent.key());
+            if (oldIntent == null ||
+                    !oldIntent.filteredEgressPoint().equals(intent.filteredEgressPoint()) ||
+                    !oldIntent.filteredIngressPoints().equals(intent.filteredIngressPoints()) ||
+                    !oldIntent.selector().equals(intent.selector()) ||
+                    !oldIntent.treatment().equals(intent.treatment()) ||
+                    !oldIntent.constraints().equals(intent.constraints())) {
+                log.info("slsnet l2forward submit unicast intent: {}", intent);
+                toBePurgedIntentKeys.remove(intent.key());
+                intentService.submit(intent);
+                uniUpdated = true;
+            }
+        }
+
+        if (bctUpdated) {
+            bctIntentsMap = newBctIntentsMap;
+        }
+        if (uniUpdated) {
+            uniIntentsMap = newUniIntentsMap;
         }
         checkIntentsPurge();
     }
@@ -185,33 +235,18 @@ public class SlsNetL2Forward {
 
     private Set<Intent> generateL2NetworkIntents(L2Network l2Network) {
         return new ImmutableSet.Builder<Intent>()
-            .addAll(buildBrcIntents(l2Network, l2ForwardAppId))
-            .addAll(buildUniIntents(l2Network, hostsFromL2Network(l2Network), l2ForwardAppId))
+            .addAll(buildBrcIntents(l2Network))
+            .addAll(buildUniIntents(l2Network, hostsFromL2Network(l2Network)))
             .build();
     }
 
-    private Set<Host> hostsFromL2Network(L2Network l2Network) {
-        Set<Interface> interfaces = l2Network.interfaces();
-        return interfaces.stream()
-                .map(this::hostsFromInterface)
-                .flatMap(Collection::stream)
-                .collect(Collectors.toSet());
-    }
-
-    private Set<Host> hostsFromInterface(Interface iface) {
-        return hostService.getConnectedHosts(iface.connectPoint())
-                .stream()
-                .filter(host -> host.vlan().equals(iface.vlan()))
-                .collect(Collectors.toSet());
-    }
-
     // Build Boadcast Intents for a L2 Network.
-    private Set<Intent> buildBrcIntents(L2Network l2Network, ApplicationId appId) {
+    private Set<SinglePointToMultiPointIntent> buildBrcIntents(L2Network l2Network) {
         Set<Interface> interfaces = l2Network.interfaces();
         if (!l2Network.l2Forward() || interfaces.size() < 2) {
             return ImmutableSet.of();
         }
-        Set<Intent> brcIntents = Sets.newHashSet();
+        Set<SinglePointToMultiPointIntent> brcIntents = Sets.newHashSet();
         ResourceGroup resourceGroup = ResourceGroup.of(l2Network.name());
 
         // Generates broadcast Intents from any network interface to other
@@ -223,13 +258,12 @@ public class SlsNetL2Forward {
                     .filter(iface -> !iface.equals(src))
                     .map(this::buildFilteredConnectedPoint)
                     .collect(Collectors.toSet());
-            Key key = buildKey(PREFIX_BROADCAST, srcFcp.connectPoint(), l2Network.name(),
-                               MacAddress.BROADCAST, appId);
+            Key key = buildKey(l2Network.name(), "BCAST", srcFcp.connectPoint(), MacAddress.BROADCAST);
             TrafficSelector selector = DefaultTrafficSelector.builder()
                     .matchEthDst(MacAddress.BROADCAST)
                     .build();
             SinglePointToMultiPointIntent.Builder intentBuilder = SinglePointToMultiPointIntent.builder()
-                    .appId(appId)
+                    .appId(l2ForwardAppId)
                     .key(key)
                     .selector(selector)
                     .filteredIngressPoint(srcFcp)
@@ -244,12 +278,12 @@ public class SlsNetL2Forward {
     }
 
     // Builds unicast Intents for a L2 Network.
-    private Set<Intent> buildUniIntents(L2Network l2Network, Set<Host> hosts, ApplicationId appId) {
+    private Set<MultiPointToSinglePointIntent> buildUniIntents(L2Network l2Network, Set<Host> hosts) {
         Set<Interface> interfaces = l2Network.interfaces();
         if (!l2Network.l2Forward() || interfaces.size() < 2) {
             return ImmutableSet.of();
         }
-        Set<Intent> uniIntents = Sets.newHashSet();
+        Set<MultiPointToSinglePointIntent> uniIntents = Sets.newHashSet();
         ResourceGroup resourceGroup = ResourceGroup.of(l2Network.name());
         hosts.forEach(host -> {
             FilteredConnectPoint hostFcp = buildFilteredConnectedPoint(host);
@@ -257,11 +291,11 @@ public class SlsNetL2Forward {
                     .map(this::buildFilteredConnectedPoint)
                     .filter(fcp -> !fcp.equals(hostFcp))
                     .collect(Collectors.toSet());
-            Key key = buildKey(PREFIX_UNICAST, hostFcp.connectPoint(), l2Network.name(), host.mac(), appId);
+            Key key = buildKey(l2Network.name(), "UNI", hostFcp.connectPoint(), host.mac());
             TrafficSelector selector = DefaultTrafficSelector.builder()
                     .matchEthDst(host.mac()).build();
             MultiPointToSinglePointIntent.Builder intentBuilder = MultiPointToSinglePointIntent.builder()
-                    .appId(appId)
+                    .appId(l2ForwardAppId)
                     .key(key)
                     .selector(selector)
                     .filteredIngressPoints(srcFcps)
@@ -278,11 +312,23 @@ public class SlsNetL2Forward {
 
     // Intent generate utilities
 
-    private Key buildKey(String prefix, ConnectPoint cPoint, String l2NetworkName,
-                         MacAddress hostMac, ApplicationId appId) {
-        return Key.of(l2NetworkName + SEPARATOR + prefix + SEPARATOR
-                      + cPoint.deviceId() + SEPARATOR + cPoint.port() + SEPARATOR + hostMac,
-                      appId);
+    private Set<Host> hostsFromL2Network(L2Network l2Network) {
+        Set<Interface> interfaces = l2Network.interfaces();
+        return interfaces.stream()
+                .map(this::hostsFromInterface)
+                .flatMap(Collection::stream)
+                .collect(Collectors.toSet());
+    }
+
+    private Set<Host> hostsFromInterface(Interface iface) {
+        return hostService.getConnectedHosts(iface.connectPoint())
+                .stream()
+                .filter(host -> host.vlan().equals(iface.vlan()))
+                .collect(Collectors.toSet());
+    }
+
+    private Key buildKey(String l2NetworkName, String type, ConnectPoint cPoint, MacAddress dstMac) {
+        return Key.of(l2NetworkName + "-" + type + "-" + cPoint.toString() + "-" + dstMac, l2ForwardAppId);
     }
 
     private void setEncap(ConnectivityIntent.Builder builder,
@@ -322,8 +368,13 @@ public class SlsNetL2Forward {
     // Dump command handler
     private void dump(String subject) {
         if (subject == "intents") {
-            System.out.println("L2Forward Intents:\n");
-            for (Intent intent: l2NetworkIntents) {
+            System.out.println("L2Forward Broadcast Intents:\n");
+            for (Intent intent: bctIntentsMap.values()) {
+                System.out.println("    " + intent.key().toString());
+            }
+            System.out.println("");
+            System.out.println("L2Forward Unicast Intents:\n");
+            for (Intent intent: uniIntentsMap.values()) {
                 System.out.println("    " + intent.key().toString());
             }
             System.out.println("");

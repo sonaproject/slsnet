@@ -581,13 +581,18 @@ public class SlsNetReactiveRouting {
         if (subject == "intents") {
             System.out.println("Reactive Routing Route Intents:\n");
             for (Map.Entry<IpPrefix, MultiPointToSinglePointIntent> entry: routeIntents.entrySet()) {
-                System.out.println("    " + entry.getKey().toString() + ": " + entry.getValue().toString());
+                System.out.println("    " + entry.getKey().toString());
             }
             System.out.println("");
 
             System.out.println("Reactive Routing Intercept Flow Rules:\n");
             for (FlowRule rule : interceptFlowRules) {
                 System.out.println("    " + rule.toString());
+            }
+            System.out.println("");
+            System.out.println("Reactive Routing Intents to Be Purged:\n");
+            for (Key key: toBePurgedIntentKeys) {
+                System.out.println("    " + key.toString());
             }
             System.out.println("");
         }
