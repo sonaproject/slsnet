@@ -38,7 +38,7 @@ public final class L2Network {
     private String name;                  // also for network configuration
     private Set<String> interfaceNames;   // also for network configuration
     private EncapsulationType encapsulationType;  // also for network configuration
-    private boolean l2Forwarding;         // do l2Forwarding (default:true) or not
+    private boolean l2Forward;            // do l2Forward (default:true) or not
     private Set<Interface> interfaces;    // available interfaces from interfaceNames
     private Set<HostId> hostIds;          // available hosts from interfaces
     private boolean dirty;
@@ -49,13 +49,13 @@ public final class L2Network {
      * @param name the given name
      * @param ifaceNames the interface names
      * @param encapType the encapsulation type
-     * @param l2Forwarding flag for l2Forwarding intents to be installed or not
+     * @param l2Forward flag for l2Forward intents to be installed or not
      */
-    L2Network(String name, Collection<String> ifaceNames, EncapsulationType encapType, boolean l2Forwarding) {
+    L2Network(String name, Collection<String> ifaceNames, EncapsulationType encapType, boolean l2Forward) {
         this.name = name;
         this.interfaceNames = Sets.newHashSet();
         this.encapsulationType = encapType;
-        this.l2Forwarding = l2Forwarding;
+        this.l2Forward = l2Forward;
         this.interfaces = Sets.newHashSet();
         this.hostIds = Sets.newHashSet();
         this.dirty = false;
@@ -72,7 +72,7 @@ public final class L2Network {
         this.name = name;
         this.interfaceNames = Sets.newHashSet();
         this.encapsulationType = encapType;
-        this.l2Forwarding = true;
+        this.l2Forward = true;
         this.interfaces = Sets.newHashSet();
         this.hostIds = Sets.newHashSet();
         this.dirty = false;
@@ -100,7 +100,7 @@ public final class L2Network {
         Objects.requireNonNull(l2Network);
         L2Network l2NetworkCopy = new L2Network(l2Network.name(), l2Network.encapsulationType());
         l2NetworkCopy.addInterfaceNames(l2Network.interfaceNames());
-        l2NetworkCopy.setL2Forwarding(l2Network.l2Forwarding());
+        l2NetworkCopy.setL2Forward(l2Network.l2Forward());
         l2NetworkCopy.addInterfaces(l2Network.interfaces());
         l2NetworkCopy.setDirty(l2Network.dirty());
         return l2NetworkCopy;
@@ -120,8 +120,8 @@ public final class L2Network {
         return encapsulationType;
     }
 
-    public boolean l2Forwarding() {
-        return l2Forwarding;
+    public boolean l2Forward() {
+        return l2Forward;
     }
 
     public Set<Interface> interfaces() {
@@ -175,9 +175,9 @@ public final class L2Network {
         }
     }
 
-    // set l2Forwarding flag
-    public void setL2Forwarding(boolean l2Forwarding) {
-        this.l2Forwarding = l2Forwarding;
+    // set l2Forward flag
+    public void setL2Forward(boolean l2Forward) {
+        this.l2Forward = l2Forward;
     }
 
     // add and remove interfaces from port configuration for each interfaceName */
@@ -243,7 +243,7 @@ public final class L2Network {
                 .add("name", name)
                 .add("interfaceNames", interfaceNames)
                 .add("encap type", encapsulationType)
-                .add("l2Forwarding", l2Forwarding)
+                .add("l2Forward", l2Forward)
                 .add("interfaces", interfaces)
                 .add("hostIds", hostIds)
                 .add("dirty", dirty)
@@ -262,13 +262,13 @@ public final class L2Network {
         return Objects.equals(other.name, this.name)
                && Objects.equals(other.interfaceNames, this.interfaceNames)
                && Objects.equals(other.encapsulationType, this.encapsulationType)
-               && Objects.equals(other.l2Forwarding, this.l2Forwarding)
+               && Objects.equals(other.l2Forward, this.l2Forward)
                && Objects.equals(other.interfaces, this.interfaces)
                && Objects.equals(other.hostIds, this.hostIds);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(name, interfaces, encapsulationType, l2Forwarding);
+        return Objects.hash(name, interfaces, encapsulationType, l2Forward);
     }
 }

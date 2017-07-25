@@ -64,14 +64,14 @@ import java.util.stream.Collectors;
  * application.
  */
 @Component(immediate = true, enabled = false)
-public class SlsNetL2NetworkRouting {
+public class SlsNetL2Forward {
 
     public static final String PREFIX_BROADCAST = "BCAST";
     public static final String PREFIX_UNICAST = "UNI";
     private static final String SEPARATOR = "-";
 
     private final Logger log = LoggerFactory.getLogger(getClass());
-    protected ApplicationId l2NetAppId;
+    protected ApplicationId l2ForwardAppId;
 
     @Reference(cardinality = ReferenceCardinality.MANDATORY_UNARY)
     protected CoreService coreService;
@@ -97,19 +97,19 @@ public class SlsNetL2NetworkRouting {
 
     @Activate
     public void activate() {
-        l2NetAppId = coreService.registerApplication(slsnet.L2NETWORK_APP_ID);
-        log.info("slsnet l2network routing starting with l2net app id {}", l2NetAppId.toString());
+        l2ForwardAppId = coreService.registerApplication(slsnet.L2FORWARD_APP_ID);
+        log.info("slsnet l2 forwaring starting with l2net app id {}", l2ForwardAppId.toString());
 
         slsnet.addListener(slsnetListener);
 
         refresh();
 
-        log.info("slsnet l2network started");
+        log.info("slsnet l2forward started");
     }
 
     @Deactivate
     public void deactivate() {
-        log.info("slsnet l2network routing stopping");
+        log.info("slsnet l2forward stopping");
 
         slsnet.removeListener(slsnetListener);
 
@@ -125,11 +125,11 @@ public class SlsNetL2NetworkRouting {
         }
         l2NetworkIntents.clear();
 
-        log.info("slsnet l2network routing stopped");
+        log.info("slsnet l2forward stopped");
     }
 
     public void refresh() {
-        log.info("slsnet l2network routing refresh");
+        log.info("slsnet l2forward refresh");
 
         Set<Intent> newL2NetworkIntents = new HashSet<>();
         for (L2Network l2Network : slsnet.getL2Networks()) {
@@ -143,7 +143,7 @@ public class SlsNetL2NetworkRouting {
         boolean updated = false;
         for (Intent intent : l2NetworkIntents) {
             if (!newL2NetworkIntents.contains(intent)) {
-                log.info("slsnet l2network routing withdraw intent: {}", intent);
+                log.info("slsnet l2forward withdraw intent: {}", intent);
                 toBePurgedIntentKeys.add(intent.key());
                 intentService.withdraw(intent);
                 updated = true;
@@ -151,7 +151,7 @@ public class SlsNetL2NetworkRouting {
         }
         for (Intent intent : newL2NetworkIntents) {
             if (!l2NetworkIntents.contains(intent)) {
-                log.info("slsnet l2network routing submit intent: {}", intent);
+                log.info("slsnet l2forward submit intent: {}", intent);
                 toBePurgedIntentKeys.remove(intent.key());
                 intentService.submit(intent);
                 updated = true;
@@ -170,10 +170,10 @@ public class SlsNetL2NetworkRouting {
             for (Key key : toBePurgedIntentKeys) {
                 Intent intentToPurge = intentService.getIntent(key);
                 if (intentToPurge == null) {
-                    log.info("slsnet l2network routing purged intent: key={}", key);
+                    log.info("slsnet l2forward purged intent: key={}", key);
                     purgedKeys.add(key);
                 } else {
-                    log.info("slsnet l2network routing try to purge intent: key={}", key);
+                    log.info("slsnet l2forward try to purge intent: key={}", key);
                     intentService.purge(intentToPurge);
                 }
             }
@@ -185,8 +185,8 @@ public class SlsNetL2NetworkRouting {
 
     private Set<Intent> generateL2NetworkIntents(L2Network l2Network) {
         return new ImmutableSet.Builder<Intent>()
-            .addAll(buildBrcIntents(l2Network, l2NetAppId))
-            .addAll(buildUniIntents(l2Network, hostsFromL2Network(l2Network), l2NetAppId))
+            .addAll(buildBrcIntents(l2Network, l2ForwardAppId))
+            .addAll(buildUniIntents(l2Network, hostsFromL2Network(l2Network), l2ForwardAppId))
             .build();
     }
 
@@ -322,12 +322,12 @@ public class SlsNetL2NetworkRouting {
     // Dump command handler
     private void dump(String subject) {
         if (subject == "intents") {
-            System.out.println("L2Network Intents:\n");
+            System.out.println("L2Forward Intents:\n");
             for (Intent intent: l2NetworkIntents) {
                 System.out.println("    " + intent.key().toString());
             }
             System.out.println("");
-            System.out.println("L2Network Intents to Be Purged:\n");
+            System.out.println("L2Forward Intents to Be Purged:\n");
             for (Key key: toBePurgedIntentKeys) {
                 System.out.println("    " + key.toString());
             }

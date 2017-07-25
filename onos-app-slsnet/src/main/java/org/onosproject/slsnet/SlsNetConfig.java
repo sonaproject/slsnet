@@ -41,7 +41,7 @@ public class SlsNetConfig extends Config<ApplicationId> {
     private static final String NAME = "name";
     private static final String INTERFACES = "interfaces";
     private static final String ENCAPSULATION = "encapsulation";
-    private static final String L2FORWARDING = "l2Forwarding";
+    private static final String L2FORWARD = "l2Forward";
     private static final String IPSUBNETS = "ipSubnets";
     private static final String BORDERROUTES = "borderRoutes";
     private static final String IPPREFIX = "ipPrefix";
@@ -78,13 +78,12 @@ public class SlsNetConfig extends Config<ApplicationId> {
                 encap = EncapsulationType.enumFromString(jsonNode.get(ENCAPSULATION).asText());
             }
 
-            boolean l2Forwarding = true;
-            if (jsonNode.hasNonNull(L2FORWARDING)) {
-                l2Forwarding = jsonNode.get(L2FORWARDING).asBoolean();
+            boolean l2Forward = true;
+            if (jsonNode.hasNonNull(L2FORWARD)) {
+                l2Forward = jsonNode.get(L2FORWARD).asBoolean();
             }
 
-            //l2Networks.add(new L2Network(name, ifaces, EncapsulationType.NONE, l2Forwarding));
-            l2Networks.add(new L2Network(name, ifaces, encap, l2Forwarding));
+            l2Networks.add(new L2Network(name, ifaces, encap, l2Forward));
         });
         return l2Networks;
     }

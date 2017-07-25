@@ -37,7 +37,7 @@ public interface SlsNetService
 
     // App symbols
     static final String APP_ID = "org.onosproject.slsnet";
-    static final String L2NETWORK_APP_ID = "org.onosproject.slsnet.l2network";
+    static final String L2FORWARD_APP_ID = "org.onosproject.slsnet.l2forward";
     static final String REACTIVE_ROUTE_APP_ID = "org.onosproject.slsnet.intercept";
     static final String REACTIVE_INTERCEPT_APP_ID = "org.onosproject.slsnet.route";
 
