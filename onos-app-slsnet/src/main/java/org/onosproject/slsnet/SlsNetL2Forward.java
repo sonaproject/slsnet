@@ -208,7 +208,7 @@ public class SlsNetL2Forward {
     // Build Boadcast Intents for a L2 Network.
     private Set<Intent> buildBrcIntents(L2Network l2Network, ApplicationId appId) {
         Set<Interface> interfaces = l2Network.interfaces();
-        if (!l2Network.l2Forwarding() || interfaces.size() < 2) {
+        if (!l2Network.l2Forward() || interfaces.size() < 2) {
             return ImmutableSet.of();
         }
         Set<Intent> brcIntents = Sets.newHashSet();
@@ -246,7 +246,7 @@ public class SlsNetL2Forward {
     // Builds unicast Intents for a L2 Network.
     private Set<Intent> buildUniIntents(L2Network l2Network, Set<Host> hosts, ApplicationId appId) {
         Set<Interface> interfaces = l2Network.interfaces();
-        if (!l2Network.l2Forwarding() || interfaces.size() < 2) {
+        if (!l2Network.l2Forward() || interfaces.size() < 2) {
             return ImmutableSet.of();
         }
         Set<Intent> uniIntents = Sets.newHashSet();
