@@ -1,7 +1,7 @@
 {
 
   "devices":{
-    "of:of:0000000000111111":{ "basic":{ "driver" : "cisco", "name":"LEAF", "latitude":37.5, "longitude":127.0 } }
+    "of:0000000000111111":{ "basic":{ "driver" : "cisco", "name":"LEAF", "latitude":37.5, "longitude":127.0 } }
   },
 
   "ports" : {
