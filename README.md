@@ -76,8 +76,9 @@ Logical Switch Context
 
 - 10G Server x 9
 - 40G Storage x 4
-- Leaf Switch: 10Gs + 40G x 6 (2 for Spine and 4 for Storage): [may be Cisco Nexus 3172PQ](http://www.cisco.com/c/en/us/td/docs/switches/datacenter/nexus/openflow/b_openflow_agent_nxos_1_3/Cisco_Plug_in_for_OpenFlow.html)
-- Spine Switch: Maybe 40G
+- Switch: Nexus 9000 Series C9372PX
+   - Leaf Switch: 10Gs + 40G x 6 (2 for Spine and 4 for Storage)
+   - Spine Switch: Maybe 40G
 - Do ECMP and Link Failover
 
 
