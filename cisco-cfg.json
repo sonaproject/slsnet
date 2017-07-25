@@ -15,10 +15,10 @@
     "org.onosproject.slsnet" : {
       "slsnet" : {
         "l2Networks" : [
-          { "name" : "LEAF1", "interfaces" : ["s1p1", "s1p2", "s1p3", "s1p4" ] }
+          { "name" : "CISCO", "interfaces" : ["s1p1", "s1p2", "s1p3", "s1p4" ] }
         ],
         "ipSubnets" : [
-           { "ipPrefix" : "10.0.1.0/24", "gatewayIp" : "10.0.1.1", "l2NetworkName" : "LEAF1" }
+           { "ipPrefix" : "10.0.3.0/24", "gatewayIp" : "10.0.3.1", "l2NetworkName" : "CISCO" }
         ],
         "borderRoutes" : [
            { "ipPrefix" : "0.0.0.0/0", "gatewayIp" : "10.0.1.254" }

@@ -54,7 +54,7 @@
            { "ipPrefix" : "10.0.1.0/24", "gatewayIp" : "10.0.1.1", "l2NetworkName" : "LEAF1" },
            { "ipPrefix" : "10.0.2.0/24", "gatewayIp" : "10.0.2.1", "l2NetworkName" : "LEAF2" },
            { "ipPrefix" : "10.0.0.0/24", "gatewayIp" : "10.0.0.1", "l2NetworkName" : "BORDER" },
-           { "ipPrefix" : "10.0.3.0/24", "gatewayIp" : "10.0.1.1", "l2NetworkName" : "CISCO" }
+           { "ipPrefix" : "10.0.3.0/24", "gatewayIp" : "10.0.3.1", "l2NetworkName" : "CISCO" }
         ],
         "borderRoutes" : [
            { "ipPrefix" : "0.0.0.0/0", "gatewayIp" : "10.0.0.31" }
