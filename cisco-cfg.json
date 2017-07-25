@@ -1,7 +1,7 @@
 {
 
   "devices":{
-    "of:of:0000000000111111":{ "basic":{ "name":"LEAF", "latitude":37.5, "longitude":127.0 } }
+    "of:of:0000000000111111":{ "basic":{ "driver" : "cisco", "name":"LEAF", "latitude":37.5, "longitude":127.0 } }
   },
 
   "ports" : {
@@ -21,7 +21,7 @@
            { "ipPrefix" : "10.0.1.0/24", "gatewayIp" : "10.0.1.1", "l2NetworkName" : "LEAF1" }
         ],
         "borderRoutes" : [
-           { "ipPrefix" : "0.0.0.0/0", "gatewayIp" : "10.0.0.31" }
+           { "ipPrefix" : "0.0.0.0/0", "gatewayIp" : "10.0.1.254" }
         ],
         "virtualGatewayMacAddress" : "00:00:00:00:00:01"
       }

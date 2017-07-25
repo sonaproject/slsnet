@@ -88,6 +88,8 @@ public class SlsNetL2NetworkRouting {
     public static final ImmutableList<Constraint> PARTIAL_FAILURE_CONSTRAINT =
             ImmutableList.of(new PartialFailureConstraint());
 
+    //private Map<Key,SinglePointToMultiPointIntent> bcastIntentsMap = Maps.newConcurrentMap();
+    //private Map<Key,MultiPointToSinglePointIntent> uniIntentsMap = Maps.newConcurrentMap();
     private Set<Intent> l2NetworkIntents = new HashSet<>();
     private Set<Key> toBePurgedIntentKeys = new HashSet<>();
 

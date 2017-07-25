@@ -240,6 +240,11 @@
         <behaviour api="org.onosproject.net.behaviour.Pipeliner"
                    impl="org.onosproject.driver.pipeline.AristaPipeline"/>
     </driver>
+    <driver name="cisco" extends="default"
+            manufacturer="Cisco Systems, Inc." hwVersion="N9K-C9332PQ V03" swVersion="| of_agent 0.1">
+        <behaviour api="org.onosproject.net.behaviour.Pipeliner"
+                   impl="org.onosproject.driver.pipeline.AristaPipeline"/>
+    </driver>
     <!-- The abstract driver is meant as a base driver containing classes that are
        ~ present in the default drivers module. These classes are needed by other
        ~ drivers but not loaded by any of the base ones.

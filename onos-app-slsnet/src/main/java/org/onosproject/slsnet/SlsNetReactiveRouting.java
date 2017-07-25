@@ -232,17 +232,17 @@ public class SlsNetReactiveRouting {
         int priority = slsnet.PRI_REACTIVE_BASE +
                        prefix.prefixLength() * slsnet.PRI_REACTIVE_STEP +
                        slsnet.PRI_REACTIVE_INTERCEPT;
-        TrafficSelector selector = DefaultTrafficSelector.builder()
+        TrafficSelector.Builder selector = DefaultTrafficSelector.builder()
                 .matchEthType(prefix.isIp4() ? Ethernet.TYPE_IPV4 : Ethernet.TYPE_IPV6)
-                .matchEthDst(slsnet.getVirtualGatewayMacAddress())
-                .matchIPDst(prefix).build();
-        TrafficTreatment treatment = DefaultTrafficTreatment.builder()
-                .punt().build();
+                .matchEthDst(slsnet.getVirtualGatewayMacAddress());
+        if (prefix.prefixLength() > 0) {
+            selector.matchIPDst(prefix);
+        }
         FlowRule rule = DefaultFlowRule.builder()
                 .forDevice(deviceId)
                 .withPriority(priority)
-                .withSelector(selector)
-                .withTreatment(treatment)
+                .withSelector(selector.build())
+                .withTreatment(DefaultTrafficTreatment.builder().punt().build())
                 .fromApp(interceptAppId)
                 .makePermanent()
                 .forTable(0).build();
