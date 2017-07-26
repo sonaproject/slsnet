@@ -369,13 +369,19 @@ public class SlsNetL2Forward {
     private void dump(String subject) {
         if (subject == "intents") {
             System.out.println("L2Forward Broadcast Intents:\n");
-            for (Intent intent: bctIntentsMap.values()) {
-                System.out.println("    " + intent.key().toString());
+            for (SinglePointToMultiPointIntent intent: bctIntentsMap.values()) {
+                System.out.println("    " + intent.key().toString() + ": "
+                                   + intent.selector() + " | "
+                                   + intent.filteredIngressPoint() + " -> "
+                                   + intent.filteredEgressPoints());
             }
             System.out.println("");
             System.out.println("L2Forward Unicast Intents:\n");
-            for (Intent intent: uniIntentsMap.values()) {
-                System.out.println("    " + intent.key().toString());
+            for (MultiPointToSinglePointIntent intent: uniIntentsMap.values()) {
+                System.out.println("    " + intent.key().toString()
+                                   + intent.selector() + " | " 
+                                   + intent.filteredIngressPoints() + " -> "
+                                   + intent.filteredEgressPoint());
             }
             System.out.println("");
             System.out.println("L2Forward Intents to Be Purged:\n");
