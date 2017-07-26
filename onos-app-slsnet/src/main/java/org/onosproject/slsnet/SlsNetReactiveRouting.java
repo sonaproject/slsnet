@@ -263,32 +263,44 @@ public class SlsNetReactiveRouting {
                 prefixToRemove.add(entry.getKey());
                 toBePurgedIntentKeys.add(intent.key());
                 intentService.withdraw(intent);
-            } else {
-                Set<ConnectPoint> newIngressPoints = new HashSet<>();
-                for (ConnectPoint cp : intent.ingressPoints()) {
-                    if (slsnet.findL2Network(cp, VlanId.NONE) != null) {
-                        newIngressPoints.add(cp);
-                    }
-                }
-                if (!newIngressPoints.equals(intent.ingressPoints())) {
-                    MultiPointToSinglePointIntent updatedIntent =
-                            MultiPointToSinglePointIntent.builder()
-                                .appId(routeAppId)
-                                .key(intent.key())
-                                .selector(intent.selector())
-                                .treatment(intent.treatment())
-                                .ingressPoints(intent.ingressPoints())
-                                .egressPoint(intent.egressPoint())
-                                .priority(intent.priority())
-                                .constraints(CONSTRAINTS)
-                                .build();
-                    log.trace("slsnet reactive routing refresh route update intent: key={} updatedIntent={}",
-                              intent.key(), updatedIntent);
-                    routeIntents.put(entry.getKey(), updatedIntent);
-                    toBePurgedIntentKeys.remove(updatedIntent.key());   // may remove from old purged entry
-                    intentService.submit(updatedIntent);
+                continue;
+            } 
+            // check if ingress or egress changed
+            Set<ConnectPoint> newIngressPoints = new HashSet<>();
+            for (ConnectPoint cp : intent.ingressPoints()) {
+                if (slsnet.findL2Network(cp, VlanId.NONE) != null) {
+                    newIngressPoints.add(cp);
                 }
             }
+            if (newIngressPoints.isEmpty() || slsnet.findL2Network(intent.egressPoint(), VlanId.NONE) == null) {
+               log.info("slsnet reactive routing refresh route intents; "
+                         + "remove intent for no ingress nor egress point available: key={}", intent.key());
+               prefixToRemove.add(entry.getKey());
+               toBePurgedIntentKeys.add(intent.key());
+               intentService.withdraw(intent);
+               continue;
+            }
+            // check if ingress already contains this cp
+            if (newIngressPoints.equals(intent.ingressPoints())) {
+                continue;
+            }
+            // apply new ingress points
+            MultiPointToSinglePointIntent updatedIntent =
+                MultiPointToSinglePointIntent.builder()
+                    .appId(routeAppId)
+                    .key(intent.key())
+                    .selector(intent.selector())
+                    .treatment(intent.treatment())
+                    .ingressPoints(intent.ingressPoints())
+                    .egressPoint(intent.egressPoint())
+                    .priority(intent.priority())
+                    .constraints(CONSTRAINTS)
+                    .build();
+            log.trace("slsnet reactive routing refresh route update intent: key={} updatedIntent={}",
+                       intent.key(), updatedIntent);
+            routeIntents.put(entry.getKey(), updatedIntent);
+            toBePurgedIntentKeys.remove(updatedIntent.key());   // may remove from old purged entry
+            intentService.submit(updatedIntent);
         }
         /* clean up intents */
         for (IpPrefix prefix : prefixToRemove) {
@@ -491,15 +503,18 @@ public class SlsNetReactiveRouting {
                 break;
             }
         }
-        if (nextHopMac == null) {
-            log.trace("slsnet reactive routing nextHopMac unknown: prefix={} nextHopIp={}", prefix, nextHopIp);
+        if (nextHopMac == null || egressPoint == null) {
+            log.trace("slsnet reactive routing nextHopCP and Mac unknown: prefix={} nextHopIp={}", prefix, nextHopIp);
             hostService.startMonitoringIp(nextHopIp);
             slsnet.requestMac(nextHopIp);
             return;
         }
 
         MultiPointToSinglePointIntent existingIntent = routeIntents.get(prefix);
-        if (existingIntent != null) {
+        if (existingIntent != null
+                && existingIntent.egressPoint().equals(egressPoint)
+                && existingIntent.treatment().equals(generateTargetTreatment(nextHopMac))) {
+            // note: egressPoint and dstMack should be same, else build new one to override old one
             log.trace("slsnet reactive routing update mp2p intent: prefix={} srcCp={}", prefix, srcCp);
             Set<ConnectPoint> ingressPoints = existingIntent.ingressPoints();
             if (ingressPoints.contains(srcCp) || ingressPoints.add(srcCp)) {
@@ -544,16 +559,13 @@ public class SlsNetReactiveRouting {
                     selector.matchIPv6Dst(prefix);
                 }
             }
-            TrafficTreatment.Builder treatment = DefaultTrafficTreatment.builder()
-                    .setEthDst(nextHopMac)
-                    .setEthSrc(slsnet.getVirtualGatewayMacAddress());
             Set<ConnectPoint> ingressPoints = new HashSet<>();
             ingressPoints.add(srcCp);
             MultiPointToSinglePointIntent newIntent = MultiPointToSinglePointIntent.builder()
                     .appId(routeAppId)
                     .key(key)
                     .selector(selector.build())
-                    .treatment(treatment.build())
+                    .treatment(generateTargetTreatment(nextHopMac))
                     .ingressPoints(ingressPoints)
                     .egressPoint(egressPoint)
                     .priority(priority)
@@ -566,6 +578,14 @@ public class SlsNetReactiveRouting {
            toBePurgedIntentKeys.remove(newIntent.key());
            intentService.submit(newIntent);
        }
+    }
+
+    // generate treatement to target
+    private TrafficTreatment generateTargetTreatment(MacAddress dstMac) {
+        return DefaultTrafficTreatment.builder()
+                   .setEthDst(dstMac)
+                   .setEthSrc(slsnet.getVirtualGatewayMacAddress())
+                   .build();
     }
 
     // monitor border peers for routeService lookup to be effective

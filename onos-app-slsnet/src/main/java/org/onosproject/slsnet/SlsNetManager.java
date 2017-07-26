@@ -121,9 +121,9 @@ public class SlsNetManager extends ListenerRegistry<SlsNetEvent, SlsNetListener>
     @Reference(cardinality = ReferenceCardinality.MANDATORY_UNARY)
     protected ComponentService componentService;
     private final List<String> components = ImmutableList.of(
-        //SlsNetNeighbour.class.getName(),
-        SlsNetL2Forward.class.getName()
-        //SlsNetReactiveRouting.class.getName()
+        SlsNetNeighbour.class.getName(),
+        SlsNetL2Forward.class.getName(),
+        SlsNetReactiveRouting.class.getName()
     );
 
     // SlsNet variables

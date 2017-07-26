@@ -378,8 +378,8 @@ public class SlsNetL2Forward {
             System.out.println("");
             System.out.println("L2Forward Unicast Intents:\n");
             for (MultiPointToSinglePointIntent intent: uniIntentsMap.values()) {
-                System.out.println("    " + intent.key().toString()
-                                   + intent.selector() + " | " 
+                System.out.println("    " + intent.key().toString() + ": "
+                                   + intent.selector() + " | "
                                    + intent.filteredIngressPoints() + " -> "
                                    + intent.filteredEgressPoint());
             }
