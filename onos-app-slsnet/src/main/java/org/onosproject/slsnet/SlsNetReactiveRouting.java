@@ -30,6 +30,7 @@ import org.onlab.packet.IPv4;
 import org.onlab.packet.IPv6;
 import org.onlab.packet.IpAddress;
 import org.onlab.packet.IpPrefix;
+//import org.onlab.packet.Ip6Prefix;
 import org.onlab.packet.MacAddress;
 import org.onlab.packet.VlanId;
 import org.onosproject.core.ApplicationId;
@@ -232,11 +233,18 @@ public class SlsNetReactiveRouting {
         int priority = slsnet.PRI_REACTIVE_BASE +
                        prefix.prefixLength() * slsnet.PRI_REACTIVE_STEP +
                        slsnet.PRI_REACTIVE_INTERCEPT;
-        TrafficSelector.Builder selector = DefaultTrafficSelector.builder()
-                .matchEthType(prefix.isIp4() ? Ethernet.TYPE_IPV4 : Ethernet.TYPE_IPV6)
-                .matchEthDst(slsnet.getVirtualGatewayMacAddress());
-        if (prefix.prefixLength() > 0) {
-            selector.matchIPDst(prefix);
+        TrafficSelector.Builder selector = DefaultTrafficSelector.builder();
+        selector.matchEthDst(slsnet.getVirtualGatewayMacAddress());
+        if (prefix.isIp4()) {
+            selector.matchEthType(Ethernet.TYPE_IPV4);
+            if (prefix.prefixLength() > 0) {
+                selector.matchIPDst(prefix);
+            }
+        } else {
+            selector.matchEthType(Ethernet.TYPE_IPV6);
+            if (prefix.prefixLength() > 0) {
+                selector.matchIPv6Dst(prefix);
+            }
         }
         FlowRule rule = DefaultFlowRule.builder()
                 .forDevice(deviceId)
@@ -264,7 +272,7 @@ public class SlsNetReactiveRouting {
                 toBePurgedIntentKeys.add(intent.key());
                 intentService.withdraw(intent);
                 continue;
-            } 
+            }
             // check if ingress or egress changed
             Set<ConnectPoint> newIngressPoints = new HashSet<>();
             for (ConnectPoint cp : intent.ingressPoints()) {
@@ -429,14 +437,18 @@ public class SlsNetReactiveRouting {
     private boolean ipPacketReactiveProcessor(Ethernet ethPkt, ConnectPoint srcCp, IpAddress srcIp, IpAddress dstIp) {
         log.trace("slsnet reactive routing ip packet: srcCp={} srcIp={} dstIp={} srcCp={}", srcCp, srcIp, dstIp);
         // NOTE: do not check source ip for source is recognized as ConnectPoint only
-        if (slsnet.isIpAddressLocal(dstIp)) {
-            if (slsnet.findIpSubnet(dstIp).equals(slsnet.findIpSubnet(srcIp))) {
-                // within same subnet; to be handled by l2NetworkRouting
-                // no reactive route action but try to forward packet
-                return true;
-            } else {
-                setUpConnectivity(srcCp, dstIp.toIpPrefix(), dstIp);
+        IpSubnet dstSubnet = slsnet.findIpSubnet(dstIp);
+        if (dstSubnet != null) {
+            // destination is local ip
+            if (dstSubnet.equals(slsnet.findIpSubnet(srcIp))) {
+                L2Network l2Network = slsnet.findL2Network(dstSubnet.l2NetworkName());
+                if (l2Network != null && l2Network.l2Forward()) {
+                    // within same subnet and to be handled by l2NetworkRouting
+                    // no reactive route action but try to forward packet
+                    return true;
+                }
             }
+            setUpConnectivity(srcCp, dstIp.toIpPrefix(), dstIp);
         } else {
             Route route = routeService.longestPrefixMatch(dstIp);
             if (route == null) {
@@ -547,7 +559,7 @@ public class SlsNetReactiveRouting {
                            + prefix.prefixLength() * slsnet.PRI_REACTIVE_STEP
                            + slsnet.PRI_REACTIVE_ROUTE;
             TrafficSelector.Builder selector = DefaultTrafficSelector.builder();
-            // select.matchEthDst(slsnet.getVirtualGatewayMacAddress());
+            selector.matchEthDst(slsnet.getVirtualGatewayMacAddress());
             if (prefix.isIp4()) {
                 selector.matchEthType(Ethernet.TYPE_IPV4);
                 if (prefix.prefixLength() > 0) {

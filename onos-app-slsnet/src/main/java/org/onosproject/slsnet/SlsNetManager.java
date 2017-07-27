@@ -509,7 +509,7 @@ public class SlsNetManager extends ListenerRegistry<SlsNetEvent, SlsNetListener>
                      ipSubnet.l2NetworkName(), ip);
             return false;
         }
-        log.info("slsnet send request mac L2Network {}: {}", l2Network.name(), ip);
+        log.debug("slsnet send request mac L2Network {}: {}", l2Network.name(), ip);
         for (Interface iface : l2Network.interfaces()) {
             Ethernet neighbourReq;
             if (ip.isIp4()) {
