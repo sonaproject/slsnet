@@ -63,27 +63,30 @@ public class SlsNetConfig extends Config<ApplicationId> {
         }
 
         l2NetworkNode.forEach(jsonNode -> {
-            String name = jsonNode.get(NAME).asText();
-
             Set<String> ifaces = Sets.newHashSet();
             JsonNode l2NetworkIfaces = jsonNode.path(INTERFACES);
             if (l2NetworkIfaces == null) {
-                log.warn("slsnet network config cannot find {}; skip: {}", INTERFACES, jsonNode);
+                log.warn("slsnet network config cannot find {}; skip: jsonNode={}", INTERFACES, jsonNode);
             } else if (!l2NetworkIfaces.toString().isEmpty()) {
                 l2NetworkIfaces.forEach(ifacesNode -> ifaces.add(new String(ifacesNode.asText())));
             }
-
-            EncapsulationType encap = EncapsulationType.NONE;
+            String encapsulation = "NONE";   // NONE or VLAN
             if (jsonNode.hasNonNull(ENCAPSULATION)) {
-                encap = EncapsulationType.enumFromString(jsonNode.get(ENCAPSULATION).asText());
+                encapsulation = jsonNode.get(ENCAPSULATION).asText();
             }
-
             boolean l2Forward = true;
             if (jsonNode.hasNonNull(L2FORWARD)) {
                 l2Forward = jsonNode.get(L2FORWARD).asBoolean();
             }
-
-            l2Networks.add(new L2Network(name, ifaces, encap, l2Forward));
+            try {
+                l2Networks.add(new L2Network(
+                        jsonNode.get(NAME).asText(),
+                        ifaces,
+                        EncapsulationType.enumFromString(encapsulation),
+                        l2Forward));
+            } catch (Exception e) {
+                log.error("slsnet network config l2Network parse failed; skip: error={} jsonNode={}", jsonNode);
+            }
         });
         return l2Networks;
     }
@@ -95,7 +98,6 @@ public class SlsNetConfig extends Config<ApplicationId> {
      */
     public Set<IpSubnet> ipSubnets() {
         Set<IpSubnet> subnets = Sets.newHashSet();
-
         JsonNode subnetsNode = object.get(IPSUBNETS);
         if (subnetsNode == null) {
             log.warn("slsnet network config ipSubnets is null!");
@@ -103,13 +105,18 @@ public class SlsNetConfig extends Config<ApplicationId> {
         }
 
         subnetsNode.forEach(jsonNode -> {
+            String encapsulation = "NONE";   // NONE or VLAN
+            if (jsonNode.hasNonNull(ENCAPSULATION)) {
+                encapsulation = jsonNode.get(ENCAPSULATION).asText();
+            }
             try {
                 subnets.add(new IpSubnet(
                         IpPrefix.valueOf(jsonNode.get(IPPREFIX).asText()),
                         IpAddress.valueOf(jsonNode.get(GATEWAYIP).asText()),
+                        EncapsulationType.enumFromString(encapsulation),
                         jsonNode.get(L2NETWORKNAME).asText()));
-            } catch (IllegalArgumentException e) {
-                log.warn("slsnet network config parse error; skip: {}", jsonNode);
+            } catch (Exception e) {
+                log.error("slsnet network config ipSubnet parse failed; skip: error={} jsonNode={}", jsonNode);
             }
         });
 

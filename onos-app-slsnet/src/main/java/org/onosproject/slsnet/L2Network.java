@@ -37,7 +37,7 @@ public final class L2Network {
 
     private String name;                  // also for network configuration
     private Set<String> interfaceNames;   // also for network configuration
-    private EncapsulationType encapsulationType;  // also for network configuration
+    private EncapsulationType encapsulation;  // also for network configuration
     private boolean l2Forward;            // do l2Forward (default:true) or not
     private Set<Interface> interfaces;    // available interfaces from interfaceNames
     private Set<HostId> hostIds;          // available hosts from interfaces
@@ -48,13 +48,13 @@ public final class L2Network {
      *
      * @param name the given name
      * @param ifaceNames the interface names
-     * @param encapType the encapsulation type
+     * @param encapsulation the encapsulation type
      * @param l2Forward flag for l2Forward intents to be installed or not
      */
-    L2Network(String name, Collection<String> ifaceNames, EncapsulationType encapType, boolean l2Forward) {
+    L2Network(String name, Collection<String> ifaceNames, EncapsulationType encapsulation, boolean l2Forward) {
         this.name = name;
         this.interfaceNames = Sets.newHashSet();
-        this.encapsulationType = encapType;
+        this.encapsulation = encapsulation;
         this.l2Forward = l2Forward;
         this.interfaces = Sets.newHashSet();
         this.hostIds = Sets.newHashSet();
@@ -68,11 +68,11 @@ public final class L2Network {
      * @param name the given name
      * @param encapType the encapsulation type
      */
-    private L2Network(String name, EncapsulationType encapType) {
+    private L2Network(String name, EncapsulationType encaptulation) {
         this.name = name;
         this.interfaceNames = Sets.newHashSet();
-        this.encapsulationType = encapType;
-        this.l2Forward = true;
+        this.encapsulation = encapsulation;
+        this.l2Forward = (SlsNetService.ALLOW_ETH_ADDRESS_SELECTOR) ? true : false;
         this.interfaces = Sets.newHashSet();
         this.hostIds = Sets.newHashSet();
         this.dirty = false;
@@ -98,9 +98,13 @@ public final class L2Network {
      */
     public static L2Network of(L2Network l2Network) {
         Objects.requireNonNull(l2Network);
-        L2Network l2NetworkCopy = new L2Network(l2Network.name(), l2Network.encapsulationType());
+        L2Network l2NetworkCopy = new L2Network(l2Network.name(), l2Network.encapsulation());
         l2NetworkCopy.addInterfaceNames(l2Network.interfaceNames());
-        l2NetworkCopy.setL2Forward(l2Network.l2Forward());
+        if (SlsNetService.ALLOW_ETH_ADDRESS_SELECTOR) {
+            l2NetworkCopy.setL2Forward(l2Network.l2Forward());
+        } else {
+            l2NetworkCopy.setL2Forward(false);
+        }
         l2NetworkCopy.addInterfaces(l2Network.interfaces());
         l2NetworkCopy.setDirty(l2Network.dirty());
         return l2NetworkCopy;
@@ -116,8 +120,8 @@ public final class L2Network {
         return ImmutableSet.copyOf(interfaceNames);
     }
 
-    public EncapsulationType encapsulationType() {
-        return encapsulationType;
+    public EncapsulationType encapsulation() {
+        return encapsulation;
     }
 
     public boolean l2Forward() {
@@ -154,9 +158,9 @@ public final class L2Network {
 
     // field updates
 
-    public void setEncapsulationType(EncapsulationType encapType) {
-        if (encapsulationType != encapType) {
-            encapsulationType = encapType;
+    public void setEncapsulation(EncapsulationType encapsulation) {
+        if (encapsulation != encapsulation) {
+            this.encapsulation = encapsulation;
             setDirty(true);
         }
     }
@@ -177,7 +181,7 @@ public final class L2Network {
 
     // set l2Forward flag
     public void setL2Forward(boolean l2Forward) {
-        this.l2Forward = l2Forward;
+        this.l2Forward = (SlsNetService.ALLOW_ETH_ADDRESS_SELECTOR) ? l2Forward : false;
     }
 
     // add and remove interfaces from port configuration for each interfaceName */
@@ -242,7 +246,7 @@ public final class L2Network {
         return MoreObjects.toStringHelper(getClass())
                 .add("name", name)
                 .add("interfaceNames", interfaceNames)
-                .add("encap type", encapsulationType)
+                .add("encapsulation", encapsulation)
                 .add("l2Forward", l2Forward)
                 .add("interfaces", interfaces)
                 .add("hostIds", hostIds)
@@ -261,7 +265,7 @@ public final class L2Network {
         L2Network other = (L2Network) obj;
         return Objects.equals(other.name, this.name)
                && Objects.equals(other.interfaceNames, this.interfaceNames)
-               && Objects.equals(other.encapsulationType, this.encapsulationType)
+               && Objects.equals(other.encapsulation, this.encapsulation)
                && Objects.equals(other.l2Forward, this.l2Forward)
                && Objects.equals(other.interfaces, this.interfaces)
                && Objects.equals(other.hostIds, this.hostIds);
@@ -269,6 +273,6 @@ public final class L2Network {
 
     @Override
     public int hashCode() {
-        return Objects.hash(name, interfaces, encapsulationType, l2Forward);
+        return Objects.hash(name, interfaces, encapsulation, l2Forward);
     }
 }

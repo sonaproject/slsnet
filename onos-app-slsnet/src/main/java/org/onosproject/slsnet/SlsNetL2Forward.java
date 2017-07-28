@@ -142,6 +142,7 @@ public class SlsNetL2Forward {
 
         for (L2Network l2Network : slsnet.getL2Networks()) {
             // scans all l2network regardless of dirty flag
+            // if l2Network.l2Forward == false or number of interfaces() < 2, no Intents generated
             for (SinglePointToMultiPointIntent intent : buildBrcIntents(l2Network)) {
                 newBctIntentsMap.put(intent.key(), intent);
             }
@@ -271,7 +272,7 @@ public class SlsNetL2Forward {
                     .constraints(PARTIAL_FAILURE_CONSTRAINT)
                     .priority(SlsNetService.PRI_L2NETWORK_BROADCAST)
                     .resourceGroup(resourceGroup);
-            setEncap(intentBuilder, PARTIAL_FAILURE_CONSTRAINT, l2Network.encapsulationType());
+            setEncap(intentBuilder, PARTIAL_FAILURE_CONSTRAINT, l2Network.encapsulation());
             brcIntents.add(intentBuilder.build());
         });
         return brcIntents;
@@ -303,7 +304,7 @@ public class SlsNetL2Forward {
                     .constraints(PARTIAL_FAILURE_CONSTRAINT)
                     .priority(SlsNetService.PRI_L2NETWORK_UNICAST)
                     .resourceGroup(resourceGroup);
-            setEncap(intentBuilder, PARTIAL_FAILURE_CONSTRAINT, l2Network.encapsulationType());
+            setEncap(intentBuilder, PARTIAL_FAILURE_CONSTRAINT, l2Network.encapsulation());
             uniIntents.add(intentBuilder.build());
         });
 
@@ -332,14 +333,14 @@ public class SlsNetL2Forward {
     }
 
     private void setEncap(ConnectivityIntent.Builder builder,
-                                 List<Constraint> constraints, EncapsulationType encap) {
+                          List<Constraint> constraints, EncapsulationType encapsulation) {
         // Constraints might be an immutable list, so a new modifiable list is created
         List<Constraint> newConstraints = new ArrayList<>(constraints);
         constraints.stream()
                 .filter(c -> c instanceof EncapsulationConstraint)
                 .forEach(newConstraints::remove);
-        if (!encap.equals(EncapsulationType.NONE)) {
-            newConstraints.add(new EncapsulationConstraint(encap));
+        if (!encapsulation.equals(EncapsulationType.NONE)) {
+            newConstraints.add(new EncapsulationConstraint(encapsulation));
         }
         // Submit new constraint list as immutable list
         builder.constraints(ImmutableList.copyOf(newConstraints));

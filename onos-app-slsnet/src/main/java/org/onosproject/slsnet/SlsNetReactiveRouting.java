@@ -39,6 +39,7 @@ import org.onosproject.incubator.net.intf.InterfaceService;
 import org.onosproject.incubator.net.routing.Route;
 import org.onosproject.incubator.net.routing.RouteService;
 import org.onosproject.net.ConnectPoint;
+import org.onosproject.net.EncapsulationType;
 import org.onosproject.net.Device;
 import org.onosproject.net.DeviceId;
 import org.onosproject.net.device.DeviceService;
@@ -54,6 +55,7 @@ import org.onosproject.net.host.HostService;
 import org.onosproject.net.intent.Constraint;
 import org.onosproject.net.intent.constraint.PartialFailureConstraint;
 import org.onosproject.net.intent.constraint.HashedPathSelectionConstraint;
+import org.onosproject.net.intent.constraint.EncapsulationConstraint;
 import org.onosproject.net.intent.Intent;
 import org.onosproject.net.intent.IntentService;
 import org.onosproject.net.intent.Key;
@@ -114,7 +116,8 @@ public class SlsNetReactiveRouting {
 
     private static final ImmutableList<Constraint> CONSTRAINTS
             = ImmutableList.of(new PartialFailureConstraint(),
-                               new HashedPathSelectionConstraint());
+                               new HashedPathSelectionConstraint(),
+                               new EncapsulationConstraint(EncapsulationType.VLAN));
 
     private Set<FlowRule> interceptFlowRules = new HashSet<>();
     private Map<IpPrefix, MultiPointToSinglePointIntent> routeIntents = Maps.newConcurrentMap();
@@ -234,7 +237,9 @@ public class SlsNetReactiveRouting {
                        prefix.prefixLength() * slsnet.PRI_REACTIVE_STEP +
                        slsnet.PRI_REACTIVE_INTERCEPT;
         TrafficSelector.Builder selector = DefaultTrafficSelector.builder();
-        selector.matchEthDst(slsnet.getVirtualGatewayMacAddress());
+        if (SlsNetService.VIRTUAL_GATEWAY_ETH_ADDRESS_SELECTOR) {
+            selector.matchEthDst(slsnet.getVirtualGatewayMacAddress());
+        }
         if (prefix.isIp4()) {
             selector.matchEthType(Ethernet.TYPE_IPV4);
             if (prefix.prefixLength() > 0) {
@@ -440,7 +445,8 @@ public class SlsNetReactiveRouting {
         IpSubnet dstSubnet = slsnet.findIpSubnet(dstIp);
         if (dstSubnet != null) {
             // destination is local ip
-            if (dstSubnet.equals(slsnet.findIpSubnet(srcIp))) {
+            if (SlsNetService.ALLOW_ETH_ADDRESS_SELECTOR && dstSubnet.equals(slsnet.findIpSubnet(srcIp))) {
+                // NOTE: if ALLOW_ETH_ADDRESS_SELECTOR == false; l2Forward is always false
                 L2Network l2Network = slsnet.findL2Network(dstSubnet.l2NetworkName());
                 if (l2Network != null && l2Network.l2Forward()) {
                     // within same subnet and to be handled by l2NetworkRouting
@@ -559,7 +565,9 @@ public class SlsNetReactiveRouting {
                            + prefix.prefixLength() * slsnet.PRI_REACTIVE_STEP
                            + slsnet.PRI_REACTIVE_ROUTE;
             TrafficSelector.Builder selector = DefaultTrafficSelector.builder();
-            selector.matchEthDst(slsnet.getVirtualGatewayMacAddress());
+            if (SlsNetService.VIRTUAL_GATEWAY_ETH_ADDRESS_SELECTOR) {
+               selector.matchEthDst(slsnet.getVirtualGatewayMacAddress());
+            }
             if (prefix.isIp4()) {
                 selector.matchEthType(Ethernet.TYPE_IPV4);
                 if (prefix.prefixLength() > 0) {

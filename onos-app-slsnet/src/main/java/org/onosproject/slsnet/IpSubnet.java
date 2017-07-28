@@ -18,41 +18,45 @@ package org.onosproject.slsnet;
 import com.google.common.base.MoreObjects;
 import org.onlab.packet.IpAddress;
 import org.onlab.packet.IpPrefix;
+import org.onosproject.net.EncapsulationType;
 
 import java.util.Objects;
 
 /**
- * Configuration details for an IP prefix entry.
+ * Configuration details for an ip subnet entry.
  */
 public class IpSubnet {
     private final IpPrefix ipPrefix;
     private final IpAddress gatewayIp;
+    private EncapsulationType encapsulation;
     private final String l2NetworkName;
 
     /**
-     * Creates a new IP prefix entry.
+     * Creates a new ip subnet entry.
      *
-     * @param ipPrefix  an IP prefix
+     * @param ipPrefix  an ip subnet
      * @param gatewayIp IP of the gateway
+     * @param encapsulation EnacaptulatioType for routes related to this subnet
      * @param l2NetworkName Name of L2 Network this subnet is bound
      */
-    public IpSubnet(IpPrefix ipPrefix, IpAddress gatewayIp, String l2NetworkName) {
+    public IpSubnet(IpPrefix ipPrefix, IpAddress gatewayIp, EncapsulationType encapsulation, String l2NetworkName) {
         this.ipPrefix = ipPrefix;
         this.gatewayIp = gatewayIp;
+        this.encapsulation = (SlsNetService.ALLOW_ETH_ADDRESS_SELECTOR) ? encapsulation : EncapsulationType.VLAN;
         this.l2NetworkName = l2NetworkName;
     }
 
     /**
-     * Gets the IP prefix of the IP prefix entry.
+     * Gets the ip subnet of the ip subnet entry.
      *
-     * @return the IP prefix
+     * @return the ip subnet
      */
     public IpPrefix ipPrefix() {
         return ipPrefix;
     }
 
     /**
-     * Gets the gateway IP address of the IP prefix entry.
+     * Gets the gateway IP address of the ip subnet entry.
      *
      * @return the gateway IP address
      */
@@ -61,9 +65,18 @@ public class IpSubnet {
     }
 
     /**
+     * Gets the encaptulation type of ip subnet entry.
+     *
+     * @return the encapsulation type
+     */
+    public EncapsulationType encaptulation() {
+        return encapsulation;
+    }
+
+    /**
      * Gets the name of L2 Network this subnet is bound.
      *
-     * @return the gateway IP address
+     * @return the l2Network name this subnet is allocated
      */
     public String l2NetworkName() {
         return l2NetworkName;
@@ -111,6 +124,7 @@ public class IpSubnet {
         return MoreObjects.toStringHelper(getClass())
                 .add("ipPrefix", ipPrefix)
                 .add("gatewayIp", gatewayIp)
+                .add("encapsulation", encapsulation)
                 .add("l2NetworkName", l2NetworkName)
                 .toString();
     }

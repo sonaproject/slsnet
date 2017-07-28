@@ -16,7 +16,6 @@
 
 package org.onosproject.slsnet;
 
-import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.googlecode.concurrenttrees.radix.node.concrete.DefaultByteArrayNodeFactory;
 import com.googlecode.concurrenttrees.radixinverted.ConcurrentInvertedRadixTree;
@@ -74,7 +73,6 @@ import java.nio.ByteBuffer;
 import java.util.Iterator;
 import java.util.HashSet;
 import java.util.Collection;
-import java.util.List;
 import java.util.Set;
 
 import static org.onosproject.incubator.net.routing.RouteTools.createBinaryString;
@@ -120,11 +118,6 @@ public class SlsNetManager extends ListenerRegistry<SlsNetEvent, SlsNetListener>
     // compoents to be activated within SlsNet
     @Reference(cardinality = ReferenceCardinality.MANDATORY_UNARY)
     protected ComponentService componentService;
-    private final List<String> components = ImmutableList.of(
-        SlsNetNeighbour.class.getName(),
-        SlsNetL2Forward.class.getName(),
-        SlsNetReactiveRouting.class.getName()
-    );
 
     // SlsNet variables
     private ApplicationId appId = null;
@@ -162,15 +155,14 @@ public class SlsNetManager extends ListenerRegistry<SlsNetEvent, SlsNetListener>
     private final InternalHostListener hostListener = new InternalHostListener();
     private final InternalInterfaceListener interfaceListener = new InternalInterfaceListener();
 
-    private ConfigFactory<ApplicationId, SlsNetConfig>
-            reactiveRoutingConfigFactory =
-            new ConfigFactory<ApplicationId, SlsNetConfig>(
-                    SubjectFactories.APP_SUBJECT_FACTORY,
-                    SlsNetConfig.class, "slsnet") {
+    private ConfigFactory<ApplicationId, SlsNetConfig> reactiveRoutingConfigFactory =
+        new ConfigFactory<ApplicationId, SlsNetConfig>(
+                SubjectFactories.APP_SUBJECT_FACTORY,
+                SlsNetConfig.class, "slsnet") {
         @Override
         public SlsNetConfig createConfig() {
             return new SlsNetConfig();
-        }
+       }
     };
 
     @Activate
@@ -189,7 +181,11 @@ public class SlsNetManager extends ListenerRegistry<SlsNetEvent, SlsNetListener>
         deviceService.addListener(deviceListener);
         hostService.addListener(hostListener);
 
-        components.forEach(name -> componentService.activate(appId, name));
+        componentService.activate(appId, SlsNetNeighbour.class.getName());
+        componentService.activate(appId, SlsNetReactiveRouting.class.getName());
+        if (SlsNetService.ALLOW_ETH_ADDRESS_SELECTOR) {
+            componentService.activate(appId, SlsNetL2Forward.class.getName());
+        }
 
         refreshThread = new InternalRefreshThread();
         refreshThread.start();
@@ -201,7 +197,11 @@ public class SlsNetManager extends ListenerRegistry<SlsNetEvent, SlsNetListener>
     public void deactivate() {
         log.info("slsnet stopping");
 
-        components.forEach(name -> componentService.deactivate(appId, name));
+        componentService.deactivate(appId, SlsNetNeighbour.class.getName());
+        componentService.deactivate(appId, SlsNetReactiveRouting.class.getName());
+        if (SlsNetService.ALLOW_ETH_ADDRESS_SELECTOR) {
+            componentService.deactivate(appId, SlsNetL2Forward.class.getName());
+        }
 
         deviceService.removeListener(deviceListener);
         hostService.removeListener(hostListener);

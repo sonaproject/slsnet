@@ -67,29 +67,29 @@ public class SlsNetCli extends AbstractShellCommand {
 
     // Shows configuraions
     protected void show() {
+        print("Static Configuration Flag:");
+        print("    ALLOW_ETH_ADDRESS_SELECTOR=%s", SlsNetService.ALLOW_ETH_ADDRESS_SELECTOR);
+        print("    VIRTUAL_GATEWAY_ETH_ADDRESS_SELECTOR=%s", SlsNetService.VIRTUAL_GATEWAY_ETH_ADDRESS_SELECTOR);
+        print("");
         print("SlsNetAppId:");
         print("    %s", slsnet.getAppId());
         print("");
-
         print("l2Networks:");
         for (L2Network l2Network : slsnet.getL2Networks()) {
             print("    %s", l2Network);
         }
         print("");
-
         print("ipSubnets:");
         for (IpSubnet ipSubnet : slsnet.getIpSubnets()) {
             print("    %s", ipSubnet);
         }
         print("");
-
         print("borderRoutes:");
         // directly show slsnet's borderRoute info
         for (Route route : slsnet.getBorderRoutes()) {
             print("    %s", route);
         }
         print("");
-
         /* OLD: use routeService's routeTable info
         for (RouteTableId routeTableId : routeService.getRouteTables()) {
             if (routeTableId.name() == "ipv4" || routeTableId.name() == "ipv6") {
@@ -99,11 +99,9 @@ public class SlsNetCli extends AbstractShellCommand {
             }
         }
         */
-
         print("virtualGatewayMacAddress:");
         print("    %s", slsnet.getVirtualGatewayMacAddress());
         print("");
-
         print("virtualGatewayIpAddressed:");
         print("    %s", slsnet.getVirtualGatewayIpAddresses());
         print("");
