@@ -116,6 +116,7 @@ public class IpSubnet {
         IpSubnet that = (IpSubnet) obj;
         return Objects.equals(this.ipPrefix, that.ipPrefix)
                && Objects.equals(this.gatewayIp, that.gatewayIp)
+               && Objects.equals(this.encapsulation, that.encapsulation)
                && Objects.equals(this.l2NetworkName, that.l2NetworkName);
     }
 

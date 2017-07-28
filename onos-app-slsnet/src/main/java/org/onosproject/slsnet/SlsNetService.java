@@ -56,7 +56,7 @@ public interface SlsNetService
     static final long IDLE_INTERVAL_MSEC = 5000;
 
     // feature control parameters
-    static final boolean ALLOW_ETH_ADDRESS_SELECTOR = true;
+    static final boolean ALLOW_ETH_ADDRESS_SELECTOR = false;
     static final boolean VIRTUAL_GATEWAY_ETH_ADDRESS_SELECTOR = false;
 
     /**

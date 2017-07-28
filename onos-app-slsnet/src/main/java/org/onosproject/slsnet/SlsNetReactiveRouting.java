@@ -30,6 +30,8 @@ import org.onlab.packet.IPv4;
 import org.onlab.packet.IPv6;
 import org.onlab.packet.IpAddress;
 import org.onlab.packet.IpPrefix;
+//import org.onlab.packet.Ip4Address;
+//import org.onlab.packet.Ip4Prefix;
 //import org.onlab.packet.Ip6Prefix;
 import org.onlab.packet.MacAddress;
 import org.onlab.packet.VlanId;
@@ -67,6 +69,7 @@ import org.onosproject.net.packet.PacketContext;
 import org.onosproject.net.packet.PacketPriority;
 import org.onosproject.net.packet.PacketProcessor;
 import org.onosproject.net.packet.PacketService;
+import org.onosproject.net.Port;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -209,6 +212,7 @@ public class SlsNetReactiveRouting {
         for (Device device : deviceService.getAvailableDevices()) {
             for (IpSubnet subnet : slsnet.getIpSubnets()) {
                 newInterceptFlowRules.add(generateInterceptFlowRule(device.id(), subnet.ipPrefix()));
+                //newInterceptFlowRules.add(generateIpBroadcastFlowRule(device.id(), subnet.ipPrefix()));
             }
             for (Route route : slsnet.getBorderRoutes()) {
                 newInterceptFlowRules.add(generateInterceptFlowRule(device.id(), route.prefix()));
@@ -256,6 +260,42 @@ public class SlsNetReactiveRouting {
                 .withPriority(priority)
                 .withSelector(selector.build())
                 .withTreatment(DefaultTrafficTreatment.builder().punt().build())
+                .fromApp(interceptAppId)
+                .makePermanent()
+                .forTable(0).build();
+        return rule;
+    }
+
+    private FlowRule generateIpBroadcastFlowRule(DeviceId deviceId, IpPrefix prefix) {
+        int priority = slsnet.PRI_REACTIVE_BASE +
+                       prefix.prefixLength() * slsnet.PRI_REACTIVE_STEP +
+                       slsnet.PRI_REACTIVE_INTERCEPT;
+        TrafficSelector.Builder selector = DefaultTrafficSelector.builder();
+        if (prefix.isIp4()) {
+            selector.matchEthType(Ethernet.TYPE_IPV4);
+            if (prefix.prefixLength() > 0) {
+                selector.matchIPDst(prefix);
+                //selector.matchIPDst(Ip4Prefix.valueOf(prefix.getIp4Prefix().address().toInt() |
+                //                            ~Ip4Address.makeMaskPrefix(prefix.prefixLength()).toInt(),
+                //                        prefix.prefixLength()));
+            }
+        } else {
+            selector.matchEthType(Ethernet.TYPE_IPV6);
+            if (prefix.prefixLength() > 0) {
+                selector.matchIPv6Dst(prefix);
+            }
+        }
+        TrafficTreatment.Builder treatment = DefaultTrafficTreatment.builder();
+        Set<ConnectPoint> newEgressPoints = new HashSet<>();
+        treatment.setVlanId(VlanId.vlanId("1000"));
+        for (Port port : deviceService.getPorts(deviceId)) {
+            treatment.setOutput(port.number());
+        }
+        FlowRule rule = DefaultFlowRule.builder()
+                .forDevice(deviceId)
+                .withPriority(priority)
+                .withSelector(selector.build())
+                .withTreatment(treatment.build())
                 .fromApp(interceptAppId)
                 .makePermanent()
                 .forTable(0).build();

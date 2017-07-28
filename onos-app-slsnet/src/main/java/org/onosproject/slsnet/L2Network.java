@@ -54,12 +54,12 @@ public final class L2Network {
     L2Network(String name, Collection<String> ifaceNames, EncapsulationType encapsulation, boolean l2Forward) {
         this.name = name;
         this.interfaceNames = Sets.newHashSet();
+        this.addInterfaceNames(ifaceNames);
         this.encapsulation = encapsulation;
-        this.l2Forward = l2Forward;
+        this.l2Forward = (SlsNetService.ALLOW_ETH_ADDRESS_SELECTOR) ? l2Forward : false;
         this.interfaces = Sets.newHashSet();
         this.hostIds = Sets.newHashSet();
         this.dirty = false;
-        this.addInterfaceNames(ifaceNames);
     }
 
     /**
@@ -100,11 +100,8 @@ public final class L2Network {
         Objects.requireNonNull(l2Network);
         L2Network l2NetworkCopy = new L2Network(l2Network.name(), l2Network.encapsulation());
         l2NetworkCopy.addInterfaceNames(l2Network.interfaceNames());
-        if (SlsNetService.ALLOW_ETH_ADDRESS_SELECTOR) {
-            l2NetworkCopy.setL2Forward(l2Network.l2Forward());
-        } else {
-            l2NetworkCopy.setL2Forward(false);
-        }
+        l2NetworkCopy.setEncapsulation(l2Network.encapsulation());
+        l2NetworkCopy.setL2Forward((SlsNetService.ALLOW_ETH_ADDRESS_SELECTOR) ? l2Network.l2Forward() : false);
         l2NetworkCopy.addInterfaces(l2Network.interfaces());
         l2NetworkCopy.setDirty(l2Network.dirty());
         return l2NetworkCopy;
@@ -159,7 +156,7 @@ public final class L2Network {
     // field updates
 
     public void setEncapsulation(EncapsulationType encapsulation) {
-        if (encapsulation != encapsulation) {
+        if (!encapsulation.equals(this.encapsulation)) {
             this.encapsulation = encapsulation;
             setDirty(true);
         }

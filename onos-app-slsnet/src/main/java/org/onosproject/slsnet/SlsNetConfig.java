@@ -85,7 +85,7 @@ public class SlsNetConfig extends Config<ApplicationId> {
                         EncapsulationType.enumFromString(encapsulation),
                         l2Forward));
             } catch (Exception e) {
-                log.error("slsnet network config l2Network parse failed; skip: error={} jsonNode={}", jsonNode);
+                log.warn("slsnet network config l2Network parse failed; skip: error={} jsonNode={}", jsonNode);
             }
         });
         return l2Networks;
@@ -116,7 +116,7 @@ public class SlsNetConfig extends Config<ApplicationId> {
                         EncapsulationType.enumFromString(encapsulation),
                         jsonNode.get(L2NETWORKNAME).asText()));
             } catch (Exception e) {
-                log.error("slsnet network config ipSubnet parse failed; skip: error={} jsonNode={}", jsonNode);
+                log.warn("slsnet network config ipSubnet parse failed; skip: error={} jsonNode={}", jsonNode);
             }
         });
 
