@@ -70,6 +70,7 @@ import org.onosproject.net.packet.PacketPriority;
 import org.onosproject.net.packet.PacketProcessor;
 import org.onosproject.net.packet.PacketService;
 import org.onosproject.net.Port;
+import org.onosproject.net.PortNumber;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -218,6 +219,8 @@ public class SlsNetReactiveRouting {
                 if (l2Network != null && l2Network.contains(device.id())) {
                     newInterceptFlowRules.add(generateIpBctFlowRule(device.id(), subnet.ipPrefix()));
                 }
+                // JUST FOR FLOW RULE TEST ONLY
+                //newInterceptFlowRules.add(generateTestFlowRule(device.id(), subnet.ipPrefix()));
             }
             for (Route route : slsnet.getBorderRoutes()) {
                 newInterceptFlowRules.add(generateInterceptFlowRule(device.id(), route.prefix()));
@@ -302,6 +305,40 @@ public class SlsNetReactiveRouting {
                 .forTable(0).build();
         return rule;
     }
+
+    // JUST FOR FLOW RULE TEST ONLY
+    /*
+    private FlowRule generateTestFlowRule(DeviceId deviceId, IpPrefix prefix) {
+        TrafficSelector.Builder selector = DefaultTrafficSelector.builder();
+        if (SlsNetService.VIRTUAL_GATEWAY_ETH_ADDRESS_SELECTOR) {
+            selector.matchEthDst(slsnet.getVirtualGatewayMacAddress());
+        }
+        if (prefix.isIp4()) {
+            selector.matchEthType(Ethernet.TYPE_IPV4);
+            if (prefix.prefixLength() > 0) {
+                selector.matchIPDst(prefix);
+            }
+        } else {
+            selector.matchEthType(Ethernet.TYPE_IPV6);
+            if (prefix.prefixLength() > 0) {
+                selector.matchIPv6Dst(prefix);
+            }
+        }
+        FlowRule rule = DefaultFlowRule.builder()
+                .forDevice(deviceId)
+                .withPriority(reactivePriority(prefix.prefixLength(), slsnet.PRI_REACTIVE_INTERCEPT))
+                .withSelector(selector.build())
+                .withTreatment(DefaultTrafficTreatment.builder()
+                        .setEthSrc(MacAddress.valueOf("11:22:33:44:55:66"))
+                        .setEthDst(MacAddress.valueOf("12:34:56:78:9a:bc"))
+                        .setOutput(PortNumber.portNumber(1))
+                        .build())
+                .fromApp(interceptAppId)
+                .makePermanent()
+                .forTable(0).build();
+        return rule;
+    }
+    */
 
     /**
      * Refresh routes by examining network resource status.
@@ -656,7 +693,8 @@ public class SlsNetReactiveRouting {
     private TrafficTreatment generateTargetTreatment(MacAddress dstMac, MacAddress srcMac) {
         return DefaultTrafficTreatment.builder()
                    .setEthDst(dstMac)
-                   .setEthSrc(srcMac)
+                   // NOTE: do not need to set srcMac; also for Cisco case
+                   //.setEthSrc(srcMac)
                    .build();
     }
 
