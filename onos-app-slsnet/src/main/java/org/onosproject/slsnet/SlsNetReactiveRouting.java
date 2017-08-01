@@ -158,8 +158,9 @@ public class SlsNetReactiveRouting {
         flowRuleService.removeFlowRulesById(routeAppId);
         flowRuleService.removeFlowRulesById(interceptAppId);
 
-        routeIntents.clear();
-        interceptFlowRules.clear();
+        // do not set clear() for switch capatibility
+        //routeIntents.clear();
+        //interceptFlowRules.clear();
         processor = null;
 
         log.info("slsnet reactive routing stopped");

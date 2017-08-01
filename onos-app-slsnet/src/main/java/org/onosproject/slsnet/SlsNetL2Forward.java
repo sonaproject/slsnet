@@ -127,8 +127,10 @@ public class SlsNetL2Forward {
                 intentService.purge(intentToPurge);
             }
         }
-        bctIntentsMap.clear();
-        uniIntentsMap.clear();
+
+        // do not set clear for switch compatibility
+        //bctIntentsMap.clear();
+        //uniIntentsMap.clear();
 
         log.info("slsnet l2forward stopped");
     }
