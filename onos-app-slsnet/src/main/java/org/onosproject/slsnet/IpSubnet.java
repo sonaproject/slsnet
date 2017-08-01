@@ -42,7 +42,7 @@ public class IpSubnet {
     public IpSubnet(IpPrefix ipPrefix, IpAddress gatewayIp, EncapsulationType encapsulation, String l2NetworkName) {
         this.ipPrefix = ipPrefix;
         this.gatewayIp = gatewayIp;
-        this.encapsulation = (SlsNetService.ALLOW_ETH_ADDRESS_SELECTOR) ? encapsulation : EncapsulationType.VLAN;
+        this.encapsulation = EncapsulationType.NONE;
         this.l2NetworkName = l2NetworkName;
     }
 
@@ -69,7 +69,7 @@ public class IpSubnet {
      *
      * @return the encapsulation type
      */
-    public EncapsulationType encaptulation() {
+    public EncapsulationType encapsulation() {
         return encapsulation;
     }
 

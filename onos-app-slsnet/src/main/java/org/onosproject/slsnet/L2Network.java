@@ -22,6 +22,7 @@ import com.google.common.collect.Sets;
 import org.onlab.packet.VlanId;
 import org.onosproject.incubator.net.intf.Interface;
 import org.onosproject.net.ConnectPoint;
+import org.onosproject.net.DeviceId;
 import org.onosproject.net.Host;
 import org.onosproject.net.HostId;
 import org.onosproject.net.EncapsulationType;
@@ -136,6 +137,15 @@ public final class L2Network {
     public boolean contains(ConnectPoint port, VlanId vlanId) {
         for (Interface iface : interfaces) {
             if (iface.connectPoint().equals(port) && iface.vlan().equals(vlanId)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    public boolean contains(DeviceId deviceId) {
+        for (Interface iface : interfaces) {
+            if (iface.connectPoint().deviceId().equals(deviceId)) {
                 return true;
             }
         }

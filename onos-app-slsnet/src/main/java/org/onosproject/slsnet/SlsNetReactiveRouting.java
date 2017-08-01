@@ -30,9 +30,10 @@ import org.onlab.packet.IPv4;
 import org.onlab.packet.IPv6;
 import org.onlab.packet.IpAddress;
 import org.onlab.packet.IpPrefix;
-//import org.onlab.packet.Ip4Address;
-//import org.onlab.packet.Ip4Prefix;
-//import org.onlab.packet.Ip6Prefix;
+import org.onlab.packet.Ip4Address;
+import org.onlab.packet.Ip4Prefix;
+import org.onlab.packet.Ip6Address;
+import org.onlab.packet.Ip6Prefix;
 import org.onlab.packet.MacAddress;
 import org.onlab.packet.VlanId;
 import org.onosproject.core.ApplicationId;
@@ -56,7 +57,6 @@ import org.onosproject.net.Host;
 import org.onosproject.net.host.HostService;
 import org.onosproject.net.intent.Constraint;
 import org.onosproject.net.intent.constraint.PartialFailureConstraint;
-import org.onosproject.net.intent.constraint.HashedPathSelectionConstraint;
 import org.onosproject.net.intent.constraint.EncapsulationConstraint;
 import org.onosproject.net.intent.Intent;
 import org.onosproject.net.intent.IntentService;
@@ -74,7 +74,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.nio.ByteBuffer;
+import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
@@ -117,10 +119,8 @@ public class SlsNetReactiveRouting {
     @Reference(cardinality = ReferenceCardinality.MANDATORY_UNARY)
     protected SlsNetService slsnet;
 
-    private static final ImmutableList<Constraint> CONSTRAINTS
-            = ImmutableList.of(new PartialFailureConstraint(),
-                               new HashedPathSelectionConstraint(),
-                               new EncapsulationConstraint(EncapsulationType.VLAN));
+    private static final ImmutableList<Constraint> REACTIVE_CONSTRAINTS
+            = ImmutableList.of(new PartialFailureConstraint());
 
     private Set<FlowRule> interceptFlowRules = new HashSet<>();
     private Map<IpPrefix, MultiPointToSinglePointIntent> routeIntents = Maps.newConcurrentMap();
@@ -212,7 +212,11 @@ public class SlsNetReactiveRouting {
         for (Device device : deviceService.getAvailableDevices()) {
             for (IpSubnet subnet : slsnet.getIpSubnets()) {
                 newInterceptFlowRules.add(generateInterceptFlowRule(device.id(), subnet.ipPrefix()));
-                //newInterceptFlowRules.add(generateIpBroadcastFlowRule(device.id(), subnet.ipPrefix()));
+                // check if this devices has the ipSubnet, then add ip broadcast flue rule
+                L2Network l2Network = slsnet.findL2Network(subnet.l2NetworkName());
+                if (l2Network != null && l2Network.contains(device.id())) {
+                    newInterceptFlowRules.add(generateIpBctFlowRule(device.id(), subnet.ipPrefix()));
+                }
             }
             for (Route route : slsnet.getBorderRoutes()) {
                 newInterceptFlowRules.add(generateInterceptFlowRule(device.id(), route.prefix()));
@@ -237,9 +241,6 @@ public class SlsNetReactiveRouting {
     }
 
     private FlowRule generateInterceptFlowRule(DeviceId deviceId, IpPrefix prefix) {
-        int priority = slsnet.PRI_REACTIVE_BASE +
-                       prefix.prefixLength() * slsnet.PRI_REACTIVE_STEP +
-                       slsnet.PRI_REACTIVE_INTERCEPT;
         TrafficSelector.Builder selector = DefaultTrafficSelector.builder();
         if (SlsNetService.VIRTUAL_GATEWAY_ETH_ADDRESS_SELECTOR) {
             selector.matchEthDst(slsnet.getVirtualGatewayMacAddress());
@@ -257,7 +258,7 @@ public class SlsNetReactiveRouting {
         }
         FlowRule rule = DefaultFlowRule.builder()
                 .forDevice(deviceId)
-                .withPriority(priority)
+                .withPriority(reactivePriority(prefix.prefixLength(), slsnet.PRI_REACTIVE_INTERCEPT))
                 .withSelector(selector.build())
                 .withTreatment(DefaultTrafficTreatment.builder().punt().build())
                 .fromApp(interceptAppId)
@@ -266,34 +267,33 @@ public class SlsNetReactiveRouting {
         return rule;
     }
 
-    private FlowRule generateIpBroadcastFlowRule(DeviceId deviceId, IpPrefix prefix) {
-        int priority = slsnet.PRI_REACTIVE_BASE +
-                       prefix.prefixLength() * slsnet.PRI_REACTIVE_STEP +
-                       slsnet.PRI_REACTIVE_INTERCEPT;
+    private FlowRule generateIpBctFlowRule(DeviceId deviceId, IpPrefix prefix) {
         TrafficSelector.Builder selector = DefaultTrafficSelector.builder();
+        IpPrefix bctPrefix;
         if (prefix.isIp4()) {
+            bctPrefix = Ip4Prefix.valueOf(prefix.getIp4Prefix().address().toInt() |
+                                              ~Ip4Address.makeMaskPrefix(prefix.prefixLength()).toInt(),
+                                          Ip4Address.BIT_LENGTH);
             selector.matchEthType(Ethernet.TYPE_IPV4);
-            if (prefix.prefixLength() > 0) {
-                selector.matchIPDst(prefix);
-                //selector.matchIPDst(Ip4Prefix.valueOf(prefix.getIp4Prefix().address().toInt() |
-                //                            ~Ip4Address.makeMaskPrefix(prefix.prefixLength()).toInt(),
-                //                        prefix.prefixLength()));
-            }
+            selector.matchIPDst(bctPrefix);
         } else {
-            selector.matchEthType(Ethernet.TYPE_IPV6);
-            if (prefix.prefixLength() > 0) {
-                selector.matchIPv6Dst(prefix);
+            byte[] p = prefix.getIp6Prefix().address().toOctets();
+            byte[] m = Ip6Address.makeMaskPrefix(prefix.prefixLength()).toOctets();
+            for (int i = 0; i < p.length; i++) {
+                 p[i] |= ~m[i];
             }
+            bctPrefix = Ip6Prefix.valueOf(p, Ip6Address.BIT_LENGTH);
+            selector.matchEthType(Ethernet.TYPE_IPV6);
+            selector.matchIPv6Dst(bctPrefix);
         }
         TrafficTreatment.Builder treatment = DefaultTrafficTreatment.builder();
         Set<ConnectPoint> newEgressPoints = new HashSet<>();
-        treatment.setVlanId(VlanId.vlanId("1000"));
         for (Port port : deviceService.getPorts(deviceId)) {
             treatment.setOutput(port.number());
         }
         FlowRule rule = DefaultFlowRule.builder()
                 .forDevice(deviceId)
-                .withPriority(priority)
+                .withPriority(reactivePriority(bctPrefix.prefixLength(), slsnet.PRI_REACTIVE_ROUTE))
                 .withSelector(selector.build())
                 .withTreatment(treatment.build())
                 .fromApp(interceptAppId)
@@ -347,7 +347,7 @@ public class SlsNetReactiveRouting {
                     .ingressPoints(intent.ingressPoints())
                     .egressPoint(intent.egressPoint())
                     .priority(intent.priority())
-                    .constraints(CONSTRAINTS)
+                    .constraints(intent.constraints())
                     .build();
             log.trace("slsnet reactive routing refresh route update intent: key={} updatedIntent={}",
                        intent.key(), updatedIntent);
@@ -482,20 +482,32 @@ public class SlsNetReactiveRouting {
     private boolean ipPacketReactiveProcessor(Ethernet ethPkt, ConnectPoint srcCp, IpAddress srcIp, IpAddress dstIp) {
         log.trace("slsnet reactive routing ip packet: srcCp={} srcIp={} dstIp={} srcCp={}", srcCp, srcIp, dstIp);
         // NOTE: do not check source ip for source is recognized as ConnectPoint only
+        EncapsulationType encap = EncapsulationType.NONE;
+        IpSubnet srcSubnet = slsnet.findIpSubnet(srcIp);
         IpSubnet dstSubnet = slsnet.findIpSubnet(dstIp);
         if (dstSubnet != null) {
             // destination is local ip
-            if (SlsNetService.ALLOW_ETH_ADDRESS_SELECTOR && dstSubnet.equals(slsnet.findIpSubnet(srcIp))) {
+            if (SlsNetService.ALLOW_ETH_ADDRESS_SELECTOR && dstSubnet.equals(srcSubnet)) {
                 // NOTE: if ALLOW_ETH_ADDRESS_SELECTOR == false; l2Forward is always false
-                L2Network l2Network = slsnet.findL2Network(dstSubnet.l2NetworkName());
+                L2Network l2Network = slsnet.findL2Network(srcSubnet.l2NetworkName());
                 if (l2Network != null && l2Network.l2Forward()) {
                     // within same subnet and to be handled by l2NetworkRouting
                     // no reactive route action but try to forward packet
                     return true;
                 }
+                // may use ethPkt's ethSrc mac as srcMac BUT NEED to resolve conflict with inter-subnet case */
             }
-            setUpConnectivity(srcCp, dstIp.toIpPrefix(), dstIp);
+            encap = dstSubnet.encapsulation();
+            if (encap == EncapsulationType.NONE && srcSubnet != null) {
+               encap = srcSubnet.encapsulation();
+            }
+            setUpConnectivity(srcCp, dstIp.toIpPrefix(), dstIp, slsnet.getVirtualGatewayMacAddress(), encap);
         } else {
+            if (srcSubnet == null) {
+                log.warn("slsnet reactive routing srcIp and dstIp are both NON-LOCAL; ignore: srcIp={} dstIp={}",
+                         srcIp, dstIp);
+                return false;
+            }
             Route route = routeService.longestPrefixMatch(dstIp);
             if (route == null) {
                 log.warn("slsnet reactive routing route unknown in routeServce: dstIp={}", dstIp);
@@ -505,7 +517,8 @@ public class SlsNetReactiveRouting {
                     return false;
                 }
             }
-            setUpConnectivity(srcCp, route.prefix(), route.nextHop());
+            encap = srcSubnet.encapsulation();
+            setUpConnectivity(srcCp, route.prefix(), route.nextHop(), slsnet.getVirtualGatewayMacAddress(), encap);
         }
         return true;
     }
@@ -551,7 +564,8 @@ public class SlsNetReactiveRouting {
      * ToHost: prefix = destHostIp.toIpPrefix(), nextHopIp = destHostIp
      * ToInternet: prefix = route.prefix(), nextHopIp = route.nextHopIp
      */
-    private void setUpConnectivity(ConnectPoint srcCp, IpPrefix prefix, IpAddress nextHopIp) {
+    private void setUpConnectivity(ConnectPoint srcCp, IpPrefix prefix, IpAddress nextHopIp,
+                                   MacAddress treatmentSrcMac, EncapsulationType encap) {
         MacAddress nextHopMac = null;
         ConnectPoint egressPoint = null;
         for (Host host : hostService.getHostsByIp(nextHopIp)) {
@@ -571,7 +585,7 @@ public class SlsNetReactiveRouting {
         MultiPointToSinglePointIntent existingIntent = routeIntents.get(prefix);
         if (existingIntent != null
                 && existingIntent.egressPoint().equals(egressPoint)
-                && existingIntent.treatment().equals(generateTargetTreatment(nextHopMac))) {
+                && existingIntent.treatment().equals(generateTargetTreatment(nextHopMac, treatmentSrcMac))) {
             // note: egressPoint and dstMack should be same, else build new one to override old one
             log.trace("slsnet reactive routing update mp2p intent: prefix={} srcCp={}", prefix, srcCp);
             Set<ConnectPoint> ingressPoints = existingIntent.ingressPoints();
@@ -585,7 +599,7 @@ public class SlsNetReactiveRouting {
                                 .ingressPoints(ingressPoints)
                                 .egressPoint(existingIntent.egressPoint())
                                 .priority(existingIntent.priority())
-                                .constraints(CONSTRAINTS)
+                                .constraints(buildConstraints(REACTIVE_CONSTRAINTS, encap))
                                 .build();
 
                 log.trace("slsnet reactive routing update mp2p intent: prefix={} srcCp={} updatedIntent={}",
@@ -601,9 +615,6 @@ public class SlsNetReactiveRouting {
             // ingressConnectPoint. This will not affect reactive routing.
         } else {
             Key key = Key.of(prefix.toString(), routeAppId);
-            int priority = slsnet.PRI_REACTIVE_BASE
-                           + prefix.prefixLength() * slsnet.PRI_REACTIVE_STEP
-                           + slsnet.PRI_REACTIVE_ROUTE;
             TrafficSelector.Builder selector = DefaultTrafficSelector.builder();
             if (SlsNetService.VIRTUAL_GATEWAY_ETH_ADDRESS_SELECTOR) {
                selector.matchEthDst(slsnet.getVirtualGatewayMacAddress());
@@ -625,11 +636,11 @@ public class SlsNetReactiveRouting {
                     .appId(routeAppId)
                     .key(key)
                     .selector(selector.build())
-                    .treatment(generateTargetTreatment(nextHopMac))
+                    .treatment(generateTargetTreatment(nextHopMac, treatmentSrcMac))
                     .ingressPoints(ingressPoints)
                     .egressPoint(egressPoint)
-                    .priority(priority)
-                    .constraints(CONSTRAINTS)
+                    .priority(reactivePriority(prefix.prefixLength(), slsnet.PRI_REACTIVE_ROUTE))
+                    .constraints(buildConstraints(REACTIVE_CONSTRAINTS, encap))
                     .build();
 
            log.trace("slsnet reactive routing generate mp2p intent: prefix={} srcCp={} newIntent={}",
@@ -641,10 +652,10 @@ public class SlsNetReactiveRouting {
     }
 
     // generate treatement to target
-    private TrafficTreatment generateTargetTreatment(MacAddress dstMac) {
+    private TrafficTreatment generateTargetTreatment(MacAddress dstMac, MacAddress srcMac) {
         return DefaultTrafficTreatment.builder()
                    .setEthDst(dstMac)
-                   .setEthSrc(slsnet.getVirtualGatewayMacAddress())
+                   .setEthSrc(srcMac)
                    .build();
     }
 
@@ -654,6 +665,24 @@ public class SlsNetReactiveRouting {
             hostService.startMonitoringIp(route.nextHop());
             slsnet.requestMac(route.nextHop());
         }
+    }
+
+    // priority calculator
+    private int reactivePriority(int prefixLength, int useCaseOffset) {
+        return slsnet.PRI_REACTIVE_BASE + prefixLength * slsnet.PRI_REACTIVE_STEP + useCaseOffset;
+    }
+
+    // constraints generator
+    private List<Constraint> buildConstraints(List<Constraint> constraints, EncapsulationType encap) {
+        if (!encap.equals(EncapsulationType.NONE)) {
+            List<Constraint> newConstraints = new ArrayList<>(constraints);
+            constraints.stream()
+                .filter(c -> c instanceof EncapsulationConstraint)
+                .forEach(newConstraints::remove);
+            newConstraints.add(new EncapsulationConstraint(encap));
+            return ImmutableList.copyOf(newConstraints);
+        }
+        return constraints;
     }
 
     // Dump Cli Handler

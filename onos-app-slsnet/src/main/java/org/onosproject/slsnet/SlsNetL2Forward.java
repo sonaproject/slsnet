@@ -38,7 +38,6 @@ import org.onosproject.net.ResourceGroup;
 import org.onosproject.net.flow.DefaultTrafficSelector;
 import org.onosproject.net.flow.TrafficSelector;
 import org.onosproject.net.host.HostService;
-import org.onosproject.net.intent.ConnectivityIntent;
 import org.onosproject.net.intent.Constraint;
 import org.onosproject.net.intent.Intent;
 import org.onosproject.net.intent.IntentService;
@@ -87,7 +86,7 @@ public class SlsNetL2Forward {
     @Reference(cardinality = ReferenceCardinality.MANDATORY_UNARY)
     protected SlsNetService slsnet;
 
-    public static final ImmutableList<Constraint> PARTIAL_FAILURE_CONSTRAINT =
+    public static final ImmutableList<Constraint> L2NETWORK_CONSTRAINTS =
             ImmutableList.of(new PartialFailureConstraint());
 
     private Map<Key, SinglePointToMultiPointIntent> bctIntentsMap = Maps.newConcurrentMap();
@@ -269,10 +268,9 @@ public class SlsNetL2Forward {
                     .selector(selector)
                     .filteredIngressPoint(srcFcp)
                     .filteredEgressPoints(dstFcps)
-                    .constraints(PARTIAL_FAILURE_CONSTRAINT)
+                    .constraints(buildConstraints(L2NETWORK_CONSTRAINTS, l2Network.encapsulation()))
                     .priority(SlsNetService.PRI_L2NETWORK_BROADCAST)
                     .resourceGroup(resourceGroup);
-            setEncap(intentBuilder, PARTIAL_FAILURE_CONSTRAINT, l2Network.encapsulation());
             brcIntents.add(intentBuilder.build());
         });
         return brcIntents;
@@ -301,10 +299,9 @@ public class SlsNetL2Forward {
                     .selector(selector)
                     .filteredIngressPoints(srcFcps)
                     .filteredEgressPoint(hostFcp)
-                    .constraints(PARTIAL_FAILURE_CONSTRAINT)
+                    .constraints(buildConstraints(L2NETWORK_CONSTRAINTS, l2Network.encapsulation()))
                     .priority(SlsNetService.PRI_L2NETWORK_UNICAST)
                     .resourceGroup(resourceGroup);
-            setEncap(intentBuilder, PARTIAL_FAILURE_CONSTRAINT, l2Network.encapsulation());
             uniIntents.add(intentBuilder.build());
         });
 
@@ -332,18 +329,16 @@ public class SlsNetL2Forward {
         return Key.of(l2NetworkName + "-" + type + "-" + cPoint.toString() + "-" + dstMac, l2ForwardAppId);
     }
 
-    private void setEncap(ConnectivityIntent.Builder builder,
-                          List<Constraint> constraints, EncapsulationType encapsulation) {
-        // Constraints might be an immutable list, so a new modifiable list is created
-        List<Constraint> newConstraints = new ArrayList<>(constraints);
-        constraints.stream()
+    private List<Constraint> buildConstraints(List<Constraint> constraints, EncapsulationType encapsulation) {
+        if (!encapsulation.equals(EncapsulationType.NONE)) {
+            List<Constraint> newConstraints = new ArrayList<>(constraints);
+            constraints.stream()
                 .filter(c -> c instanceof EncapsulationConstraint)
                 .forEach(newConstraints::remove);
-        if (!encapsulation.equals(EncapsulationType.NONE)) {
             newConstraints.add(new EncapsulationConstraint(encapsulation));
+            return ImmutableList.copyOf(newConstraints);
         }
-        // Submit new constraint list as immutable list
-        builder.constraints(ImmutableList.copyOf(newConstraints));
+        return constraints;
     }
 
     private FilteredConnectPoint buildFilteredConnectedPoint(Interface iface) {
