@@ -14,14 +14,11 @@ COMPILE_DEPS = [
 
 BUNDLES = [
     '//apps/sdnip:onos-apps-sdnip',
-    '//apps/routing-api:onos-apps-routing-api',
-    '//apps/routing/common:onos-apps-routing-common',
 ]
 
 TEST_DEPS = [
     '//lib:TEST_ADAPTERS',
     '//incubator/api:onos-incubator-api-tests',
-    '//apps/routing-api:onos-apps-routing-api-tests',
 ]
 
 osgi_jar_with_tests (

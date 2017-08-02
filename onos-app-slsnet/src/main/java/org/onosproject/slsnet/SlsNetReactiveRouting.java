@@ -70,7 +70,6 @@ import org.onosproject.net.packet.PacketPriority;
 import org.onosproject.net.packet.PacketProcessor;
 import org.onosproject.net.packet.PacketService;
 import org.onosproject.net.Port;
-import org.onosproject.net.PortNumber;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -623,7 +622,7 @@ public class SlsNetReactiveRouting {
         MultiPointToSinglePointIntent existingIntent = routeIntents.get(prefix);
         if (existingIntent != null
                 && existingIntent.egressPoint().equals(egressPoint)
-                && existingIntent.treatment().equals(generateTargetTreatment(nextHopMac, treatmentSrcMac))) {
+                && existingIntent.treatment().equals(generateSetMacTreatment(nextHopMac, treatmentSrcMac))) {
             // note: egressPoint and dstMack should be same, else build new one to override old one
             log.trace("slsnet reactive routing update mp2p intent: prefix={} srcCp={}", prefix, srcCp);
             Set<ConnectPoint> ingressPoints = existingIntent.ingressPoints();
@@ -674,7 +673,7 @@ public class SlsNetReactiveRouting {
                     .appId(routeAppId)
                     .key(key)
                     .selector(selector.build())
-                    .treatment(generateTargetTreatment(nextHopMac, treatmentSrcMac))
+                    .treatment(generateSetMacTreatment(nextHopMac, treatmentSrcMac))
                     .ingressPoints(ingressPoints)
                     .egressPoint(egressPoint)
                     .priority(reactivePriority(prefix.prefixLength(), slsnet.PRI_REACTIVE_ROUTE))
@@ -690,11 +689,10 @@ public class SlsNetReactiveRouting {
     }
 
     // generate treatement to target
-    private TrafficTreatment generateTargetTreatment(MacAddress dstMac, MacAddress srcMac) {
+    private TrafficTreatment generateSetMacTreatment(MacAddress dstMac, MacAddress srcMac) {
         return DefaultTrafficTreatment.builder()
+                   .setEthSrc(srcMac)
                    .setEthDst(dstMac)
-                   // NOTE: do not need to set srcMac; also for Cisco case
-                   //.setEthSrc(srcMac)
                    .build();
     }
 
