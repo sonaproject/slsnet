@@ -1,10 +1,9 @@
 # Simple Leaf-Spine Network Application
-Lee Yongjae, 2017-06-15,07-17.
+Lee Yongjae, 2017-06-15,08-03.
 
 
 
 ## SONA Fabric 설계
-from: 정종식
 
 ### 최종 목표
 - Leaf-Spine Network을 자동으로 설정한다.
@@ -207,42 +206,15 @@ Following app are auto activated by SLSNET app's dependency
 
 ### 구현된 기능
 
-#### L2 Network
-- L2 Unicast: intra-rack (intra-subnet) untagged communication when the destination is known.
-- L2 Broadcast: intra-rack (intra-subnet) untagged communication when the destination host is unknown.
-- ARP: ARP packets will be sent to the controller and App will do proxy ARP on L3 Router IP’s
-- L3 Unicast: inter-rack (inter-subnet) untagged communication when the destination is known.
-- VLAN Cross Connect: ?? 
+- L2 Network Forwarding
+  - Cisco 에서는 동작 불가
 
+- Neighbour Message Handling
+  - Host간 ARP 전달 및 Virtual Gateway IP 에 대한 ARP 응답 처리
+  - Virtual Gateway IP 에 대한 ICMP ECHO (ping) 요청에 대한 응답 처리
 
-
-
-## Roles of SLSNET App's Sub Features
-
-SLSNET VLAN L2 Broadcast Network App (VPLS)
-- https://wiki.onosproject.org/display/ONOS/Virtual+Private+LAN+Service+-+VPLS
-- to handle L2 switch local broadcast/unicast
-- handle ARP message to be forwarded to appropriate endpoints
-
-SLSNET SDN-IP Reactive Forwarding App
-- https://wiki.onosproject.org/display/ONOS/SDN-IP+Reactive+Routing
-- handles inter switch (hnx--hmx) routing by adding host intents
-- port.{device_id}.interfaces must be set for all host ports
-  with valid route ip configed as interfaces value
-- reactiveRoutings ip4LocalPrefixes of type PRIVATE only
-- handle ARP on virtual router ip
-- NO hanndling on ICMP on router ip  
-- ** TO CHECK: ECMP handling for SL-SS allocation per host intents compile **
-- ** ISSUE SDN-IP Installed Intents's Host MAC is not updated when Host's MAC value is changed (ex. restart Mininet)
-  - The related flow seem not working for DST MAC is updated as old MAC, then receiving host DROPs IT!!! **
-
-SLSNET SDN-IP + Incubator Routing API
-- affect SND-IP Intents for local<->external traffic
-- register default route by netcfg "routes" subject within org.onosproject.slsnet app configuration
-- onos cli command: `routes`
-- registers MultiPointToSinglePointIntent for source={all edge ports with named interface} to target={port for next hop}
-  (seems auto probe for the next hop host)
-
-Aditional Feature
-- Implement RequestMAC (ARP) when destination Host location is not known
-- Do response on ICMP ECHO Request on virtual gateway addresses
+- L3 Reactive Routing
+  - Subnet 내부 IP 통신
+  - Local Subnet 간 IP 통신
+  - Local Subnet - External Router 가 Route 에 따른 IP 통신
+  - 을 모두 Reactive 방식으로 처리
