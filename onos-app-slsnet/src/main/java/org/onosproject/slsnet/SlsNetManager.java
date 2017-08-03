@@ -240,9 +240,12 @@ public class SlsNetManager extends ListenerRegistry<SlsNetEvent, SlsNetListener>
                 }
             }
             for (Host host : hostService.getHosts()) {
-                Interface iface = getAvailableDeviceHostInterface(host);
-                if (iface != null && newL2Network.contains(iface)) {
-                    newL2Network.addHost(host);
+                // consider host with ip only
+                if (!host.ipAddresses().isEmpty()) {
+                    Interface iface = getAvailableDeviceHostInterface(host);
+                    if (iface != null && newL2Network.contains(iface)) {
+                        newL2Network.addHost(host);
+                    }
                 }
             }
             newL2Network.setDirty(true);
