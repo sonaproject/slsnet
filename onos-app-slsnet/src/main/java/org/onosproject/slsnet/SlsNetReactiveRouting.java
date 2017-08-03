@@ -160,12 +160,15 @@ public class SlsNetReactiveRouting {
 
         withdrawIntercepts();
 
+        // NOTE: do not clear at init for MIGHT generate pending_remove garbages
         // withdraw all my intents and flow rules
-        for (Intent intent : routeIntents.values()) {
-            log.info("slsnet l2forward withdraw unicast intent: {}", intent);
-            toBePurgedIntentKeys.add(intent.key());
-            intentService.withdraw(intent);
-        }
+        //withdrawAllReactiveIntents();
+        // OR
+        //for (Intent intent : routeIntents.values()) {
+        //    log.info("slsnet l2forward withdraw unicast intent: {}", intent);
+        //    toBePurgedIntentKeys.add(intent.key());
+        //    intentService.withdraw(intent);
+        //}
         flowRuleService.removeFlowRulesById(reactiveAppId);
         routeIntents.clear();
         checkIntentsPurge();
