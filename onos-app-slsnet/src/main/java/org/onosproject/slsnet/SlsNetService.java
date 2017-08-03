@@ -38,8 +38,7 @@ public interface SlsNetService
     // App symbols
     static final String APP_ID = "org.onosproject.slsnet";
     static final String L2FORWARD_APP_ID = "org.onosproject.slsnet.l2forward";
-    static final String REACTIVE_ROUTE_APP_ID = "org.onosproject.slsnet.intercept";
-    static final String REACTIVE_INTERCEPT_APP_ID = "org.onosproject.slsnet.route";
+    static final String REACTIVE_APP_ID = "org.onosproject.slsnet.reactive";
 
     // priority for l2NetworkRouting: L2NETWORK_UNICAST or L2NETWORK_BROADCAST
     static final int PRI_L2NETWORK_UNICAST   = 401;
@@ -56,7 +55,7 @@ public interface SlsNetService
     static final long IDLE_INTERVAL_MSEC = 5000;
 
     // feature control parameters
-    static final boolean ALLOW_ETH_ADDRESS_SELECTOR = false;
+    static final boolean ALLOW_ETH_ADDRESS_SELECTOR = true;
     static final boolean VIRTUAL_GATEWAY_ETH_ADDRESS_SELECTOR = false;
 
     /**

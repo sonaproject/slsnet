@@ -89,8 +89,7 @@ import java.util.Set;
 public class SlsNetReactiveRouting {
 
     private final Logger log = LoggerFactory.getLogger(getClass());
-    private ApplicationId routeAppId;
-    private ApplicationId interceptAppId;
+    private ApplicationId reactiveAppId;
 
     @Reference(cardinality = ReferenceCardinality.MANDATORY_UNARY)
     protected CoreService coreService;
@@ -132,10 +131,12 @@ public class SlsNetReactiveRouting {
 
     @Activate
     public void activate() {
-        routeAppId = coreService.registerApplication(slsnet.REACTIVE_ROUTE_APP_ID);
-        interceptAppId = coreService.registerApplication(slsnet.REACTIVE_INTERCEPT_APP_ID);
-        log.info("slsnet reactive routing starting with app id {} and {}",
-                 routeAppId.toString(), interceptAppId.toString());
+        reactiveAppId = coreService.registerApplication(slsnet.REACTIVE_APP_ID);
+        log.info("slsnet reactive routing starting with app id {}", reactiveAppId.toString());
+
+        // clear all previous intents and flow rules
+        withdrawAllReactiveIntents();
+        flowRuleService.removeFlowRulesById(reactiveAppId);
 
         processor = new ReactiveRoutingProcessor();
         packetService.addProcessor(processor, PacketProcessor.director(2));
@@ -143,6 +144,8 @@ public class SlsNetReactiveRouting {
 
         registerIntercepts();
         refreshIntercepts();
+
+        checkIntentsPurge();
 
         log.info("slsnet reactive routing started");
     }
@@ -155,12 +158,16 @@ public class SlsNetReactiveRouting {
         slsnet.removeListener(slsnetListener);
 
         withdrawIntercepts();
-        flowRuleService.removeFlowRulesById(routeAppId);
-        flowRuleService.removeFlowRulesById(interceptAppId);
 
-        // do not set clear() for switch capatibility
-        //routeIntents.clear();
-        //interceptFlowRules.clear();
+        // withdraw all my intents and flow rules
+        for (Intent intent : routeIntents.values()) {
+            log.info("slsnet l2forward withdraw unicast intent: {}", intent);
+            toBePurgedIntentKeys.add(intent.key());
+            intentService.withdraw(intent);
+        }
+        flowRuleService.removeFlowRulesById(reactiveAppId);
+        checkIntentsPurge();
+
         processor = null;
 
         log.info("slsnet reactive routing stopped");
@@ -174,11 +181,11 @@ public class SlsNetReactiveRouting {
 
         packetService.requestPackets(
             DefaultTrafficSelector.builder().matchEthType(Ethernet.TYPE_IPV4).build(),
-            PacketPriority.REACTIVE, interceptAppId);
+            PacketPriority.REACTIVE, reactiveAppId);
 
         packetService.requestPackets(
             DefaultTrafficSelector.builder().matchEthType(Ethernet.TYPE_IPV6).build(),
-            PacketPriority.REACTIVE, interceptAppId);
+            PacketPriority.REACTIVE, reactiveAppId);
 
         log.info("slsnet reactive routing ip packet intercepts started");
     }
@@ -191,11 +198,11 @@ public class SlsNetReactiveRouting {
 
         packetService.cancelPackets(
             DefaultTrafficSelector.builder().matchEthType(Ethernet.TYPE_IPV4).build(),
-            PacketPriority.REACTIVE, interceptAppId);
+            PacketPriority.REACTIVE, reactiveAppId);
 
         packetService.cancelPackets(
             DefaultTrafficSelector.builder().matchEthType(Ethernet.TYPE_IPV6).build(),
-            PacketPriority.REACTIVE, interceptAppId);
+            PacketPriority.REACTIVE, reactiveAppId);
 
         log.info("slsnet reactive routing ip packet intercepts stopped");
     }
@@ -264,7 +271,7 @@ public class SlsNetReactiveRouting {
                 .withPriority(reactivePriority(prefix.prefixLength(), slsnet.PRI_REACTIVE_INTERCEPT))
                 .withSelector(selector.build())
                 .withTreatment(DefaultTrafficTreatment.builder().punt().build())
-                .fromApp(interceptAppId)
+                .fromApp(reactiveAppId)
                 .makePermanent()
                 .forTable(0).build();
         return rule;
@@ -299,7 +306,7 @@ public class SlsNetReactiveRouting {
                 .withPriority(reactivePriority(bctPrefix.prefixLength(), slsnet.PRI_REACTIVE_ROUTE))
                 .withSelector(selector.build())
                 .withTreatment(treatment.build())
-                .fromApp(interceptAppId)
+                .fromApp(reactiveAppId)
                 .makePermanent()
                 .forTable(0).build();
         return rule;
@@ -332,7 +339,7 @@ public class SlsNetReactiveRouting {
                         .setEthDst(MacAddress.valueOf("12:34:56:78:9a:bc"))
                         .setOutput(PortNumber.portNumber(1))
                         .build())
-                .fromApp(interceptAppId)
+                .fromApp(reactiveAppId)
                 .makePermanent()
                 .forTable(0).build();
         return rule;
@@ -377,7 +384,7 @@ public class SlsNetReactiveRouting {
             // apply new ingress points
             MultiPointToSinglePointIntent updatedIntent =
                 MultiPointToSinglePointIntent.builder()
-                    .appId(routeAppId)
+                    .appId(reactiveAppId)
                     .key(intent.key())
                     .selector(intent.selector())
                     .treatment(intent.treatment())
@@ -414,6 +421,21 @@ public class SlsNetReactiveRouting {
                 }
             }
             toBePurgedIntentKeys.removeAll(purgedKeys);
+        }
+    }
+
+    public void withdrawAllReactiveIntents() {
+        // check all intents if mine
+        Set<Intent> myIntents = new HashSet<>();
+        for (Intent intent : intentService.getIntents()) {
+            if (intent.appId().equals(reactiveAppId)) {
+                myIntents.add(intent);
+            }
+        }
+        // withdraw all my intents
+        for (Intent intent : myIntents) {
+            intentService.withdraw(intent);
+            toBePurgedIntentKeys.add(intent.key());
         }
     }
 
@@ -525,8 +547,8 @@ public class SlsNetReactiveRouting {
         if (dstSubnet != null) {
             // destination is local ip
             if (SlsNetService.ALLOW_ETH_ADDRESS_SELECTOR && dstSubnet.equals(srcSubnet)) {
-                // NOTE: if ALLOW_ETH_ADDRESS_SELECTOR == false; l2Forward is always false
-                L2Network l2Network = slsnet.findL2Network(srcSubnet.l2NetworkName());
+                // NOTE: if ALLOW_ETH_ADDRESS_SELECTOR=false; l2Forward is always false
+                L2Network l2Network = slsnet.findL2Network(dstSubnet.l2NetworkName());
                 if (l2Network != null && l2Network.l2Forward()) {
                     // within same subnet and to be handled by l2NetworkRouting
                     // no reactive route action but try to forward packet
@@ -629,7 +651,7 @@ public class SlsNetReactiveRouting {
             if (ingressPoints.contains(srcCp) || ingressPoints.add(srcCp)) {
                 MultiPointToSinglePointIntent updatedIntent =
                         MultiPointToSinglePointIntent.builder()
-                                .appId(routeAppId)
+                                .appId(reactiveAppId)
                                 .key(existingIntent.key())
                                 .selector(existingIntent.selector())
                                 .treatment(existingIntent.treatment())
@@ -651,7 +673,7 @@ public class SlsNetReactiveRouting {
             // packet-in and the new intent also includes the
             // ingressConnectPoint. This will not affect reactive routing.
         } else {
-            Key key = Key.of(prefix.toString(), routeAppId);
+            Key key = Key.of(prefix.toString(), reactiveAppId);
             TrafficSelector.Builder selector = DefaultTrafficSelector.builder();
             if (SlsNetService.VIRTUAL_GATEWAY_ETH_ADDRESS_SELECTOR) {
                selector.matchEthDst(slsnet.getVirtualGatewayMacAddress());
@@ -670,7 +692,7 @@ public class SlsNetReactiveRouting {
             Set<ConnectPoint> ingressPoints = new HashSet<>();
             ingressPoints.add(srcCp);
             MultiPointToSinglePointIntent newIntent = MultiPointToSinglePointIntent.builder()
-                    .appId(routeAppId)
+                    .appId(reactiveAppId)
                     .key(key)
                     .selector(selector.build())
                     .treatment(generateSetMacTreatment(nextHopMac, treatmentSrcMac))
@@ -733,7 +755,7 @@ public class SlsNetReactiveRouting {
 
             System.out.println("Reactive Routing Intercept Flow Rules:\n");
             for (FlowRule rule : interceptFlowRules) {
-                System.out.println("    " + rule.toString());
+                System.out.println("    " + rule.selector().toString());
             }
             System.out.println("");
             System.out.println("Reactive Routing Intents to Be Purged:\n");

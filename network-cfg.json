@@ -45,8 +45,8 @@
     "org.onosproject.slsnet" : {
       "slsnet" : {
         "l2Networks" : [
-          { "name" : "LEAF1", "interfaces" : ["h11", "h12", "h13", "h14", "d11", "d12" ] },
-          { "name" : "LEAF2", "interfaces" : ["h21", "h22", "h23", "h24", "d21", "d22" ] },
+          { "name" : "LEAF1", "interfaces" : ["h11", "h12", "h13", "h14", "d11", "d12" ], "l2Forward" : false },
+          { "name" : "LEAF2", "interfaces" : ["h21", "h22", "h23", "h24", "d21", "d22" ], "l2Forward" : false },
           { "name" : "BORDER", "interfaces" : ["SS1_h31", "SS2_h32"], "l2Forward" : false },
           { "name" : "CISCO", "interfaces" : ["s1p1", "s1p2", "s1p3", "s1p4" ], "l2Forward" : false }
         ],
