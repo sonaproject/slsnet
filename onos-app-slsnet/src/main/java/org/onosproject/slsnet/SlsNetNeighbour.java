@@ -35,7 +35,6 @@ import org.slf4j.LoggerFactory;
 
 import java.util.Objects;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 
 /**
@@ -168,17 +167,20 @@ public class SlsNetNeighbour {
         if (l2Network != null) {
             // TODO: need to check and update slsnet.L2Network
             MacAddress dstMac = context.dstMac();
-            Set<Host> hosts = hostService.getHostsByMac(dstMac);
-            hosts = hosts.stream()
-                    .filter(host -> l2Network.interfaces().contains(slsnet.getHostInterface(host)))
-                    .collect(Collectors.toSet());
-            // reply to all host in same L2 Network
-            log.debug("slsnet neightbour response message forward: {} {} --> {}",
-                      context.inPort(), context.vlan(), hosts);
-            hosts.stream()
-                    .map(host -> slsnet.getHostInterface(host))
-                    .filter(Objects::nonNull)
-                    .forEach(context::forward);
+            if (dstMac.equals(slsnet.getVirtualGatewayMacAddress())) {
+                log.debug("slsnet neightbour response message to virtual gateway; drop: {} {}",
+                          context.inPort(), context.vlan());
+                context.drop();
+            } else {
+                // reply to the hosts of the dstMac
+                Set<Host> hosts = hostService.getHostsByMac(dstMac);
+                log.debug("slsnet neightbour response message forward: {} {} --> {}",
+                          context.inPort(), context.vlan(), hosts);
+                hosts.stream()
+                        .map(host -> slsnet.getHostInterface(host))
+                        .filter(Objects::nonNull)
+                        .forEach(context::forward);
+            }
         } else {
             // this might be happened when we remove an interface from L2 Network
             // just ignore this message
