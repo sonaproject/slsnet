@@ -134,9 +134,10 @@ public class SlsNetReactiveRouting {
         reactiveAppId = coreService.registerApplication(slsnet.REACTIVE_APP_ID);
         log.info("slsnet reactive routing starting with app id {}", reactiveAppId.toString());
 
+        // NOTE: do not clear at init for MIGHT generate pending_remove garbages
         // clear all previous intents and flow rules
-        withdrawAllReactiveIntents();
-        flowRuleService.removeFlowRulesById(reactiveAppId);
+        //withdrawAllReactiveIntents();
+        //flowRuleService.removeFlowRulesById(reactiveAppId);
 
         processor = new ReactiveRoutingProcessor();
         packetService.addProcessor(processor, PacketProcessor.director(2));
@@ -166,6 +167,7 @@ public class SlsNetReactiveRouting {
             intentService.withdraw(intent);
         }
         flowRuleService.removeFlowRulesById(reactiveAppId);
+        routeIntents.clear();
         checkIntentsPurge();
 
         processor = null;
@@ -434,8 +436,29 @@ public class SlsNetReactiveRouting {
         }
         // withdraw all my intents
         for (Intent intent : myIntents) {
-            intentService.withdraw(intent);
-            toBePurgedIntentKeys.add(intent.key());
+            switch (intentService.getIntentState(intent.key())) {
+            case FAILED:
+            case WITHDRAWN:
+                intentService.purge(intent);
+                break;
+            case INSTALL_REQ:
+            case INSTALLED:
+            case INSTALLING:
+            case RECOMPILING:
+            case COMPILING:
+                intentService.withdraw(intent);
+                toBePurgedIntentKeys.add(intent.key());
+                break;
+            case WITHDRAW_REQ:
+            case WITHDRAWING:
+                toBePurgedIntentKeys.add(intent.key());
+                break;
+            case PURGE_REQ:
+            case CORRUPT:
+            default:
+                // no action
+                break;
+            }
         }
     }
 
