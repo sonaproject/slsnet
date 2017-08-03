@@ -15,6 +15,6 @@
  */
 
 /**
- * SDN-IP peering application.
+ * Simple Leaf-Spine Network application.
  */
 package org.onosproject.slsnet;
