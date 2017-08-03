@@ -1,10 +1,9 @@
 # Simple Leaf-Spine Network Application
-Lee Yongjae, 2017-06-15,07-17.
+Lee Yongjae, 2017-06-15,08-03.
 
 
 
 ## SONA Fabric 설계
-from: 정종식
 
 ### 최종 목표
 - Leaf-Spine Network을 자동으로 설정한다.
@@ -29,58 +28,71 @@ from: 정종식
   - L3 Unicast
 
 ### 가정
-- 시스코 스위치가 OpenFlow 1.3을 지원하지만 multi-table은 지원하지 않고 single table만 지원할 가능성이 높음
-- 이 경우 ECMP 지원은 불가능함
+- 시스코 스위치가 OpenFlow 1.3을 지원하지만 multi-table은 지원하지 않고 single table만 지원할 가능성이 높음 -- 이 경우 ECMP 지원은 불가능함
  
+
+## Cisco Switch
+
+Switch: Nexus 9000 Series C9372PX
+- Leaf Switch: 10Gs + 40G x 6 (2 for Spine and 4 for Storage)
+- Spine Switch: Maybe 40G
+
+Configuration
 ```txt
-Device# show openflow switch 1
+!Command: show running-config
+!Time: Thu Aug  3 07:37:51 2017
 
-Logical Switch Context
-  Id: 1
-  Switch type: Forwarding
-  Pipeline id: 201
-  Signal version: Openflow 1.0
-  Data plane: secure
-  Table-Miss default: NONE
-  Config state: no-shutdown
-  Working state: enabled
-  Rate limit (packet per second): 0
-  Burst limit: 0
-  Max backoff (sec): 8
-  Probe interval (sec): 5
-  TLS local trustpoint name: not configured
-  TLS remote trustpoint name: not configured
-  Stats coll. period (sec): 5
-  Logging flow changes: Disabled
-  OFA Description:
-    Manufacturer: Cisco Systems, Inc.
-    Hardware: N3K-C3064PQ V01
-    Software: 6.0(2)U2(1) of_agent 1.1.0_fc1
-    Serial Num: SSI15200QD8
-    DP Description: n3k-200-141-3:sw1
- FLOW_ OF Features:
-    DPID:0001547fee00c2a0
-    Number of tables:1
-    Number of buffers:256
-    Capabilities: STATS TABLE_STATS PORT_STATS
-    Actions: OUTPUT SET_VLAN_VID STRIP_VLAN SET_DL_SRC SET_DL_DST
-  Controllers:
-    1.1.1.1:6653, Protocol: TLS, VRF: s
-  Interfaces:
-    Ethernet1/1
-    Ethernet1/7
+version 7.0(3)I6(1)
+switchname LEAF-1
+vdc LEAF-1 id 1
+  limit-resource vlan minimum 16 maximum 4094
+  limit-resource vrf minimum 2 maximum 4096
+  limit-resource port-channel minimum 0 maximum 511
+  limit-resource u4route-mem minimum 248 maximum 248
+  limit-resource u6route-mem minimum 96 maximum 96
+  limit-resource m4route-mem minimum 58 maximum 58
+  limit-resource m6route-mem minimum 8 maximum 8
+
+onep
+feature openflow
+
+username admin password 5 $5$yzg6Ajmu$kSFxPBlRxABu2D5IwPaSyGAWIeo5gIDRQUex4PBXCc8  role network-admin
+ip domain-lookup
+spanning-tree mode mst
+copp profile strict
+snmp-server user admin network-admin auth md5 0xa35b241e98ebe6c85b124d37048ac87e priv 0xa35b241e98ebe6c85b124d37048ac87e localizedkey
+rmon event 1 description FATAL(1) owner PMON@FATAL
+rmon event 2 description CRITICAL(2) owner PMON@CRITICAL
+rmon event 3 description ERROR(3) owner PMON@ERROR
+rmon event 4 description WARNING(4) owner PMON@WARNING
+rmon event 5 description INFORMATION(5) owner PMON@INFO
+
+vlan 1-2048
+
+no cdp enable
+vrf context management
+  ip route 0.0.0.0/0 10.10.1.1
+hardware access-list tcam region racl 0
+hardware access-list tcam region e-racl 0
+hardware access-list tcam region l3qos 0
+hardware access-list tcam region span 0
+hardware access-list tcam region redirect 0
+hardware access-list tcam region vpc-convergence 0
+hardware access-list tcam region openflow 1024
+openflow
+  switch 1 pipeline 202
+    rate-limit packet_in 1 burst 4
+    statistics collection-interval 10
+    datapath-id 0x111111
+    controller ipv4 10.10.108.140 port 6653 vrf management security none
+    of-port interface Ethernet1/1
+    of-port interface Ethernet1/2
+    of-port interface Ethernet1/3
+    of-port interface Ethernet1/4
+    default-miss continue-normal
+    protocol-version 1.3
+    logging flow-mod
 ```
-
-
-## Info from SKT
-
-- 10G Server x 9
-- 40G Storage x 4
-- Switch: Nexus 9000 Series C9372PX
-   - Leaf Switch: 10Gs + 40G x 6 (2 for Spine and 4 for Storage)
-   - Spine Switch: Maybe 40G
-- Do ECMP and Link Failover
-
 
 
 ## Topology
@@ -132,7 +144,7 @@ Mininet Model: <a href="mininet-slsnet.py"><code>mininet-slsnet.py</code></a>
 
 <br/>
 
-## [TBD] SLSNET Application
+## SLSNET Application
 
 
 ### SLSNET App Build, Install and Activate
@@ -146,7 +158,7 @@ INSTALL TO ONOS AND ACTIVATE APP:
 - `onos-app localhost install target/onos-app-slsnet-1.11.0-SNAPSHOT.oar`
 - `onos-app localhost activate org.onosproject.slsnet`
 
-Folling app are auto activated by SLSNET app's dependency
+Following app are auto activated by SLSNET app's dependency
 - Intent Synchronizer
 - OpenFlow Provider (for OpenFlow Controller) --> Optical inforamtion model
 - Host Location Provider (for auto regi host from ARP)
@@ -155,7 +167,24 @@ Folling app are auto activated by SLSNET app's dependency
 
 ### ONOS Network Configuration
 
-- SEE: [network-cfg.json](network-cfg.json)
+SEE: [network-cfg.json](network-cfg.json)
+
+설정 항목
+- devices : 유효한 device 목록
+- ports : 유효한 한 port 목록; interface name을 지정하여 l2Network 구성시 사용
+- app : slsnet
+  - l2Network : ipSubnet 을 할달할 물리적 L2 Network에 속하는 Interface 정보
+     - interfaces : l2Network 에 속하는 ports의 interface name 들을 지정
+     - l2Forward : false 로 지정하면 L2Forwarding 관련 Intents 생성을 차단 (Cisco용)
+  - ipSubnet : Local IP Subnet 정보
+     - gatewayIp : 해당 subnet에서의 virtual gateway ip 를 지정
+     - l2NetworkName : 해단 subnet 이 속해 있는 l2Network 을 지정
+  - borderRoute : 외부로 나가는 Route 정보
+     - gatewayIp : 외부 peer측 gateway의 ip; 내부 peer측은 이 gatewayIp 가 속하는 ipSubnet의
+       virtual gateway ip 가 사용됨
+  - virtualGatewayMacAddress : virtual gateway의 공통 mac address
+
+적용 방법
 - to update: `onos-netcfg localhost network-cfg.json`
   - each call updates loaded network config (onos netcfg to see loaded config)
   - updated values are immediately applied to existing entries
@@ -163,32 +192,42 @@ Folling app are auto activated by SLSNET app's dependency
 - to be applied at onos restarts, copy `network-cfg.json` to `${ONOS_HOME}/config/`
 
 
-## Roles of SLSNET App's Sub Features
+### Cisco OpenFlow 기능의 제약
 
-SLSNET VLAN L2 Broadcast Network App (VPLS)
-- https://wiki.onosproject.org/display/ONOS/Virtual+Private+LAN+Service+-+VPLS
-- to handle L2 switch local broadcast/unicast
-- handle ARP message to be forwarded to appropriate endpoints
+- Selector 에 L2 Src/Dst MAC 을 사용할 수 없음
+   - L2 Forwarding 을 구성할 수 없고, IP 조건식만 사용해야함
+   - 기존적으로 사용되는 IntentCompiler 인 LinkCollectionCompiler 에서 
+     각 Hop 단계에서의 Treatment 를 기준으로 다음 단계에서 Selector를 사용하는데, 문제가됨
 
-SLSNET SDN-IP Reactive Forwarding App
-- https://wiki.onosproject.org/display/ONOS/SDN-IP+Reactive+Routing
-- handles inter switch (hnx--hmx) routing by adding host intents
-- port.{device_id}.interfaces must be set for all host ports
-  with valid route ip configed as interfaces value
-- reactiveRoutings ip4LocalPrefixes of type PRIVATE only
-- handle ARP on virtual router ip
-- NO hanndling on ICMP on router ip  
-- ** TO CHECK: ECMP handling for SL-SS allocation per host intents compile **
-- ** ISSUE SDN-IP Installed Intents's Host MAC is not updated when Host's MAC value is changed (ex. restart Mininet)
-  - The related flow seem not working for DST MAC is updated as old MAC, then receiving host DROPs IT!!! **
+- Instruction 에서 PushVlan 을 사용할 수 없음
+   - Intents 에서 EncapsulationType.VLAN 을 사용할 수 없음
+   - L2Mac 및 PushVlan 문제로, 기본 IntentCompiler LinkCollectopnCompiler 를 수정하여
+     최초의 Selector를 모든 단계에서 사용하도록 코드 수정이 필요 (1줄)
 
-SLSNET SDN-IP + Incubator Routing API
-- affect SND-IP Intents for local<->external traffic
-- register default route by netcfg "routes" subject within org.onosproject.slsnet app configuration
-- onos cli command: `routes`
-- registers MultiPointToSinglePointIntent for source={all edge ports with named interface} to target={port for next hop}
-  (seems auto probe for the next hop host)
+- Instruction 에서 ClearDiffered 를 사용할 수 없음
+   - FlowObjective 를 사용하는 경우에 문제가 되는데, 기본적으 PacketService 등록시 해당 기능이 사용됨
+   - OpenFlow Pineline Driver 에서 해당 Operation을 빼도록 Driver를 수정해야 함.
 
-Aditional Feature
-- Implement RequestMAC (ARP) when destination Host location is not known
-- Do response on ICMP ECHO Request on virtual gateway addresses
+- Single Table
+   - Cisco Pipeline 202 에서는 테이블을 분리하여 사용할 수 있는 것 처럼 나와 있으나, 안됨.
+
+- Selecttor 에서 Switch 단위로 IPv4 또는 IPv6 중 한가지만 사용할 수 있음
+   - 스위치 설정 중 `hardware access-list tcam region openflow 1024`
+     대신 `hardware access-list tcam region openflow-ipv6 1024`
+     를 사용하며 IPv6 로만 동작함
+
+
+### 구현된 기능
+
+- L2 Network Forwarding
+  - Cisco 에서는 동작 불가
+
+- Neighbour Message Handling
+  - Host간 ARP 전달 및 Virtual Gateway IP 에 대한 ARP 응답 처리
+  - Virtual Gateway IP 에 대한 ICMP ECHO (ping) 요청에 대한 응답 처리
+
+- L3 Reactive Routing
+  - Subnet 내부 IP 통신
+  - Local Subnet 간 IP 통신
+  - Local Subnet - External Router 가 Route 에 따른 IP 통신
+  - 을 모두 Reactive 방식으로 처리
