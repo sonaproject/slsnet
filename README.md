@@ -144,7 +144,7 @@ Mininet Model: <a href="mininet-slsnet.py"><code>mininet-slsnet.py</code></a>
 
 <br/>
 
-## [TBD] SLSNET Application
+## SLSNET Application
 
 
 ### SLSNET App Build, Install and Activate
@@ -167,11 +167,26 @@ Following app are auto activated by SLSNET app's dependency
 
 ### ONOS Network Configuration
 
-- SEE: [network-cfg.json](network-cfg.json)
-  - l2Network : ipSubnet 을 할달할 물리적 L2 Network에 속하는 Interface 정보
-  - ipSubnet : Local IP Subnet 정보
-  - borderRoute : 외부로 나가는 Route 정보
+SEE: [network-cfg.json](network-cfg.json)
 
+설정 항목
+- devices : 유효한 device 목록
+
+- ports : 유효한 한 port 목록; interface name을 지정하여 l2Network 구성시 사용
+
+- app : slsnet
+  - l2Network : ipSubnet 을 할달할 물리적 L2 Network에 속하는 Interface 정보
+     - interfaces : l2Network 에 속하는 ports의 interface name 들을 지정
+     - l2Forward : false 로 지정하면 L2Forwarding 관련 Intents 생성을 차단 (Cisco용)
+  - ipSubnet : Local IP Subnet 정보
+     - gatewayIp : 해당 subnet에서의 virtual gateway ip 를 지정
+     - l2NetworkName : 해단 subnet 이 속해 있는 l2Network 을 지정
+  - borderRoute : 외부로 나가는 Route 정보
+     - gatewayIp : 외부 peer측 gateway의 ip; 내부 peer측은 이 gatewayIp 가 속하는 ipSubnet의
+       virtual gateway ip 가 사용됨
+  - virtualGatewayMacAddress : virtual gateway의 공통 mac address
+
+적용 방법
 - to update: `onos-netcfg localhost network-cfg.json`
   - each call updates loaded network config (onos netcfg to see loaded config)
   - updated values are immediately applied to existing entries
