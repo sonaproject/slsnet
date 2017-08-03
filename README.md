@@ -171,9 +171,7 @@ SEE: [network-cfg.json](network-cfg.json)
 
 설정 항목
 - devices : 유효한 device 목록
-
 - ports : 유효한 한 port 목록; interface name을 지정하여 l2Network 구성시 사용
-
 - app : slsnet
   - l2Network : ipSubnet 을 할달할 물리적 L2 Network에 속하는 Interface 정보
      - interfaces : l2Network 에 속하는 ports의 interface name 들을 지정
