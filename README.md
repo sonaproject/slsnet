@@ -147,6 +147,11 @@ Mininet Model: <a href="mininet-slsnet.py"><code>mininet-slsnet.py</code></a>
 ## SLSNET Application
 
 
+### ONOS Core Source Patch for Cisco Issue
+
+apply [onos.patch](onos.patch) and rebuild onos
+
+
 ### SLSNET App Build, Install and Activate
 
 in `onos-app-slsnet` directory
@@ -163,7 +168,7 @@ Following app are auto activated by SLSNET app's dependency
 - OpenFlow Provider (for OpenFlow Controller) --> Optical inforamtion model
 - Host Location Provider (for auto regi host from ARP)
 - Network Config Link Provider (for auto Regi/Deregi Links)
-  
+
 
 ### ONOS Network Configuration
 
@@ -229,5 +234,4 @@ SEE: [network-cfg.json](network-cfg.json)
 - L3 Reactive Routing
   - Subnet 내부 IP 통신
   - Local Subnet 간 IP 통신
-  - Local Subnet - External Router 가 Route 에 따른 IP 통신
-  - 을 모두 Reactive 방식으로 처리
+  - Local Subnet - External Router 가 Route 에 따른 IP 통신을 모두 Reactive 방식으로 처리
