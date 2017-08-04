@@ -1,4 +1,0 @@
--------------------------------------------------------------------------------
-Test set: org.onosproject.sdnip.SdnIpFibTest
--------------------------------------------------------------------------------
-Tests run: 8, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.779 s - in org.onosproject.sdnip.SdnIpFibTest

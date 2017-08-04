@@ -1,4 +1,0 @@
-Jun 30, 2017 11:19:55 AM org.onosproject.vpls.VplsNeighbourHandler handleReply
-WARNING: Cannot find VPLS for port 6/1 with VLAN Id 300.
-Jun 30, 2017 11:19:55 AM org.onosproject.vpls.VplsNeighbourHandler handleRequest
-WARNING: Cannot find VPLS for port 6/1 with VLAN Id 300.

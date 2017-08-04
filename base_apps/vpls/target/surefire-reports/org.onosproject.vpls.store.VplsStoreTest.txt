@@ -1,4 +1,0 @@
--------------------------------------------------------------------------------
-Test set: org.onosproject.vpls.store.VplsStoreTest
--------------------------------------------------------------------------------
-Tests run: 3, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.481 s - in org.onosproject.vpls.store.VplsStoreTest

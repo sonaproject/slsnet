@@ -1,9 +1,0 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<scr:component xmlns:scr="http://www.osgi.org/xmlns/scr/v1.1.0" immediate="true" name="org.onosproject.vpls.VplsNeighbourHandler" activate="activate" deactivate="deactivate">
-    <reference name="coreService" interface="org.onosproject.core.CoreService" cardinality="1..1" policy="static" bind="bindCoreService" unbind="unbindCoreService"/>
-    <reference name="interfaceService" interface="org.onosproject.incubator.net.intf.InterfaceService" cardinality="1..1" policy="static" bind="bindInterfaceService" unbind="unbindInterfaceService"/>
-    <reference name="neighbourService" interface="org.onosproject.incubator.net.neighbour.NeighbourResolutionService" cardinality="1..1" policy="static" bind="bindNeighbourService" unbind="unbindNeighbourService"/>
-    <reference name="vplsStore" interface="org.onosproject.vpls.api.VplsStore" cardinality="1..1" policy="static" bind="bindVplsStore" unbind="unbindVplsStore"/>
-    <reference name="configService" interface="org.onosproject.net.config.NetworkConfigService" cardinality="1..1" policy="static" bind="bindConfigService" unbind="unbindConfigService"/>
-    <implementation class="org.onosproject.vpls.VplsNeighbourHandler"/>
-</scr:component>
