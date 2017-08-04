@@ -164,10 +164,9 @@ INSTALL TO ONOS AND ACTIVATE APP:
 - `onos-app localhost activate org.onosproject.slsnet`
 
 Following app are auto activated by SLSNET app's dependency
-- Intent Synchronizer
 - OpenFlow Provider (for OpenFlow Controller) --> Optical inforamtion model
-- Host Location Provider (for auto regi host from ARP)
 - Network Config Link Provider (for auto Regi/Deregi Links)
+- Host Location Provider (for auto regi host from ARP)
 
 
 ### ONOS Network Configuration
