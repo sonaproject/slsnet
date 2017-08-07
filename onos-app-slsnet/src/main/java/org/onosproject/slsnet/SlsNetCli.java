@@ -19,9 +19,6 @@ import org.apache.karaf.shell.commands.Argument;
 import org.apache.karaf.shell.commands.Command;
 import org.onosproject.cli.AbstractShellCommand;
 import org.onosproject.incubator.net.routing.Route;
-//import org.onosproject.incubator.net.routing.RouteInfo;
-//import org.onosproject.incubator.net.routing.RouteAdminService;
-//import org.onosproject.incubator.net.routing.RouteTableId;
 
 
 /**

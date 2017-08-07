@@ -174,6 +174,8 @@ Following app are auto activated by SLSNET app's dependency
 - Network Config Link Provider (for auto Regi/Deregi Links)
 - Host Location Provider (for auto regi host from ARP)
 
+If onos is updated, call `onos-buck-publish-local` to apply update for external app build
+
 
 ### ONOS Network Configuration
 
@@ -223,7 +225,7 @@ SEE: [network-cfg.json](network-cfg.json)
    - Intents 에서 EncapsulationType.VLAN 을 사용할 수 없음
    - L2Mac 및 PushVlan 문제로, 기본 IntentCompiler LinkCollectopnCompiler 를 수정하여
      최초의 Selector를 모든 단계에서 사용하도록 코드 수정이 필요 (1줄)
-   - --> Selector Mac 제약이 없어졌으므로, 코드 수정 불필 (2017-08-07)
+   - --> Selector Mac 제약이 없어졌으므로, 관련 코드 수정 불필요 (2017-08-07)
 
 - Single Table
    - Cisco Pipeline 202 에서는 테이블을 분리하여 사용할 수 있는 것 처럼 나와 있으나, 안됨.
@@ -234,13 +236,14 @@ SEE: [network-cfg.json](network-cfg.json)
 ### 구현된 기능
 
 - L2 Network Forwarding
-  - Cisco 에서는 동작 불가
+  - L2 Network 내의 Broadcast 메시지 전송
+  - L2 Network 내의 Dst Mac 기준 메시지 전송
 
 - Neighbour Message Handling
   - Host간 ARP 전달 및 Virtual Gateway IP 에 대한 ARP 응답 처리
   - Virtual Gateway IP 에 대한 ICMP ECHO (ping) 요청에 대한 응답 처리
 
 - L3 Reactive Routing
-  - Subnet 내부 IP 통신
+  - Subnet 내부 IP 통신 (L2 Network Forwarding 에서 처리되는 경우 비활성화)
   - Local Subnet 간 IP 통신
   - Local Subnet - External Router 가 Route 에 따른 IP 통신을 모두 Reactive 방식으로 처리

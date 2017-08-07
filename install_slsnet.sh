@@ -5,22 +5,24 @@
 # ASSUME: onos source is at /home/yjlee/onos/onos/
 #sudo service onos stop; sudo pkill java; sudo rm -rf /opt/onos-1.11.0-SNAPSHOT/; sudo tar -xzf /home/yjlee/onos/onos/buck-out/gen/tools/package/onos-package/onos.tar.gz -C /opt; sudo service onos start
 
-
-cd /home/yjlee/onos/slsnet/onos-app-slsnet/
-
-
-# build and reinistall slsnet app
-
+# build, reinistall and reactivate slsnet app
+cd onos-app-slsnet/
 mvn clean compile install || exit 1
-
 onos-app localhost reinstall! org.onosproject.slsnet target/onos-app-slsnet-1.11.0-SNAPSHOT.oar
-
-# reactivate slsnet app
 onos-app localhost activate org.onosproject.slsnet
+cd ..
+
+# build, reinistall and reactivate slsnet driver
+#cd onos-app-slsnet-driver/
+#mvn clean compile install || exit 1
+#onos-app localhost reinstall! org.onosproject.slsnet-driver target/onos-app-slsnet-driver-1.11.0-SNAPSHOT.oar
+#onos-app localhost activate org.onosproject.slsnet-driver
+#cd ..
+
 
 # reinstall network config
-sudo cp ../network-cfg.json /opt/onos/config/
-#sudo cp ../cisco-cfg.json /opt/onos/config/
+sudo cp network-cfg.json /opt/onos/config/
+#sudo cp cisco-cfg.json /opt/onos/config/
 
 # restart onos service
 sudo service onos restart
