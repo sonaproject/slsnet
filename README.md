@@ -40,7 +40,7 @@ Switch: Nexus 9000 Series C9372PX
 Configuration
 ```txt
 !Command: show running-config
-!Time: Thu Aug  3 07:37:51 2017
+!Time: Mon Aug  7 03:19:46 2017
 
 version 7.0(3)I6(1)
 switchname LEAF-1
@@ -60,7 +60,8 @@ username admin password 5 $5$yzg6Ajmu$kSFxPBlRxABu2D5IwPaSyGAWIeo5gIDRQUex4PBXCc
 ip domain-lookup
 spanning-tree mode mst
 copp profile strict
-snmp-server user admin network-admin auth md5 0xa35b241e98ebe6c85b124d37048ac87e priv 0xa35b241e98ebe6c85b124d37048ac87e localizedkey
+snmp-server user admin network-admin auth md5 0xa35b241e98ebe6c85b124d37048ac87e priv 0xa35b241e98ebe6c85b124d37
+048ac87e localizedkey
 rmon event 1 description FATAL(1) owner PMON@FATAL
 rmon event 2 description CRITICAL(2) owner PMON@CRITICAL
 rmon event 3 description ERROR(3) owner PMON@ERROR
@@ -77,10 +78,16 @@ hardware access-list tcam region e-racl 0
 hardware access-list tcam region l3qos 0
 hardware access-list tcam region span 0
 hardware access-list tcam region redirect 0
+hardware access-list tcam region ns-qos 0
+hardware access-list tcam region ns-vqos 0
+hardware access-list tcam region ns-l3qos 0
 hardware access-list tcam region vpc-convergence 0
-hardware access-list tcam region openflow 1024
+hardware access-list tcam region rp-qos 0
+hardware access-list tcam region rp-ipv6-qos 0
+hardware access-list tcam region rp-mac-qos 0
+hardware access-list tcam region openflow 1024 double-wide
 openflow
-  switch 1 pipeline 202
+  switch 1 pipeline 203
     rate-limit packet_in 1 burst 4
     statistics collection-interval 10
     datapath-id 0x111111
@@ -89,7 +96,6 @@ openflow
     of-port interface Ethernet1/2
     of-port interface Ethernet1/3
     of-port interface Ethernet1/4
-    default-miss continue-normal
     protocol-version 1.3
     logging flow-mod
 ```
@@ -198,27 +204,31 @@ SEE: [network-cfg.json](network-cfg.json)
 
 ### Cisco OpenFlow 기능의 제약
 
-- Selector 에 L2 Src/Dst MAC 을 사용할 수 없음
-   - L2 Forwarding 을 구성할 수 없고, IP 조건식만 사용해야함
-   - 기존적으로 사용되는 IntentCompiler 인 LinkCollectionCompiler 에서 
-     각 Hop 단계에서의 Treatment 를 기준으로 다음 단계에서 Selector를 사용하는데, 문제가됨
-
-- Instruction 에서 PushVlan 을 사용할 수 없음
-   - Intents 에서 EncapsulationType.VLAN 을 사용할 수 없음
-   - L2Mac 및 PushVlan 문제로, 기본 IntentCompiler LinkCollectopnCompiler 를 수정하여
-     최초의 Selector를 모든 단계에서 사용하도록 코드 수정이 필요 (1줄)
-
 - Instruction 에서 ClearDiffered 를 사용할 수 없음
    - FlowObjective 를 사용하는 경우에 문제가 되는데, 기본적으 PacketService 등록시 해당 기능이 사용됨
    - OpenFlow Pineline Driver 에서 해당 Operation을 빼도록 Driver를 수정해야 함.
-
-- Single Table
-   - Cisco Pipeline 202 에서는 테이블을 분리하여 사용할 수 있는 것 처럼 나와 있으나, 안됨.
 
 - Selecttor 에서 Switch 단위로 IPv4 또는 IPv6 중 한가지만 사용할 수 있음
    - 스위치 설정 중 `hardware access-list tcam region openflow 1024`
      대신 `hardware access-list tcam region openflow-ipv6 1024`
      를 사용하며 IPv6 로만 동작함
+
+- Selector 에 L2 Src/Dst MAC 을 사용할 수 없음 (삭제: 2017-08-07)
+   - L2 Forwarding 을 구성할 수 없고, IP 조건식만 사용해야함
+   - 기존적으로 사용되는 IntentCompiler 인 LinkCollectionCompiler 에서 
+     각 Hop 단계에서의 Treatment 를 기준으로 다음 단계에서 Selector를 사용하는데, 문제가됨
+   - --> tcam 설정시 double-wide 를 설정하면 됨: `hardware access-list tcam region openflow 1024 double-wide`
+
+- Instruction 에서 PushVlan 을 사용할 수 없음
+   - Intents 에서 EncapsulationType.VLAN 을 사용할 수 없음
+   - L2Mac 및 PushVlan 문제로, 기본 IntentCompiler LinkCollectopnCompiler 를 수정하여
+     최초의 Selector를 모든 단계에서 사용하도록 코드 수정이 필요 (1줄)
+   - --> Selector Mac 제약이 없어졌으므로, 코드 수정 불필 (2017-08-07)
+
+- Single Table
+   - Cisco Pipeline 202 에서는 테이블을 분리하여 사용할 수 있는 것 처럼 나와 있으나, 안됨.
+   - --> tcam double-wide 설정 관련하여 변동 사항이 있는지 확인 필요 (2017-08-07)
+
 
 
 ### 구현된 기능

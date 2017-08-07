@@ -1,18 +1,3 @@
-diff --git a/core/net/src/main/java/org/onosproject/net/intent/impl/compiler/LinkCollectionCompiler.java b/core/net/src/main/java/org/onosproject/net/intent/impl/compiler/LinkCollectionCompiler.java
-index e65d256..0f61600 100644
---- a/core/net/src/main/java/org/onosproject/net/intent/impl/compiler/LinkCollectionCompiler.java
-+++ b/core/net/src/main/java/org/onosproject/net/intent/impl/compiler/LinkCollectionCompiler.java
-@@ -668,7 +668,9 @@ public abstract class LinkCollectionCompiler<T> {
-              * we derive the final state defined by the intent
-              * treatment.
-              */
--            updateBuilder(selectorBuilder, intent.treatment());
-+            // use original selector; by Lee Yongjae at 2017-08-02
-+            //updateBuilder(selectorBuilder, intent.treatment());
-+            intent.selector().criteria().stream().forEach(selectorBuilder::add); 
-             /*
-              * We derive the final state defined by the unique
-              * FEP. We merge the two states.
 diff --git a/drivers/default/src/main/java/org/onosproject/driver/pipeline/CiscoPipeline.java b/drivers/default/src/main/java/org/onosproject/driver/pipeline/CiscoPipeline.java
 new file mode 100644
 index 0000000..8350c7d
