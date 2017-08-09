@@ -174,7 +174,9 @@ Following app are auto activated by SLSNET app's dependency
 - Network Config Link Provider (for auto Regi/Deregi Links)
 - Host Location Provider (for auto regi host from ARP)
 
-If onos is updated, call `onos-buck-publish-local` to apply update for external app build
+If onos is updated, apply update for external app maven build, at onos/ source directory
+- `onos-buck-publish-local`
+- `mcis` or `mvn clean install -DskipTests -Dcheckstyle.skip`
 
 
 ### ONOS Network Configuration
