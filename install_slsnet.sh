@@ -7,9 +7,20 @@
 # or % mvn clean install -DskipTests -Dcheckstyle.skip
 # for sometimes onos-buck-publish-local might be NOT sufficently updates mvn repository
 
-# to reinstall ONOS
-# ASSUME: onos source is at /home/yjlee/onos/onos/
-#sudo service onos stop; sudo pkill java; sudo rm -rf /opt/onos-1.11.0-SNAPSHOT/; sudo tar -xzf /home/yjlee/onos/onos/buck-out/gen/tools/package/onos-package/onos.tar.gz -C /opt; sudo service onos start
+# to reinstall ONOS, call this script with "-r" argument
+# ASSUME: onos source is at ../onos
+REINISTALL_ONOS=no
+if [ "$1" = '-r' ]
+then
+    echo reinistall ONOS from ../onos/
+    sudo service onos stop
+    sudo pkill java
+    sudo rm -rf /opt/onos-1.11.0-SNAPSHOT/
+    sudo tar -xzf ../onos/buck-out/gen/tools/package/onos-package/onos.tar.gz -C /opt
+    sudo service onos start
+    echo reinistall ONOS done
+    exit 0
+fi
 
 # build, reinistall and reactivate slsnet app
 cd onos-app-slsnet/
