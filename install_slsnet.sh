@@ -1,7 +1,13 @@
 #!/bin/sh
 # install_slsnet.sh - to rebuild and reinstall slsnet app 
 
-# to rebuild ONOS
+# do build onos with maven for maven repository updates
+# in onos source directory
+# % mcis
+# or % mvn clean install -DskipTests -Dcheckstyle.skip
+# for sometimes onos-buck-publish-local might be NOT sufficently updates mvn repository
+
+# to reinstall ONOS
 # ASSUME: onos source is at /home/yjlee/onos/onos/
 #sudo service onos stop; sudo pkill java; sudo rm -rf /opt/onos-1.11.0-SNAPSHOT/; sudo tar -xzf /home/yjlee/onos/onos/buck-out/gen/tools/package/onos-package/onos.tar.gz -C /opt; sudo service onos start
 

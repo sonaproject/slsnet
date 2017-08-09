@@ -1,11 +1,11 @@
 {
 
   "devices":{
-    "of:0000000000000001":{ "basic":{ "name":"SS1", "latitude":40, "longitude":125 } },
-    "of:0000000000000002":{ "basic":{ "name":"SS2", "latitude":40, "longitude":130  } },
-    "of:000000000000000a":{ "basic":{ "name":"LS1", "latitude":35, "longitude":125 } },
-    "of:0000000000000014":{ "basic":{ "name":"LS2", "latitude":35, "longitude":130  } },
-    "of:0000000000111111":{ "basic":{ "name":"LEAF", "latitude":37.5, "longitude":127 } }
+    "of:0000000000000001":{ "basic":{ "name":"SS1", "latitude":40, "longitude":-100 } },
+    "of:0000000000000002":{ "basic":{ "name":"SS2", "latitude":40, "longitude":-90  } },
+    "of:000000000000000a":{ "basic":{ "name":"LS1", "latitude":35, "longitude":-100 } },
+    "of:0000000000000014":{ "basic":{ "name":"LS2", "latitude":35, "longitude":-90  } },
+    "of:0000000000111111":{ "basic":{ "name":"LEAF", "latitude":37.5, "longitude":-80 } }
   },
 
   "ports" : {
