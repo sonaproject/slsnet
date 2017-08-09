@@ -211,9 +211,11 @@ public class SlsNetReactiveRouting {
             DefaultTrafficSelector.builder().matchEthType(Ethernet.TYPE_IPV4).build(),
             PacketPriority.REACTIVE, reactiveAppId);
 
-        packetService.requestPackets(
-            DefaultTrafficSelector.builder().matchEthType(Ethernet.TYPE_IPV6).build(),
-            PacketPriority.REACTIVE, reactiveAppId);
+        if (slsnet.ALLOW_IPV6) {
+            packetService.requestPackets(
+                DefaultTrafficSelector.builder().matchEthType(Ethernet.TYPE_IPV6).build(),
+                PacketPriority.REACTIVE, reactiveAppId);
+        }
 
         log.info("slsnet reactive routing ip packet intercepts started");
     }
@@ -228,9 +230,11 @@ public class SlsNetReactiveRouting {
             DefaultTrafficSelector.builder().matchEthType(Ethernet.TYPE_IPV4).build(),
             PacketPriority.REACTIVE, reactiveAppId);
 
-        packetService.cancelPackets(
-            DefaultTrafficSelector.builder().matchEthType(Ethernet.TYPE_IPV6).build(),
-            PacketPriority.REACTIVE, reactiveAppId);
+        if (slsnet.ALLOW_IPV6) {
+            packetService.cancelPackets(
+                DefaultTrafficSelector.builder().matchEthType(Ethernet.TYPE_IPV6).build(),
+                PacketPriority.REACTIVE, reactiveAppId);
+        }
 
         log.info("slsnet reactive routing ip packet intercepts stopped");
     }

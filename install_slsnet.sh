@@ -38,7 +38,8 @@ cd ..
 
 
 # reinstall network config
-sudo cp network-cfg.json /opt/onos/config/
+sudo cp bundang-cfg.json /opt/onos/config/
+#sudo cp network-cfg.json /opt/onos/config/
 #sudo cp cisco-cfg.json /opt/onos/config/
 
 # restart onos service
