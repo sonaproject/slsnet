@@ -38,9 +38,12 @@ cd ..
 
 
 # reinstall network config
-sudo cp bundang-cfg.json /opt/onos/config/
-#sudo cp network-cfg.json /opt/onos/config/
-#sudo cp cisco-cfg.json /opt/onos/config/
+if [ "$1" = bundang ]
+then
+    sudo cp bundang-cfg.json /opt/onos/config/network-cfg.json
+else
+    sudo cp network-cfg.json /opt/onos/config/network-cfg.json
+fi
 
 # restart onos service
 sudo service onos restart
