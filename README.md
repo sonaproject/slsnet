@@ -39,8 +39,6 @@ Switch: Nexus 9000 Series C9372PX
 
 Configuration
 ```txt
-
-onep
 feature openflow
 
 no cdp enable
@@ -63,7 +61,7 @@ openflow
   switch 1 pipeline 203
     rate-limit packet_in 1 burst 4
     statistics collection-interval 10
-    datapath-id 0x111111
+    datapath-id 0x1234
     controller ipv4 10.10.108.140 port 6653 vrf management security none
     of-port interface Ethernet1/1
     of-port interface Ethernet1/2
