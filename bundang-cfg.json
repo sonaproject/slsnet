@@ -1,10 +1,10 @@
 {
 
   "devices":{
-    "of:0000000000000021":{ "basic":{ "name":"SS1", "latitude":40, "longitude":125 } },
-    "of:0000000000000022":{ "basic":{ "name":"SS2", "latitude":40, "longitude":130  } },
-    "of:0000000000000011":{ "basic":{ "name":"LS1", "latitude":35, "longitude":125 } },
-    "of:0000000000000012":{ "basic":{ "name":"LS2", "latitude":35, "longitude":130  } }
+    "of:0000000000000021":{ "basic":{ "name":"SS1", "latitude":40, "longitude":-100 } },
+    "of:0000000000000022":{ "basic":{ "name":"SS2", "latitude":40, "longitude":-90  } },
+    "of:0000000000000011":{ "basic":{ "name":"LS1", "latitude":35, "longitude":-100 } },
+    "of:0000000000000012":{ "basic":{ "name":"LS2", "latitude":35, "longitude":-90  } }
   },
 
   "ports" : {
