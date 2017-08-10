@@ -33,9 +33,10 @@ Lee Yongjae, 2017-06-15,08-03.
 
 ## Cisco Switch
 
-Switch: Nexus 9000 Series C9372PX
-- Leaf Switch: 10Gs + 40G x 6 (2 for Spine and 4 for Storage)
-- Spine Switch: Maybe 40G
+Switch: Nexus 9000 Series
+- Spine Switch: N9K-C9332PQ 
+- Leaf Switch: N9K-C9372PX-E
+
 
 Configuration
 ```txt
@@ -45,7 +46,6 @@ no cdp enable
 
 hardware access-list tcam region racl 0
 hardware access-list tcam region e-racl 0
-hardware access-list tcam region l3qos 0
 hardware access-list tcam region span 0
 hardware access-list tcam region redirect 0
 hardware access-list tcam region ns-qos 0
@@ -55,7 +55,7 @@ hardware access-list tcam region vpc-convergence 0
 hardware access-list tcam region rp-qos 0
 hardware access-list tcam region rp-ipv6-qos 0
 hardware access-list tcam region rp-mac-qos 0
-hardware access-list tcam region openflow 1024 double-wide
+hardware access-list tcam region openflow 512 double-wide
 
 openflow
   switch 1 pipeline 203
@@ -70,6 +70,67 @@ openflow
     protocol-version 1.3
 ```
 
+Hardware Features
+```txt
+leaf2# show openflow hardware capabilities pipeline 201
+
+  Max Interfaces: 1000
+  Aggregated Statistics: NO
+
+  Pipeline ID: 201
+    Pipeline Max Flows: 3001
+    Max Flow Batch Size: 300
+    Statistics Max Polling Rate (flows/sec): 1024
+    Pipeline Default Statistics Collect Interval: 7
+
+    Flow table ID: 0
+
+    Max Flow Batch Size: 300
+    Max Flows: 3001
+    Bind Subintfs: FALSE                              
+    Primary Table: TRUE                               
+    Table Programmable: TRUE                               
+    Miss Programmable: TRUE                               
+    Number of goto tables: 0                                  
+    goto table id:      
+    Stats collection time for full table (sec): 3
+
+    Match Capabilities                                  Match Types
+    ------------------                                  -----------
+    ethernet mac destination                            optional    
+    ethernet mac source                                 optional    
+    ethernet type                                       optional    
+    VLAN ID                                             optional    
+    VLAN priority code point                            optional    
+    IP DSCP                                             optional    
+    IP protocol                                         optional    
+    IPv4 source address                                 lengthmask  
+    IPv4 destination address                            lengthmask  
+    source port                                         optional    
+    destination port                                    optional    
+    in port (virtual or physical)                       optional    
+    wildcard all matches                                optional    
+
+    Actions                                             Count Limit             Order
+    specified interface                                     64                    20
+    controller                                               1                    20
+    divert a copy of pkt to application                      1                    20
+
+    set eth source mac                                       1                    10
+    set eth destination mac                                  1                    10
+    set vlan id                                              1                    10
+
+    pop vlan tag                                             1                    10
+
+    drop packet                                              1                    20
+
+
+    Miss actions                                        Count Limit             Order
+    use normal forwarding                                    1                     0
+    controller                                               1                    20
+
+    drop packet                                              1                    20
+```
 
 ## Topology
 
