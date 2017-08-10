@@ -212,7 +212,9 @@ If onos is updated, apply update for external app maven build, at onos/ source d
 
 ### ONOS Network Configuration
 
-SEE: [network-cfg.json](network-cfg.json)
+설정 파일
+- Mininet Test: [network-cfg.json](network-cfg.json)
+- 분당 Testbed: [bundang-cfg.json](bundang-cfg.json)
 
 설정 항목
 - devices : 유효한 device 목록
