@@ -1,5 +1,5 @@
 # Simple Leaf-Spine Network Application
-Lee Yongjae, 2017-06-15,08-03.
+Lee Yongjae, 2017-06-15,08-10.
 
 
 
@@ -59,9 +59,8 @@ hardware access-list tcam region openflow 512 double-wide
 
 openflow
   switch 1 pipeline 203
-    rate-limit packet_in 1 burst 4
     statistics collection-interval 10
-    datapath-id 0x1234
+    datapath-id 0x123 4
     controller ipv4 10.10.108.140 port 6653 vrf management security none
     of-port interface Ethernet1/1
     of-port interface Ethernet1/2
@@ -282,3 +281,16 @@ If onos is updated, apply update for external app maven build, at onos/ source d
   - Subnet 내부 IP 통신 (L2 Network Forwarding 에서 처리되는 경우 비활성화)
   - Local Subnet 간 IP 통신
   - Local Subnet - External Router 가 Route 에 따른 IP 통신을 모두 Reactive 방식으로 처리
+
+
+### 분당 TB 에서의 증상 (Cisco 스위치 적용시의 증상)
+
+- subnet간 통신이 안됨
+  - flow rule 까지 적용된 것으로 보이나, 통신은 안되는 듯
+
+- CONTROLLER 로의 패킷 Forwarding 이 매우 느리게 나타남 (cleared)
+  - virtual gateway ip 로의 ping의 지연이 심함 (200ms~2000ms, hosts unreachable)
+  - 이와 관련하여, Host의 ARP 메시지 발생시 관련 전송에 심한 지연이 나타남 (700~1700ms)
+  - 지연이 있거나 drop 이 있는 듯
+  - ** --> rate-limit 을 꺼야 함 ** (2017-08-10)
+
