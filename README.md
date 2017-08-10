@@ -39,40 +39,12 @@ Switch: Nexus 9000 Series C9372PX
 
 Configuration
 ```txt
-!Command: show running-config
-!Time: Mon Aug  7 03:19:46 2017
-
-version 7.0(3)I6(1)
-switchname LEAF-1
-vdc LEAF-1 id 1
-  limit-resource vlan minimum 16 maximum 4094
-  limit-resource vrf minimum 2 maximum 4096
-  limit-resource port-channel minimum 0 maximum 511
-  limit-resource u4route-mem minimum 248 maximum 248
-  limit-resource u6route-mem minimum 96 maximum 96
-  limit-resource m4route-mem minimum 58 maximum 58
-  limit-resource m6route-mem minimum 8 maximum 8
 
 onep
 feature openflow
 
-username admin password 5 $5$yzg6Ajmu$kSFxPBlRxABu2D5IwPaSyGAWIeo5gIDRQUex4PBXCc8  role network-admin
-ip domain-lookup
-spanning-tree mode mst
-copp profile strict
-snmp-server user admin network-admin auth md5 0xa35b241e98ebe6c85b124d37048ac87e priv 0xa35b241e98ebe6c85b124d37
-048ac87e localizedkey
-rmon event 1 description FATAL(1) owner PMON@FATAL
-rmon event 2 description CRITICAL(2) owner PMON@CRITICAL
-rmon event 3 description ERROR(3) owner PMON@ERROR
-rmon event 4 description WARNING(4) owner PMON@WARNING
-rmon event 5 description INFORMATION(5) owner PMON@INFO
-
-vlan 1-2048
-
 no cdp enable
-vrf context management
-  ip route 0.0.0.0/0 10.10.1.1
+
 hardware access-list tcam region racl 0
 hardware access-list tcam region e-racl 0
 hardware access-list tcam region l3qos 0
@@ -86,6 +58,7 @@ hardware access-list tcam region rp-qos 0
 hardware access-list tcam region rp-ipv6-qos 0
 hardware access-list tcam region rp-mac-qos 0
 hardware access-list tcam region openflow 1024 double-wide
+
 openflow
   switch 1 pipeline 203
     rate-limit packet_in 1 burst 4
@@ -97,7 +70,6 @@ openflow
     of-port interface Ethernet1/3
     of-port interface Ethernet1/4
     protocol-version 1.3
-    logging flow-mod
 ```
 
 
