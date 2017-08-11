@@ -285,8 +285,21 @@ If onos is updated, apply update for external app maven build, at onos/ source d
 
 ### 분당 TB 에서의 증상 (Cisco 스위치 적용시의 증상)
 
-- subnet간 통신이 안됨
+- subnet간 통신이 안됨 (cleared)
   - flow rule 까지 적용된 것으로 보이나, 통신은 안되는 듯
+  - Leaf->Spine 은 되나, Spine->Leaf 전송이 안됨
+  - Spine Switch (N9K-C9332PQ) Port에 switchport 를 지정해야 vlan 1에 소속되고 정상 처리됨 (2017-08-11)
+```txt
+  interface Ethernet1/31
+  switchport
+  mode openflow
+  no shutdown
+
+  interface Ethernet1/32
+  switchport
+  mode openflow
+  no shutdown
+```
 
 - CONTROLLER 로의 패킷 Forwarding 이 매우 느리게 나타남 (cleared)
   - virtual gateway ip 로의 ping의 지연이 심함 (200ms~2000ms, hosts unreachable)
