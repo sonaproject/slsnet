@@ -302,7 +302,8 @@ If onos is updated, apply update for external app maven build, at onos/ source d
   - flow rule 까지 적용된 것으로 보이나, 통신은 안되는 듯
   - Leaf->Spine 은 되나, Spine->Leaf 전송이 안됨
   - Spine Switch (N9K-C9332PQ) Port에 switchport 를 지정해야 vlan 1에 소속되고 정상 처리됨 (2017-08-11)
-    (참고:  https://www.cisco.com/c/en/us/td/docs/switches/datacenter/nexus9000/sw/ale_ports/b_Limitations_for_ALE_Uplink_Ports_on_Cisco_Nexus_9000_Series_Switches.html) 
+    (참고: 아마도 "An ALE 40G trunk port sends tagged packets on the native VLAN of the port. Normally, untagged packets are sent on the native VLAN" 관련일 듯;  https://www.cisco.com/c/en/us/td/docs/switches/datacenter/nexus9000/sw/ale_ports/b_Limitations_for_ALE_Uplink_Ports_on_Cisco_Nexus_9000_Series_Switches.html)
+
 ```txt
   interface Ethernet1/31
   switchport
