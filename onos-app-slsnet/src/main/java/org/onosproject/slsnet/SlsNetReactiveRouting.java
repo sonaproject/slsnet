@@ -793,6 +793,7 @@ public class SlsNetReactiveRouting {
     // generate treatement to target
     private TrafficTreatment generateSetMacTreatment(MacAddress dstMac, MacAddress srcMac) {
         return DefaultTrafficTreatment.builder()
+                   // NOTE: Cisco Switch requires both src and dst mac set
                    .setEthSrc(srcMac)
                    .setEthDst(dstMac)
                    .build();
