@@ -37,12 +37,14 @@ cd ..
 #cd ..
 
 
-# reinstall network config
-if [ "$1" = bundang ]
+# reinstall network config: if argument exists, use it as config file
+if [ -n "$1" ]
 then
-    sudo cp bundang-cfg.json /opt/onos/config/network-cfg.json
+    echo copy "$1" to /opt/onos/config/network-cfg.json
+    sudo cp "$1" /opt/onos/config/network-cfg.json
 else
-    sudo cp network-cfg.json /opt/onos/config/network-cfg.json
+    echo copy network-cfg.json to /opt/onos/config/
+    sudo cp network-cfg.json /opt/onos/config/
 fi
 
 # restart onos service
