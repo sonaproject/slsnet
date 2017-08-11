@@ -69,6 +69,19 @@ openflow
     protocol-version 1.3
 ```
 
+N9K-C9332PQ 의 40G Port는 switchport 를 지정해야 vlan 1에 소속되어 정상처리됨
+```txt
+  interface Ethernet1/31
+  switchport
+  mode openflow
+  no shutdown
+
+  interface Ethernet1/32
+  switchport
+  mode openflow
+  no shutdown
+```
+
 Hardware Features
 ```txt
 leaf2# show openflow hardware capabilities pipeline 201
@@ -289,6 +302,7 @@ If onos is updated, apply update for external app maven build, at onos/ source d
   - flow rule 까지 적용된 것으로 보이나, 통신은 안되는 듯
   - Leaf->Spine 은 되나, Spine->Leaf 전송이 안됨
   - Spine Switch (N9K-C9332PQ) Port에 switchport 를 지정해야 vlan 1에 소속되고 정상 처리됨 (2017-08-11)
+    (참고:  https://www.cisco.com/c/en/us/td/docs/switches/datacenter/nexus9000/sw/ale_ports/b_Limitations_for_ALE_Uplink_Ports_on_Cisco_Nexus_9000_Series_Switches.html) 
 ```txt
   interface Ethernet1/31
   switchport
