@@ -389,30 +389,31 @@ public class SlsNetReactiveRouting {
         for (Map.Entry<IpPrefix, RouteIntent> entry : routeIntents.entrySet()) {
             RouteIntent routeIntent = entry.getValue();
             MultiPointToSinglePointIntent intent = routeIntent.intent();
+            boolean clearIntent = true;  // mark to clear intent on dummy while loop breaks
             do {
                 // dummy loop to break on remove cases
                 if (!deviceService.isAvailable(intent.egressPoint().deviceId())) {
-                    log.trace("slsnet reactive routing refresh route intents; remove intent for no device: key={}",
+                    log.info("slsnet reactive routing refresh route intents; remove intent for no device: key={}",
                              intent.key());
                     break;
                 }
                 if (slsnet.findL2Network(intent.egressPoint(), VlanId.NONE) == null) {
-                    log.trace("slsnet reactive routing refresh route intents; "
-                              + "remove intent for egress point not available: key={}", intent.key());
+                    log.info("slsnet reactive routing refresh route intents; "
+                             + "remove intent for egress point not available: key={}", intent.key());
                     break;
                 }
                 // check if nextHopIp mac or connection point is changed
                 Set<Host> hosts = hostService.getHostsByIp(routeIntent.nextHopIp());
                 if (hosts.isEmpty()) {
-                    log.trace("slsnet reactive routing refresh route intents; "
-                              + "remove intent for host entry not found: key={}", intent.key());
+                    log.info("slsnet reactive routing refresh route intents; "
+                             + "remove intent for host entry not found: key={}", intent.key());
                     break;
                 }
                 Host host = hosts.iterator().next();
                 if (!host.mac().equals(routeIntent.nextHopMac) ||
                     !intent.egressPoint().equals((ConnectPoint) host.location())) {
-                    log.trace("slsnet reactive routing refresh route intents; "
-                              + "remove intent for host mac or egress point changed: key={}", intent.key());
+                    log.info("slsnet reactive routing refresh route intents; "
+                             + "remove intent for host mac or egress point changed: key={}", intent.key());
                     break;
                 }
                 // check if ingress point set is changed
@@ -423,7 +424,7 @@ public class SlsNetReactiveRouting {
                     }
                 }
                 if (newIngressPoints.isEmpty()) {
-                    log.trace("slsnet reactive routing refresh route intents; "
+                    log.info("slsnet reactive routing refresh route intents; "
                               + "remove intent for no ingress nor egress point available: key={}", intent.key());
                     break;
                 }
@@ -440,20 +441,23 @@ public class SlsNetReactiveRouting {
                             .priority(intent.priority())
                             .constraints(intent.constraints())
                             .build();
-                    log.trace("slsnet reactive routing refresh route update intent: key={} updatedIntent={}",
+                    log.info("slsnet reactive routing refresh route update intent: key={} updatedIntent={}",
                             intent.key(), updatedIntent);
-                    routeIntent.setIntent(updatedIntent);
                     toBePurgedIntentKeys.remove(updatedIntent.key());   // may remove from old purged entry
+                    routeIntent.setIntent(updatedIntent);
                     intentService.submit(updatedIntent);
                 }
                 // this intent is valid
-                continue;
+                clearIntent = false;
 
             } while (false);
+
             // remote entry for current status is not value
-            prefixToRemove.add(entry.getKey());
-            toBePurgedIntentKeys.add(intent.key());
-            intentService.withdraw(intent);
+            if (clearIntent) {
+                intentService.withdraw(intent);
+                prefixToRemove.add(entry.getKey());
+                toBePurgedIntentKeys.add(intent.key());
+            }
         }
         /* clean up intents */
         for (IpPrefix prefix : prefixToRemove) {
@@ -472,8 +476,28 @@ public class SlsNetReactiveRouting {
                     log.info("slsnet reactive routing purged intent: key={}", key);
                     purgedKeys.add(key);
                 } else {
-                    log.info("slsnet reactive routing try to purge intent: key={}", key);
-                    intentService.purge(intentToPurge);
+                    switch (intentService.getIntentState(key)) {
+                    case FAILED:
+                    case WITHDRAWN:
+                        log.info("slsnet reactive routing try to purge intent: key={}", key);
+                        intentService.purge(intentToPurge);
+                        break;
+                    case INSTALL_REQ:
+                    case INSTALLED:
+                    case INSTALLING:
+                    case RECOMPILING:
+                    case COMPILING:
+                        log.info("slsnet reactive routing withdraw intent to purge: key={}", key);
+                        intentService.withdraw(intentToPurge);
+                        break;
+                    case WITHDRAW_REQ:
+                    case WITHDRAWING:
+                    case PURGE_REQ:
+                    case CORRUPT:
+                    default:
+                        // no action
+                        break;
+                    }
                 }
             }
             toBePurgedIntentKeys.removeAll(purgedKeys);
@@ -492,7 +516,8 @@ public class SlsNetReactiveRouting {
         for (Intent intent : myIntents) {
             switch (intentService.getIntentState(intent.key())) {
             case FAILED:
-                intentService.withdraw(intent);
+                intentService.withdraw(intent);  // TO BE TESTED IF NEEDED
+                intentService.purge(intent);
                 toBePurgedIntentKeys.add(intent.key());
                 break;
             case WITHDRAWN:
@@ -702,7 +727,8 @@ public class SlsNetReactiveRouting {
             outPacket = new DefaultOutboundPacket(dstHost.location().deviceId(), treatment,
                                 context.inPacket().unparsed());
         }
-        log.info("slsnet reactive routing forward packet: dstHost={} outPacket={}", dstHost, outPacket);
+        log.info("slsnet reactive routing forward packet: dstHost={} outPacket={} srcCP={}",
+                 dstHost, outPacket, context.inPacket().receivedFrom());
         packetService.emit(outPacket);
     }
 
@@ -753,8 +779,8 @@ public class SlsNetReactiveRouting {
 
                 log.trace("slsnet reactive routing update mp2p intent: prefix={} srcCp={} updatedIntent={}",
                           prefix, srcCp, updatedIntent);
-                routeIntents.put(prefix, new RouteIntent(updatedIntent, nextHopIp, nextHopMac));
                 toBePurgedIntentKeys.remove(updatedIntent.key());
+                routeIntents.put(prefix, new RouteIntent(updatedIntent, nextHopIp, nextHopMac));
                 intentService.submit(updatedIntent);
             }
             // If adding ingressConnectPoint to ingressPoints failed, it
@@ -794,8 +820,8 @@ public class SlsNetReactiveRouting {
 
            log.trace("slsnet reactive routing generate mp2p intent: prefix={} srcCp={} "
                      + "newIntent={} nextHopIp={} nextHopMac={}", prefix, srcCp, newIntent, nextHopIp, nextHopMac);
-           routeIntents.put(prefix, new RouteIntent(newIntent, nextHopIp, nextHopMac));
            toBePurgedIntentKeys.remove(newIntent.key());
+           routeIntents.put(prefix, new RouteIntent(newIntent, nextHopIp, nextHopMac));
            intentService.submit(newIntent);
        }
     }

@@ -225,8 +225,28 @@ public class SlsNetL2Forward {
                     log.info("slsnet l2forward purged intent: key={}", key);
                     purgedKeys.add(key);
                 } else {
-                    log.info("slsnet l2forward try to purge intent: key={}", key);
-                    intentService.purge(intentToPurge);
+                    switch (intentService.getIntentState(key)) {
+                    case FAILED:
+                    case WITHDRAWN:
+                        log.info("slsnet l2forward try to purge intent: key={}", key);
+                        intentService.purge(intentToPurge);
+                        break;
+                    case INSTALL_REQ:
+                    case INSTALLED:
+                    case INSTALLING:
+                    case RECOMPILING:
+                    case COMPILING:
+                        log.info("slsnet l2forward withdraw intent to purge: key={}", key);
+                        intentService.withdraw(intentToPurge);
+                        break;
+                    case WITHDRAW_REQ:
+                    case WITHDRAWING:
+                    case PURGE_REQ:
+                    case CORRUPT:
+                    default:
+                        // no action
+                        break;
+                    }
                 }
             }
             toBePurgedIntentKeys.removeAll(purgedKeys);
@@ -368,18 +388,20 @@ public class SlsNetL2Forward {
         if (subject == "intents") {
             System.out.println("L2Forward Broadcast Intents:\n");
             for (SinglePointToMultiPointIntent intent: bctIntentsMap.values()) {
-                System.out.println("    " + intent.key().toString() + ": "
-                                   + intent.selector() + " | "
-                                   + intent.filteredIngressPoint() + " -> "
-                                   + intent.filteredEgressPoints());
+                System.out.println("    " + intent.key().toString()
+                                   + ": " + intent.selector().criteria()
+                                   + ", [" + intent.filteredIngressPoint().connectPoint()
+                                   + "] -> " + intent.filteredEgressPoints().stream()
+                                         .map(FilteredConnectPoint::connectPoint).collect(Collectors.toSet()));
             }
             System.out.println("");
             System.out.println("L2Forward Unicast Intents:\n");
             for (MultiPointToSinglePointIntent intent: uniIntentsMap.values()) {
-                System.out.println("    " + intent.key().toString() + ": "
-                                   + intent.selector() + " | "
-                                   + intent.filteredIngressPoints() + " -> "
-                                   + intent.filteredEgressPoint());
+                System.out.println("    " + intent.key().toString()
+                                   + ": " + intent.selector().criteria()
+                                   + ", [" + intent.filteredIngressPoints().stream()
+                                         .map(FilteredConnectPoint::connectPoint).collect(Collectors.toSet())
+                                   + "] -> " + intent.filteredEgressPoint().connectPoint());
             }
             System.out.println("");
             System.out.println("L2Forward Intents to Be Purged:\n");
