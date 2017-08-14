@@ -548,10 +548,8 @@ public class SlsNetReactiveRouting {
                 return;  // ignore unknow ether type packets
             }
 
-            if (checkVirtualGatewayIpPacket(pkt, srcIp, dstIp)) {
-                // handled as packet for virtual gateway inself
-            } else if (ipPacketReactiveProcessor(ethPkt, srcCp, srcIp, dstIp)) {
-                forwardPacketToDstIp(context, dstIp);
+            if (!checkVirtualGatewayIpPacket(pkt, srcIp, dstIp)) {
+                ipPacketReactiveProcessor(context, ethPkt, srcCp, srcIp, dstIp);
             }
         }
     }
@@ -617,21 +615,23 @@ public class SlsNetReactiveRouting {
     /**
      * Routes packet reactively.
      */
-    private boolean ipPacketReactiveProcessor(Ethernet ethPkt, ConnectPoint srcCp, IpAddress srcIp, IpAddress dstIp) {
+    private void ipPacketReactiveProcessor(PacketContext context, Ethernet ethPkt,
+                                           ConnectPoint srcCp, IpAddress srcIp, IpAddress dstIp) {
+        /* check reactive handling and forward packet */
         log.trace("slsnet reactive routing ip packet: srcCp={} srcIp={} dstIp={} srcCp={}", srcCp, srcIp, dstIp);
-        // NOTE: do not check source ip for source is recognized as ConnectPoint only
         EncapsulationType encap = EncapsulationType.NONE;
         IpSubnet srcSubnet = slsnet.findIpSubnet(srcIp);
         IpSubnet dstSubnet = slsnet.findIpSubnet(dstIp);
         if (dstSubnet != null) {
-            // destination is local ip
+            // destination is local subnet ip
             if (SlsNetService.ALLOW_ETH_ADDRESS_SELECTOR && dstSubnet.equals(srcSubnet)) {
                 // NOTE: if ALLOW_ETH_ADDRESS_SELECTOR=false; l2Forward is always false
                 L2Network l2Network = slsnet.findL2Network(dstSubnet.l2NetworkName());
                 if (l2Network != null && l2Network.l2Forward()) {
-                    // within same subnet and to be handled by l2NetworkRouting
-                    // no reactive route action but try to forward packet
-                    return true;
+                    // within same subnet and to be handled by L2Forward
+                    // no reactive route action but do forward packet for L2Forward do not handle packet
+                    forwardPacketToDstIp(context, dstIp, false);
+                    return;
                 }
                 // may use ethPkt's ethSrc mac as srcMac BUT NEED to resolve conflict with inter-subnet case */
             }
@@ -641,10 +641,11 @@ public class SlsNetReactiveRouting {
             }
             setUpConnectivity(srcCp, dstIp.toIpPrefix(), dstIp, slsnet.getVirtualGatewayMacAddress(), encap);
         } else {
+            // destination is external network
             if (srcSubnet == null) {
                 log.warn("slsnet reactive routing srcIp and dstIp are both NON-LOCAL; ignore: srcIp={} dstIp={}",
                          srcIp, dstIp);
-                return false;
+                return;
             }
             Route route = routeService.longestPrefixMatch(dstIp);
             if (route == null) {
@@ -652,19 +653,19 @@ public class SlsNetReactiveRouting {
                 route = slsnet.findBorderRoute(dstIp);
                 if (route == null) {
                     log.warn("slsnet reactive routing route unknown in slsnet.findBorderRoute(): dstIp={}", dstIp);
-                    return false;
+                    return;
                 }
             }
             encap = srcSubnet.encapsulation();
             setUpConnectivity(srcCp, route.prefix(), route.nextHop(), slsnet.getVirtualGatewayMacAddress(), encap);
         }
-        return true;
+        forwardPacketToDstIp(context, dstIp, true);
     }
 
     /**
      * Emits the specified packet onto the network.
      */
-    private void forwardPacketToDstIp(PacketContext context, IpAddress dstIp) {
+    private void forwardPacketToDstIp(PacketContext context, IpAddress dstIp, boolean updateMac) {
         if (!slsnet.isIpAddressLocal(dstIp)) {
             Route route = routeService.longestPrefixMatch(dstIp);
             if (route == null) {
@@ -678,22 +679,28 @@ public class SlsNetReactiveRouting {
         if (!hosts.isEmpty()) {
             dstHost = hosts.iterator().next();
         } else {
-            // NOTE: hostService.requestMac(dstIp); NOT IMPLEMENTED in ONOS HostManager.java
+            // NOTE: hostService.requestMac(dstIp); NOT IMPLEMENTED in ONOS HostManager.java; do it myself
             log.warn("slsnet reactive routing forward packet dstIp host_mac unknown: dstIp={}", dstIp);
             hostService.startMonitoringIp(dstIp);
             slsnet.requestMac(dstIp);
+            // CONSIDER: make flood on all port of the dstHost's L2Network
             return;
         }
-        log.info("slsnet reactive routing forward packet: dstHost={} packet={}", dstHost, context);
         TrafficTreatment treatment = DefaultTrafficTreatment.builder()
                 .setOutput(dstHost.location().port()).build();
-        // NOTE: eth address update treatment is NOT effective
-        OutboundPacket packet =
-                new DefaultOutboundPacket(dstHost.location().deviceId(), treatment,
-                                          ByteBuffer.wrap(context.inPacket().parsed()
-                                              .setSourceMACAddress(slsnet.getVirtualGatewayMacAddress())
-                                              .setDestinationMACAddress(dstHost.mac()).serialize()));
-        packetService.emit(packet);
+        OutboundPacket outPacket;
+        if (updateMac) {
+            // NOTE: eth address update by treatment is NOT applied, so update mac myself
+            outPacket = new DefaultOutboundPacket(dstHost.location().deviceId(), treatment,
+                                ByteBuffer.wrap(context.inPacket().parsed()
+                                       .setSourceMACAddress(slsnet.getVirtualGatewayMacAddress())
+                                       .setDestinationMACAddress(dstHost.mac()).serialize()));
+        } else {
+            outPacket = new DefaultOutboundPacket(dstHost.location().deviceId(), treatment,
+                                context.inPacket().unparsed());
+        }
+        log.info("slsnet reactive routing forward packet: dstHost={} outPacket={}", dstHost, outPacket);
+        packetService.emit(outPacket);
     }
 
     /**
