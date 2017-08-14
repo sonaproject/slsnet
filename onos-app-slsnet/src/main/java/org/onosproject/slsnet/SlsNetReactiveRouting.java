@@ -75,6 +75,8 @@ import org.slf4j.LoggerFactory;
 
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -847,8 +849,18 @@ public class SlsNetReactiveRouting {
             System.out.println("");
 
             System.out.println("Reactive Routing Intercept Flow Rules:\n");
-            for (FlowRule rule : interceptFlowRules) {
-                System.out.println("    " + rule.selector().toString());
+            List<FlowRule> rules = new ArrayList(interceptFlowRules);
+            Collections.sort(rules, new Comparator<FlowRule>() {
+                    @Override
+                    public int compare(FlowRule a, FlowRule b) {
+                        int r = a.deviceId().toString().compareTo(b.deviceId().toString());
+                        return (r != 0) ? r : Integer.compare(b.priority(), a.priority());  // descending on priority
+                    }
+                });
+            for (FlowRule rule : rules) {
+                System.out.println("    device=" + rule.deviceId().toString()
+                                   + " priority=" + rule.priority()
+                                   + " selector=" + rule.selector().criteria().toString());
             }
             System.out.println("");
             System.out.println("Reactive Routing Intents to Be Purged:\n");
