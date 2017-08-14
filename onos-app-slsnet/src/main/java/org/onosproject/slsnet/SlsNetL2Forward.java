@@ -236,7 +236,7 @@ public class SlsNetL2Forward {
                     case INSTALLING:
                     case RECOMPILING:
                     case COMPILING:
-                        log.info("slsnet l2forward withdraw intent to purge: key={}", key);
+                        log.warn("slsnet l2forward withdraw intent to purge: key={}", key);
                         intentService.withdraw(intentToPurge);
                         break;
                     case WITHDRAW_REQ:

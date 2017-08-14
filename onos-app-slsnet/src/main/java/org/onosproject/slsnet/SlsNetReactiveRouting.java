@@ -487,7 +487,7 @@ public class SlsNetReactiveRouting {
                     case INSTALLING:
                     case RECOMPILING:
                     case COMPILING:
-                        log.info("slsnet reactive routing withdraw intent to purge: key={}", key);
+                        log.warn("slsnet reactive routing withdraw intent to purge: key={}", key);
                         intentService.withdraw(intentToPurge);
                         break;
                     case WITHDRAW_REQ:
