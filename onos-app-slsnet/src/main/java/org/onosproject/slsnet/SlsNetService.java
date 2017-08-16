@@ -22,7 +22,6 @@ import org.onlab.packet.VlanId;
 import org.onosproject.core.ApplicationId;
 import org.onosproject.event.ListenerService;
 import org.onosproject.net.intf.Interface;
-import org.onosproject.incubator.net.routing.Route;
 import org.onosproject.net.ConnectPoint;
 import org.onosproject.net.Host;
 

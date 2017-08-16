@@ -24,7 +24,6 @@ import org.onlab.packet.MacAddress;
 import org.onosproject.core.ApplicationId;
 import org.onosproject.net.config.Config;
 import org.onosproject.net.EncapsulationType;
-import org.onosproject.incubator.net.routing.Route;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

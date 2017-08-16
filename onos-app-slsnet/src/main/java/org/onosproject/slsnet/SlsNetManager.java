@@ -45,8 +45,6 @@ import org.onosproject.net.intf.Interface;
 import org.onosproject.net.intf.InterfaceService;
 import org.onosproject.net.intf.InterfaceListener;
 import org.onosproject.net.intf.InterfaceEvent;
-import org.onosproject.incubator.net.routing.Route;
-import org.onosproject.incubator.net.routing.RouteAdminService;
 import org.onosproject.net.config.ConfigFactory;
 import org.onosproject.net.config.NetworkConfigEvent;
 import org.onosproject.net.config.NetworkConfigListener;
@@ -75,7 +73,7 @@ import java.util.HashSet;
 import java.util.Collection;
 import java.util.Set;
 
-import static org.onosproject.incubator.net.routing.RouteTools.createBinaryString;
+import static org.onosproject.slsnet.RouteTools.createBinaryString;
 
 
 /**
@@ -111,9 +109,6 @@ public class SlsNetManager extends ListenerRegistry<SlsNetEvent, SlsNetListener>
 
     @Reference(cardinality = ReferenceCardinality.MANDATORY_UNARY)
     protected PacketService packetService;
-
-    @Reference(cardinality = ReferenceCardinality.MANDATORY_UNARY)
-    protected RouteAdminService routeService;
 
     // compoents to be activated within SlsNet
     @Reference(cardinality = ReferenceCardinality.MANDATORY_UNARY)
@@ -309,33 +304,10 @@ public class SlsNetManager extends ListenerRegistry<SlsNetEvent, SlsNetListener>
                     newIp6BorderRouteTable.put(createBinaryString(route.prefix()), route);
                 }
             }
-            Set<Route> removeSet = new HashSet<>();
-            Set<Route> updateSet = new HashSet<>();
-            boolean isChanged = false;
-            for (Route route : borderRoutes) {  // check old to be removed
-                if (!newBorderRoutes.contains(route)) {
-                    removeSet.add(route);
-                }
-            }
-            for (Route route : newBorderRoutes) {  // check old to be removed
-                if (!borderRoutes.contains(route)) {
-                    updateSet.add(route);
-                }
-            }
-            if (!removeSet.isEmpty()) {
-                routeService.withdraw(removeSet);
-                isChanged = true;
-            }
-            if (!updateSet.isEmpty()) {
-                routeService.update(updateSet);
-                isChanged = true;
-            }
-            if (isChanged) {
-                borderRoutes = newBorderRoutes;
-                ip4BorderRouteTable = newIp4BorderRouteTable;
-                ip6BorderRouteTable = newIp6BorderRouteTable;
-                dirty = true;
-            }
+            borderRoutes = newBorderRoutes;
+            ip4BorderRouteTable = newIp4BorderRouteTable;
+            ip6BorderRouteTable = newIp6BorderRouteTable;
+            dirty = true;
         }
 
         // virtual gateway MAC

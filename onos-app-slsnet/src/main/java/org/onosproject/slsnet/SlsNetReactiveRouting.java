@@ -39,8 +39,6 @@ import org.onlab.packet.VlanId;
 import org.onosproject.core.ApplicationId;
 import org.onosproject.core.CoreService;
 import org.onosproject.net.intf.InterfaceService;
-import org.onosproject.incubator.net.routing.Route;
-import org.onosproject.incubator.net.routing.RouteService;
 import org.onosproject.net.ConnectPoint;
 import org.onosproject.net.EncapsulationType;
 import org.onosproject.net.Device;
@@ -98,9 +96,6 @@ public class SlsNetReactiveRouting {
 
     @Reference(cardinality = ReferenceCardinality.MANDATORY_UNARY)
     protected PacketService packetService;
-
-    @Reference(cardinality = ReferenceCardinality.MANDATORY_UNARY)
-    protected RouteService routeService;
 
     @Reference(cardinality = ReferenceCardinality.MANDATORY_UNARY)
     protected InterfaceService interfaceService;
@@ -693,14 +688,10 @@ public class SlsNetReactiveRouting {
                          srcIp, dstIp);
                 return;
             }
-            Route route = routeService.longestPrefixMatch(dstIp);
+            Route route = slsnet.findBorderRoute(dstIp);
             if (route == null) {
-                log.warn("slsnet reactive routing route unknown in routeServce: dstIp={}", dstIp);
-                route = slsnet.findBorderRoute(dstIp);
-                if (route == null) {
-                    log.warn("slsnet reactive routing route unknown in slsnet.findBorderRoute(): dstIp={}", dstIp);
-                    return;
-                }
+                log.warn("slsnet reactive routing route unknown in slsnet.findBorderRoute(): dstIp={}", dstIp);
+                return;
             }
             encap = srcSubnet.encapsulation();
             setUpConnectivity(srcCp, route.prefix(), route.nextHop(), slsnet.getVirtualGatewayMacAddress(), encap);
@@ -711,24 +702,16 @@ public class SlsNetReactiveRouting {
     /**
      * Emits the specified packet onto the network.
      */
-    private void forwardPacketToDstIp(PacketContext context, IpAddress dstIp, boolean updateMac) {
-        if (!slsnet.isIpAddressLocal(dstIp)) {
-            Route route = routeService.longestPrefixMatch(dstIp);
-            if (route == null) {
-                log.warn("slsnet reactive routing forward packet route to dstIp unknown: dstIp={}", dstIp);
-                return;
-            }
-            dstIp = route.nextHop();
-        }
-        Set<Host> hosts = hostService.getHostsByIp(dstIp);
+    private void forwardPacketToDstIp(PacketContext context, IpAddress nextHopIp, boolean updateMac) {
+        Set<Host> hosts = hostService.getHostsByIp(nextHopIp);
         Host dstHost;
         if (!hosts.isEmpty()) {
             dstHost = hosts.iterator().next();
         } else {
-            // NOTE: hostService.requestMac(dstIp); NOT IMPLEMENTED in ONOS HostManager.java; do it myself
-            log.warn("slsnet reactive routing forward packet dstIp host_mac unknown: dstIp={}", dstIp);
-            hostService.startMonitoringIp(dstIp);
-            slsnet.requestMac(dstIp);
+            // NOTE: hostService.requestMac(nextHopIp); NOT IMPLEMENTED in ONOS HostManager.java; do it myself
+            log.warn("slsnet reactive routing forward packet nextHopIp host_mac unknown: nextHopIp={}", nextHopIp);
+            hostService.startMonitoringIp(nextHopIp);
+            slsnet.requestMac(nextHopIp);
             // CONSIDER: make flood on all port of the dstHost's L2Network
             return;
         }

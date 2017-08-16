@@ -18,7 +18,6 @@ package org.onosproject.slsnet;
 import org.apache.karaf.shell.commands.Argument;
 import org.apache.karaf.shell.commands.Command;
 import org.onosproject.cli.AbstractShellCommand;
-import org.onosproject.incubator.net.routing.Route;
 
 
 /**
@@ -30,8 +29,6 @@ public class SlsNetCli extends AbstractShellCommand {
 
     protected static SlsNetService slsnet;
 
-//    protected static RouteAdminService routeService;
-
     @Argument(index = 0, name = "command", description = "Command name: show, intents",
               required = true, multiValued = false)
     String command = null;
@@ -41,10 +38,6 @@ public class SlsNetCli extends AbstractShellCommand {
         if (slsnet == null) {
             slsnet = get(SlsNetService.class);
         }
-//        if (routeService == null) {
-//            routeService = get(RouteAdminService.class);
-//        }
-
         if (command == null) {
             print("command not found", command);
             return;
@@ -82,20 +75,10 @@ public class SlsNetCli extends AbstractShellCommand {
         }
         print("");
         print("borderRoutes:");
-        // directly show slsnet's borderRoute info
         for (Route route : slsnet.getBorderRoutes()) {
             print("    %s", route);
         }
         print("");
-        /* OLD: use routeService's routeTable info
-        for (RouteTableId routeTableId : routeService.getRouteTables()) {
-            if (routeTableId.name() == "ipv4" || routeTableId.name() == "ipv6") {
-                for (RouteInfo routeInfo : routeService.getRoutes(routeTableId)) {
-                    print("    %s %s\n", routeInfo.prefix(), routeInfo.allRoutes().toString());
-                }
-            }
-        }
-        */
         print("virtualGatewayMacAddress:");
         print("    %s", slsnet.getVirtualGatewayMacAddress());
         print("");
