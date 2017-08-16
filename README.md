@@ -298,6 +298,20 @@ If onos is updated, apply update for external app maven build, at onos/ source d
 
 ### 분당 TB 에서의 증상 (Cisco 스위치 적용시의 증상)
 
+
+- Link 장애 테스트 (cleared)
+  - Leaf switch 에서 spine switch 방향 port를 down 시키면, 다른쪽 spine switch 쪽으로 즉시 우회됨
+     - down 시켰던 port 를 up 시키면 십수초(Cisco Switch에서의 Link Up 시간인 듯) 후 원래 방향쪽으로 돌아옴
+     - 우회로가 있는 상태에서는 intents framework 이 잘 동작하는 것으로 보임
+  - Leaf switch 에서 spine switch 뱡향 port 2개를 모두 down 시키면, 관련 intents들이 withdrawn 으로 전환됨
+     - link가 죽어도 Reactive Routing 기능의 packet forwarding 에 의해, 트래픽 전달이 수행됨 (RRT=3ms 이상)
+     - link를 다시 살려놓아도 installed 상태로 돌아오지 않음 !!!
+     - slsnet 에서 routeIntents 로 관리하던 항목이 withdrawn 으로 바뀌면, routeIntents 에서 삭제하고 purge 시키는 기능 필요
+       - 해당 기능을 추가하고, SlsNetManager에서 idle event 시 refresh() 먼저 확인하고,
+       - 각 sub 모듈의 의 idle event 처리시에도 refresh를 수행하도록 변경
+     - --> FAIL 된 intents는 remove 되고, 이후 요청 처리시 정상적으로 복구됨 (2017-08-16)
+
+
 - subnet간 통신이 안됨 (cleared)
   - flow rule 까지 적용된 것으로 보이나, 통신은 안되는 듯
   - Leaf->Spine 은 되나, Spine->Leaf 전송이 안됨
