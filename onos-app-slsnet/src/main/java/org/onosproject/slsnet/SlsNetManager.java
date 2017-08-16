@@ -215,14 +215,15 @@ public class SlsNetManager extends ListenerRegistry<SlsNetEvent, SlsNetListener>
     }
 
     // Set up from configuration
-    private void refresh() {
-        log.info("slsnet refresh");
+    // returns found dirty and refresh listners are called (true) or not (false)
+    private boolean refresh() {
+        log.debug("slsnet refresh");
         boolean dirty = false;
 
         SlsNetConfig config = configService.getConfig(coreService.registerApplication(APP_ID), SlsNetConfig.class);
         if (config == null) {
-            //log.warn("No reactive routing config available!");
-            return;
+            log.debug("No reactive routing config available!");
+            return false;
         }
 
         // l2Networks
@@ -350,6 +351,7 @@ public class SlsNetManager extends ListenerRegistry<SlsNetEvent, SlsNetListener>
             log.info("slsnet refresh; notify events");
             process(new SlsNetEvent(SlsNetEvent.Type.SLSNET_UPDATED, "updated"));
         }
+        return dirty;
     }
 
     private Interface getInterfaceByName(String interfaceName) {
@@ -569,7 +571,9 @@ public class SlsNetManager extends ListenerRegistry<SlsNetEvent, SlsNetListener>
                     }
                 } else {
                     try {
-                        process(new SlsNetEvent(SlsNetEvent.Type.SLSNET_IDLE, "idle"));
+                        if (!refresh()) {
+                            process(new SlsNetEvent(SlsNetEvent.Type.SLSNET_IDLE, "idle"));
+                        }
                     } catch (Exception e) {
                         log.warn("slsnet idle failed: exception={}", e);
                     }

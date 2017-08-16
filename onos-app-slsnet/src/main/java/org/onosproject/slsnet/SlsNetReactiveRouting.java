@@ -391,6 +391,25 @@ public class SlsNetReactiveRouting {
             MultiPointToSinglePointIntent intent = routeIntent.intent();
             boolean clearIntent = true;  // mark to clear intent on dummy while loop breaks
             do {
+                // check if intents status is bad, then remove from routeIntents for future reinstall
+                switch (intentService.getIntentState(intent.key())) {
+                case FAILED:
+                case WITHDRAWN:
+                    log.warn("slsnet reactive routing intent found failed or withdrawn; "
+                             +  "remove and try to purge intent: key={}", intent.key());
+                    // purge intents here without withdraw
+                    intentService.purge(intentService.getIntent(intent.key()));
+                    prefixToRemove.add(entry.getKey());
+                    toBePurgedIntentKeys.add(intent.key());
+                    clearIntent = false;  // mark no clear and to exit loop for this intent
+                    break;
+                default:
+                    // no action
+                    break;
+                }
+                if (!clearIntent) {
+                    break;
+                }
                 // dummy loop to break on remove cases
                 if (!deviceService.isAvailable(intent.egressPoint().deviceId())) {
                     log.info("slsnet reactive routing refresh route intents; remove intent for no device: key={}",
@@ -454,7 +473,7 @@ public class SlsNetReactiveRouting {
 
             // remote entry for current status is not value
             if (clearIntent) {
-                intentService.withdraw(intent);
+                intentService.withdraw(intentService.getIntent(intent.key()));
                 prefixToRemove.add(entry.getKey());
                 toBePurgedIntentKeys.add(intent.key());
             }
@@ -463,7 +482,6 @@ public class SlsNetReactiveRouting {
         for (IpPrefix prefix : prefixToRemove) {
             routeIntents.remove(prefix);
         }
-        checkIntentsPurge();
     }
 
     public void checkIntentsPurge() {
@@ -727,8 +745,9 @@ public class SlsNetReactiveRouting {
             outPacket = new DefaultOutboundPacket(dstHost.location().deviceId(), treatment,
                                 context.inPacket().unparsed());
         }
-        log.info("slsnet reactive routing forward packet: dstHost={} outPacket={} srcCP={}",
-                 dstHost, outPacket, context.inPacket().receivedFrom());
+        // be quiet on normal situation
+        log.trace("slsnet reactive routing forward packet: dstHost={} outPacket={} srcCP={}",
+                  dstHost, outPacket, context.inPacket().receivedFrom());
         packetService.emit(outPacket);
     }
 
@@ -905,8 +924,11 @@ public class SlsNetReactiveRouting {
             case SLSNET_UPDATED:
                 refreshIntercepts();
                 refreshRouteIntents();
+                checkIntentsPurge();
                 break;
             case SLSNET_IDLE:
+                refreshIntercepts();
+                refreshRouteIntents();
                 checkIntentsPurge();
                 monitorBorderPeers();
                 break;

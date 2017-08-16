@@ -133,7 +133,7 @@ public class SlsNetConfig extends Config<ApplicationId> {
 
         JsonNode routesNode = object.get(BORDERROUTES);
         if (routesNode == null) {
-            log.warn("slsnet network config borderRoutes is null!");
+            //log.warn("slsnet network config borderRoutes is null!");
             return routes;
         }
 

@@ -103,6 +103,7 @@ public class SlsNetL2Forward {
         slsnet.addListener(slsnetListener);
 
         refresh();
+        checkIntentsPurge();
 
         log.info("slsnet l2forward started");
     }
@@ -136,7 +137,7 @@ public class SlsNetL2Forward {
     }
 
     public void refresh() {
-        log.info("slsnet l2forward refresh");
+        log.debug("slsnet l2forward refresh");
 
         Map<Key, SinglePointToMultiPointIntent> newBctIntentsMap = Maps.newConcurrentMap();
         Map<Key, MultiPointToSinglePointIntent> newUniIntentsMap = Maps.newConcurrentMap();
@@ -212,7 +213,6 @@ public class SlsNetL2Forward {
         if (uniUpdated) {
             uniIntentsMap = newUniIntentsMap;
         }
-        checkIntentsPurge();
     }
 
     public void checkIntentsPurge() {
@@ -419,8 +419,10 @@ public class SlsNetL2Forward {
             switch (event.type()) {
             case SLSNET_UPDATED:
                 refresh();
+                checkIntentsPurge();
                 break;
             case SLSNET_IDLE:
+                refresh();
                 checkIntentsPurge();
                 break;
             case SLSNET_DUMP:

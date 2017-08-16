@@ -33,6 +33,7 @@ import org.onosproject.net.host.HostService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.HashSet;
 import java.util.Objects;
 import java.util.Set;
 
@@ -68,6 +69,8 @@ public class SlsNetNeighbour {
     private L2NetworkNeighbourMessageHandler neighbourHandler =
             new L2NetworkNeighbourMessageHandler();
 
+    private Set<Interface> monitoredInterfaces = new HashSet<>();
+
     @Activate
     public void activate() {
         appId = slsnet.getAppId();
@@ -80,6 +83,7 @@ public class SlsNetNeighbour {
     public void deactivate() {
         slsnet.removeListener(slsnetListener);
         unregister();
+        monitoredInterfaces.clear();
         log.info("slsnet neighbour stoped");
     }
 
@@ -87,19 +91,29 @@ public class SlsNetNeighbour {
      * Registers neighbour handler to all available interfaces.
      */
     protected void refresh() {
-        neighbourService.unregisterNeighbourHandlers(appId);
-        log.info("slsnet neighbour refresh");
-        interfaceService
-                .getInterfaces()
-                .forEach(intf -> {
-                    if (slsnet.isL2NetworkInterface(intf)) {
-                        log.debug("slsnet neighbour register handler: {}", intf);
-                        neighbourService.registerNeighbourHandler(intf,
-                                         neighbourHandler, appId);
-                    } else {
-                        log.debug("slsnet neighobur unknown interface: {}", intf);
-                    }
-                });
+        Set<Interface> interfaces = interfaceService.getInterfaces();
+        // check for new interfaces
+        for (Interface intf : interfaces) {
+            if (!monitoredInterfaces.contains(intf) && slsnet.isL2NetworkInterface(intf)) {
+               log.info("slsnet neighbour register handler: {}", intf);
+               neighbourService.registerNeighbourHandler(intf, neighbourHandler, appId);
+               monitoredInterfaces.add(intf);
+            } else {
+               log.debug("slsnet neighobur unknown interface: {}", intf);
+            }
+        }
+        // check for removed interfaces
+        Set<Interface> monitoredInterfacesToBeRemoved = new HashSet<>();
+        for (Interface intf : monitoredInterfaces) {
+            if (!interfaces.contains(intf)) {
+               log.info("slsnet neighbour unregister handler: {}", intf);
+               neighbourService.unregisterNeighbourHandler(intf, neighbourHandler, appId);
+               monitoredInterfacesToBeRemoved.add(intf);
+            }
+        }
+        for (Interface intf : monitoredInterfacesToBeRemoved) {
+            monitoredInterfaces.remove(intf);
+        }
     }
 
     /**
@@ -168,13 +182,13 @@ public class SlsNetNeighbour {
             // TODO: need to check and update slsnet.L2Network
             MacAddress dstMac = context.dstMac();
             if (dstMac.equals(slsnet.getVirtualGatewayMacAddress())) {
-                log.debug("slsnet neightbour response message to virtual gateway; drop: {} {}",
+                log.trace("slsnet neightbour response message to virtual gateway; drop: {} {}",
                           context.inPort(), context.vlan());
                 context.drop();
             } else {
                 // reply to the hosts of the dstMac
                 Set<Host> hosts = hostService.getHostsByMac(dstMac);
-                log.debug("slsnet neightbour response message forward: {} {} --> {}",
+                log.trace("slsnet neightbour response message forward: {} {} --> {}",
                           context.inPort(), context.vlan(), hosts);
                 hosts.stream()
                         .map(host -> slsnet.getHostInterface(host))
