@@ -204,17 +204,27 @@ apply [onos.patch](onos.patch) and rebuild onos
 ### SLSNET App Build, Install and Activate
 
 in `onos-app-slsnet` directory
+- BUILD:
+   - `mvn clean compile install`
+- INSTALL TO ONOS AND ACTIVATE APP:
+   - `onos-app localhost install target/onos-app-slsnet-1.11.0-SNAPSHOT.oar`
+   - `onos-app localhost activate org.onosproject.slsnet`
 
-BUILD:
-- `mvn clean compile install`
-
-INSTALL TO ONOS AND ACTIVATE APP:
-- `onos-app localhost install target/onos-app-slsnet-1.11.0-SNAPSHOT.oar`
-- `onos-app localhost activate org.onosproject.slsnet`
+Or use [install_slsnet.sh](install.slsnet.sh) script in `slsnet` directory
+- Assuming
+   - onos sources are located in ../onos
+   - onos is installed at /opt/onos-1.11.0-SNAPSHOT and /opt/onos is symbolic link to it
+   - system is Redhat or CentOS and controllable with `service onos [start|stop]` command
+- `./install_slsnet.sh -r` to reinistall ONOS from `../onos/buck-out/gen/tools/package/onos-package/onos.tar.gz`
+- `./install_slsnet.sh [netcfg-json-file]` to 
+   - rebuild SLSNET app
+   - install and activate SLSNET on onos
+   - install the network config json file (default: network-cfg.json) to /opt/onos/config/ 
+   - restart ONOS to apply new SLSNET app and network config
 
 Following app are auto activated by SLSNET app's dependency
 - OpenFlow Provider (for OpenFlow Controller) --> Optical inforamtion model
-- Network Config Link Provider (for auto Regi/Deregi Links)
+- LLDP Link Provider (for auto Regi/Deregi Links)
 - Host Location Provider (for auto regi host from ARP)
 
 If onos is updated, apply update for external app maven build, at onos/ source directory
