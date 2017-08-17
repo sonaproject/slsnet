@@ -132,8 +132,8 @@ public class SlsNetNeighbour {
     protected void handleRequest(NeighbourMessageContext context) {
         if (slsnet.isVirtualGatewayIpAddress(context.target())) {
             // TODO: may need to check if from valid l2Network or border gateway
-            log.info("slsnet neightbour request on virtualGatewayAddress {}; response to {} {}",
-                     context.target(), context.inPort(), context.vlan());
+            log.trace("slsnet neightbour request on virtualGatewayAddress {}; response to {} {}",
+                      context.target(), context.inPort(), context.vlan());
             context.reply(slsnet.getVirtualGatewayMacAddress());
             return;
         }
@@ -143,7 +143,7 @@ public class SlsNetNeighbour {
             int numForwards = 0;
             if (!context.dstMac().isBroadcast() && !context.dstMac().isMulticast()) {
                 for (Host host : hostService.getHostsByMac(context.dstMac())) {
-                    log.info("slsnet neightbour request forward unicast to {}", host.location());
+                    log.trace("slsnet neightbour request forward unicast to {}", host.location());
                     context.forward(host.location());  // ASSUME: vlan is same
                     // TODO: may need to check host.location().time()
                     numForwards++;
@@ -153,11 +153,11 @@ public class SlsNetNeighbour {
                 }
             }
             // else do broadcast to all host in the same l2 network
-            log.info("slsnet neightbour request forward broadcast: {} {}",
+            log.trace("slsnet neightbour request forward broadcast: {} {}",
                      context.inPort(), context.vlan());
             for (Interface iface : l2Network.interfaces()) {
                 if (!context.inPort().equals(iface.connectPoint())) {
-                    log.info("slsnet forward neighbour request broadcast to {}", iface);
+                    log.trace("slsnet forward neighbour request broadcast to {}", iface);
                     context.forward(iface);
                 }
             }

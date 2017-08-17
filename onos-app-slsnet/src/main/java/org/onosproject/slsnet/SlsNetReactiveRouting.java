@@ -60,6 +60,7 @@ import org.onosproject.net.intent.Intent;
 import org.onosproject.net.intent.IntentService;
 import org.onosproject.net.intent.Key;
 import org.onosproject.net.intent.MultiPointToSinglePointIntent;
+import org.onosproject.net.link.LinkService;
 import org.onosproject.net.packet.DefaultOutboundPacket;
 import org.onosproject.net.packet.InboundPacket;
 import org.onosproject.net.packet.OutboundPacket;
@@ -102,6 +103,9 @@ public class SlsNetReactiveRouting {
 
     @Reference(cardinality = ReferenceCardinality.MANDATORY_UNARY)
     protected DeviceService deviceService;
+
+    @Reference(cardinality = ReferenceCardinality.MANDATORY_UNARY)
+    protected LinkService linkService;
 
     @Reference(cardinality = ReferenceCardinality.MANDATORY_UNARY)
     protected HostService hostService;
@@ -432,9 +436,14 @@ public class SlsNetReactiveRouting {
                 }
                 // check if ingress point set is changed
                 Set<ConnectPoint> newIngressPoints = new HashSet<>();
+                boolean ingressPointChanged = false;
                 for (ConnectPoint cp : intent.ingressPoints()) {
-                    if (slsnet.findL2Network(cp, VlanId.NONE) != null) {
-                         newIngressPoints.add(cp);
+                    if (slsnet.findL2Network(cp, VlanId.NONE) != null || !linkService.getIngressLinks(cp).isEmpty()) {
+                        newIngressPoints.add(cp);
+                    } else {
+                        log.info("slsnet reactive routing refresh route ingress cp of "
+                                 + "not in 2Networks nor links: {}", cp);
+                        ingressPointChanged = true;
                     }
                 }
                 if (newIngressPoints.isEmpty()) {
@@ -443,14 +452,14 @@ public class SlsNetReactiveRouting {
                     break;
                 }
                 // update ingress points
-                if (!newIngressPoints.equals(intent.ingressPoints())) {
+                if (ingressPointChanged) {
                     MultiPointToSinglePointIntent updatedIntent =
                         MultiPointToSinglePointIntent.builder()
                             .appId(reactiveAppId)
                             .key(intent.key())
                             .selector(intent.selector())
                             .treatment(intent.treatment())
-                            .ingressPoints(intent.ingressPoints())
+                            .ingressPoints(newIngressPoints)
                             .egressPoint(intent.egressPoint())
                             .priority(intent.priority())
                             .constraints(intent.constraints())
@@ -729,8 +738,8 @@ public class SlsNetReactiveRouting {
                                 context.inPacket().unparsed());
         }
         // be quiet on normal situation
-        log.trace("slsnet reactive routing forward packet: dstHost={} outPacket={} srcCP={}",
-                  dstHost, outPacket, context.inPacket().receivedFrom());
+        log.info("slsnet reactive routing forward packet: dstHost={} outPacket={} srcCP={}",
+                 dstHost, outPacket, context.inPacket().receivedFrom());
         packetService.emit(outPacket);
     }
 
