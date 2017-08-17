@@ -14,18 +14,8 @@ Lee Yongjae, 2017-06-15,08-10.
 ### 필요한 기능
 - L2 Unicast: intra-rack (intra-subnet) untagged communication when the destination is known.
 - L2 Broadcast: intra-rack (intra-subnet) untagged communication when the destination host is unknown.
-- ARP: ARP packets will be sent to the controller and App will do proxy ARP on L3 Router IP’s
+- ARP: ARP packets will be sent to the controller and App reponds on virtual gatway IPs.
 - L3 Unicast: inter-rack (inter-subnet) untagged communication when the destination is known.
-- VLAN Cross Connect: ?? 
-
-### 예상동작
-- Leaf Switch:
-  - L2 Unicast: destMac이 leaf switch와 일치하지 않으면, 학습한 MAC 주소를 찾아 적절한 포트로 보낸다.
-  - L2 Broadcast: destMAC이 (학습하지 않아) 없으면, 패킷을 모든 포트로 보낸다.
-  - ARP: 라우터 IP응 요청하면 router MAC을 보내고, 알고 있는 호스트를 요청하면 그 호스트를 대산하여 proxy ARP를 보내며, 모르는 호스트를 요청하는 경우 같은 서브넷의 모든 포트로 패킷을 보낸다.
-  - L3 Unicast: destMAC이 leaf switch와 일치하고 IPv4 패킷이므로 
-- Spine Switch
-  - L3 Unicast
 
 ### 가정
 - 시스코 스위치가 OpenFlow 1.3을 지원하지만 multi-table은 지원하지 않고 single table만 지원할 가능성이 높음 -- 이 경우 ECMP 지원은 불가능함
@@ -318,8 +308,7 @@ If onos is updated, apply update for external app maven build, at onos/ source d
      - slsnet 에서 routeIntents 로 관리하던 항목이 withdrawn 으로 바뀌면, routeIntents 에서 삭제하고 purge 시키는 기능 필요
        - 해당 기능을 추가하고, SlsNetManager에서 idle event 시 refresh() 먼저 확인하고,
        - 각 sub 모듈의 의 idle event 처리시에도 refresh를 수행하도록 변경
-     - --> FAIL 된 intents는 remove 되고, 이후 요청 처리시 정상적으로 복구됨 (2017-08-16)
-
+     - --> FAIL 된 intents는 remove 되고, 이후 Reactive Routing 처리에 따라 복구됨 (2017-08-16)
 
 - subnet간 통신이 안됨 (cleared)
   - flow rule 까지 적용된 것으로 보이나, 통신은 안되는 듯
@@ -344,4 +333,3 @@ If onos is updated, apply update for external app maven build, at onos/ source d
   - 이와 관련하여, Host의 ARP 메시지 발생시 관련 전송에 심한 지연이 나타남 (700~1700ms)
   - 지연이 있거나 drop 이 있는 듯
   - ** --> rate-limit 을 꺼야 함 ** (2017-08-10)
-
