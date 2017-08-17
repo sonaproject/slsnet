@@ -219,10 +219,7 @@ Following app are auto activated by SLSNET app's dependency
 
 If onos is updated, apply update for external app maven build, at onos/ source directory
 - `onos-buck-publish-local`
-<!--
-- (OBOSLETE; 2017-08-16 버전에서는 필요 없음) `mcis` or `mvn clean install -DskipTests -Dcheckstyle.skip`
--->
-
+- ~~`mcis` or `mvn clean install -DskipTests -Dcheckstyle.skip`(2017-08-16 버전 ONOS에서는 필요 없음)~~
 
 ### ONOS Network Configuration
 
