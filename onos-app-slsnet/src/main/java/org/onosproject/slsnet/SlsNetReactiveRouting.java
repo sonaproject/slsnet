@@ -161,9 +161,9 @@ public class SlsNetReactiveRouting {
 
         // NOTE: may not clear at init for MIGHT generate pending_remove garbages
         // clear all previous intents and flow rules
-        withdrawAllReactiveIntents();
+        //withdrawAllReactiveIntents();
         //flowRuleService.removeFlowRulesById(reactiveAppId);
-        checkIntentsPurge();
+        //checkIntentsPurge();
 
         processor = new ReactiveRoutingProcessor();
         packetService.addProcessor(processor, PacketProcessor.director(2));
@@ -186,16 +186,18 @@ public class SlsNetReactiveRouting {
 
         // NOTE: may not clear at init for MIGHT generate pending_remove garbages
         // withdraw all my intents and flow rules
-        withdrawAllReactiveIntents();
+        //withdrawAllReactiveIntents();
         // OR
         //for (RouteIntent routeIntent : routeIntents.values()) {
         //    log.info("slsnet l2forward withdraw unicast intent: {}", intent);
         //    toBePurgedIntentKeys.add(routeIntent.intent().key());
         //    intentService.withdraw(routeIntent.intent());
         //}
-        flowRuleService.removeFlowRulesById(reactiveAppId);
+
         routeIntents.clear();
-        checkIntentsPurge();
+        toBePurgedIntentKeys.clear();
+
+        flowRuleService.removeFlowRulesById(reactiveAppId);
 
         processor = null;
 
@@ -391,28 +393,33 @@ public class SlsNetReactiveRouting {
             boolean clearIntent = true;  // mark to clear intent on dummy while loop breaks
             do {
                 // check if intents status is bad, then remove from routeIntents for future reinstall
-                switch (intentService.getIntentState(intent.key())) {
-                case FAILED:
-                case WITHDRAWN:
-                    log.warn("slsnet reactive routing intent found failed or withdrawn; "
-                             +  "remove and try to purge intent: key={}", intent.key());
-                    // purge intents here without withdraw
-                    intentService.purge(intentService.getIntent(intent.key()));
-                    prefixToRemove.add(entry.getKey());
-                    toBePurgedIntentKeys.add(intent.key());
-                    clearIntent = false;  // mark no clear and to exit loop for this intent
-                    break;
-                default:
-                    // no action
-                    break;
+                try {
+                    switch (intentService.getIntentState(intent.key())) {
+                    case FAILED:
+                    case WITHDRAWN:
+                        log.warn("slsnet reactive routing intent found failed or withdrawn; "
+                                 +  "remove and try to purge intent: key={}", intent.key());
+                        // purge intents here without withdraw
+                        intentService.purge(intentService.getIntent(intent.key()));
+                        prefixToRemove.add(entry.getKey());
+                        toBePurgedIntentKeys.add(intent.key());
+                        clearIntent = false;  // mark no clear and to exit loop for this intent
+                        break;
+                    default:
+                        // no action
+                        break;
+                    }
+                } catch (Exception e) {
+                    log.warn("slsnet reactive routing intent status lookup failed: error={}", e);
+                    clearIntent = false;  // this intent seems invalidated; no action
                 }
                 if (!clearIntent) {
                     break;
                 }
                 // dummy loop to break on remove cases
                 if (!deviceService.isAvailable(intent.egressPoint().deviceId())) {
-                    log.info("slsnet reactive routing refresh route intents; remove intent for no device: key={}",
-                             intent.key());
+                    log.info("slsnet reactive routing refresh route intents; "
+                             + "remove intent for no device: key={}", intent.key());
                     break;
                 }
                 if (slsnet.findL2Network(intent.egressPoint(), VlanId.NONE) == null) {
@@ -428,6 +435,7 @@ public class SlsNetReactiveRouting {
                     break;
                 }
                 Host host = hosts.iterator().next();
+
                 if (!host.mac().equals(routeIntent.nextHopMac) ||
                     !intent.egressPoint().equals((ConnectPoint) host.location())) {
                     log.info("slsnet reactive routing refresh route intents; "
@@ -527,7 +535,7 @@ public class SlsNetReactiveRouting {
     }
 
     public void withdrawAllReactiveIntents() {
-        // check all intents if mine
+        // check all intents of mine
         Set<Intent> myIntents = new HashSet<>();
         for (Intent intent : intentService.getIntents()) {
             if (intent.appId().equals(reactiveAppId)) {
