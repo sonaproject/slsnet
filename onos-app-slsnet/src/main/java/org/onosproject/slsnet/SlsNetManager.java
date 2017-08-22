@@ -554,7 +554,8 @@ public class SlsNetManager extends ListenerRegistry<SlsNetEvent, SlsNetListener>
         }
     }
 
-    private void notiToRefresh() {
+    @Override
+    public void triggerRefresh() {
         synchronized (refreshMonitor) {
             doRefresh = true;
             refreshMonitor.notifyAll();
@@ -573,7 +574,7 @@ public class SlsNetManager extends ListenerRegistry<SlsNetEvent, SlsNetListener>
             case CONFIG_UPDATED:
             case CONFIG_REMOVED:
                 if (event.configClass().equals(SlsNetConfig.class)) {
-                    notiToRefresh();
+                    triggerRefresh();
                 }
                 break;
             default:
@@ -595,7 +596,7 @@ public class SlsNetManager extends ListenerRegistry<SlsNetEvent, SlsNetListener>
             case PORT_REMOVED:
             case PORT_UPDATED:
             // case PORT_STATS_UPDATED:  IGNORED
-                notiToRefresh();
+                triggerRefresh();
                 break;
             default:
                 break;
@@ -613,7 +614,7 @@ public class SlsNetManager extends ListenerRegistry<SlsNetEvent, SlsNetListener>
             case HOST_REMOVED:
             case HOST_ADDED:
             case HOST_UPDATED:
-                notiToRefresh();
+                triggerRefresh();
                 break;
             default:
                 break;
@@ -630,7 +631,7 @@ public class SlsNetManager extends ListenerRegistry<SlsNetEvent, SlsNetListener>
             case INTERFACE_ADDED:
             case INTERFACE_REMOVED:
             case INTERFACE_UPDATED:
-                notiToRefresh();
+                triggerRefresh();
                 break;
             default:
                 break;

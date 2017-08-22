@@ -1,28 +1,55 @@
+/*
+ * Copyright 2015-present Open Networking Foundation
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package org.onosproject.slsnet;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ArrayNode;
-import com.fasterxml.jackson.databind.node.ObjectNode;
-import com.sun.org.apache.regexp.internal.RE;
 import org.onosproject.rest.AbstractWebResource;
 
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
-import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 
-@Path("status")
+/**
+ * Manage SLSNET Status.
+ */
+@Path("")
 public class SlsNetWebResource extends AbstractWebResource {
+
+    /**
+     * Get SLSNET Status Infos.
+     *
+     * @return 200 OK
+     */
     @GET
-    public Response querySlsNetStatus() {
-        ObjectMapper mapper = new ObjectMapper();
-        ObjectNode root = mapper.createObjectNode();
-        ArrayNode arrayNode = mapper.createArrayNode();
-        ObjectNode node = mapper.createObjectNode();
-        node.put("id", "0001");
-        node.put("status", "OK");
-        arrayNode.add(node);
-        root.set("SlsNetStatus", arrayNode);
-        return Response.ok(root.toString(), MediaType.APPLICATION_JSON_TYPE).build();
+    @Path("status")
+    public Response queryStatus() {
+        return Response.ok("ok").build();
     }
+
+    /**
+     * Trigger SlsNet Service Refresh.
+     *
+     * @return 200 OK
+     */
+    @GET
+    @Path("refresh")
+    public Response triggerRefresh() {
+        get(SlsNetService.class).triggerRefresh();
+        return Response.ok("ok").build();
+    }
+
 }
+

@@ -190,4 +190,9 @@ public interface SlsNetService
      */
     void dump(String subject);
 
+    /**
+     * trigger to send Refresh Notification to all sub modules.
+     */
+    void triggerRefresh();
+
 }

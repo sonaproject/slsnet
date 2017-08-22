@@ -23,7 +23,7 @@
         <groupId>org.onosproject</groupId>
         <artifactId>onos</artifactId>
         <version>1.11.0-SNAPSHOT</version>
-        <relativePath>../../../ONOS/onos</relativePath>
+        <relativePath>../../onos</relativePath>
     </parent>
 
     <artifactId>onos-app-slsnet</artifactId>
@@ -41,9 +41,7 @@
         <web.context>/onos/v1/slsnet</web.context>
         <api.version>1.0.0</api.version>
         <api.title>SLSNET Application REST API</api.title>
-        <api.description>
-            APIs for interacting with the SLSNET application.
-        </api.description>
+        <api.description>APIs for interacting with the SLSNET application.</api.description>
         <api.package>org.onosproject.slsnet</api.package>
     </properties>
 
@@ -72,11 +70,6 @@
 
         <dependency>
             <groupId>org.onosproject</groupId>
-            <artifactId>onos-incubator-api</artifactId>
-        </dependency>
-
-        <dependency>
-            <groupId>org.onosproject</groupId>
             <artifactId>onos-cli</artifactId>
             <version>${project.version}</version>
         </dependency>
@@ -94,14 +87,14 @@
         </dependency>
 
         <dependency>
-            <groupId>org.apache.felix</groupId>
-            <artifactId>org.apache.felix.scr.annotations</artifactId>
-        </dependency>
-
-        <dependency>
             <groupId>org.onosproject</groupId>
             <artifactId>onos-rest</artifactId>
             <version>${project.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.apache.felix</groupId>
+            <artifactId>org.apache.felix.scr.annotations</artifactId>
         </dependency>
 
         <dependency>
