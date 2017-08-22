@@ -25,6 +25,7 @@ import org.onosproject.net.intf.Interface;
 import org.onosproject.net.ConnectPoint;
 import org.onosproject.net.Host;
 
+import java.io.OutputStream;
 import java.util.Set;
 import java.util.Collection;
 
@@ -184,11 +185,12 @@ public interface SlsNetService
     boolean requestMac(IpAddress ip);
 
     /**
-     * Send Dump Event to all SlsNetListeners to Dump Listner Modules Info on the Subject.
+     * Send Dump Event to all SlsNetListeners to Dump Info on the Subject.
      *
      * @param subject the subject to dump
+     * @param out the output stream to dump
      */
-    void dump(String subject);
+    void dumpToStream(String subject, OutputStream out);
 
     /**
      * trigger to send Refresh Notification to all sub modules.

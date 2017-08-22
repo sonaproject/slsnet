@@ -46,7 +46,9 @@ function usage {
 [ -z $node -o "$node" = "-h" -o "$node" = "--help" -o "$node" = "-?" ] && usage
 
 case $cmd in
-    status) $curl -X GET $URL;;
+    status)  $curl -X GET $URL;;
+    show)    $curl -X GET $URL;;
+    intents) $curl -X GET $URL;;
     refresh) $curl -X GET $URL;;
 
     *) usage;;

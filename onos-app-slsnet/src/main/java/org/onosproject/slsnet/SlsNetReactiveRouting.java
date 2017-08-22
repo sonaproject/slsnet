@@ -72,6 +72,7 @@ import org.onosproject.net.Port;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.PrintStream;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -881,19 +882,19 @@ public class SlsNetReactiveRouting {
     }
 
     // Dump Cli Handler
-    private void dump(String subject) {
+    private void dump(String subject, PrintStream out) {
         if (subject == "intents") {
-            System.out.println("Reactive Routing Route Intents:\n");
+            out.println("Reactive Routing Route Intents:\n");
             for (Map.Entry<IpPrefix, RouteIntent> entry: routeIntents.entrySet()) {
-                System.out.println("    " + entry.getKey().toString()
-                                   + " to " + entry.getValue().intent().egressPoint().toString()
-                                   + " " + entry.getValue().nextHopMac().toString()
-                                   + " (" + entry.getValue().nextHopIp().toString()
-                                   + ") from " + entry.getValue().intent().ingressPoints().toString());
+                out.println("    " + entry.getKey().toString()
+                          + " to " + entry.getValue().intent().egressPoint().toString()
+                          + " " + entry.getValue().nextHopMac().toString()
+                          + " (" + entry.getValue().nextHopIp().toString()
+                          + ") from " + entry.getValue().intent().ingressPoints().toString());
             }
-            System.out.println("");
+            out.println("");
 
-            System.out.println("Reactive Routing Intercept Flow Rules:\n");
+            out.println("Reactive Routing Intercept Flow Rules:\n");
             List<FlowRule> rules = new ArrayList(interceptFlowRules);
             Collections.sort(rules, new Comparator<FlowRule>() {
                     @Override
@@ -903,16 +904,16 @@ public class SlsNetReactiveRouting {
                     }
                 });
             for (FlowRule rule : rules) {
-                System.out.println("    device=" + rule.deviceId().toString()
-                                   + " priority=" + rule.priority()
-                                   + " selector=" + rule.selector().criteria().toString());
+                out.println("    device=" + rule.deviceId().toString()
+                          + " priority=" + rule.priority()
+                          + " selector=" + rule.selector().criteria().toString());
             }
-            System.out.println("");
-            System.out.println("Reactive Routing Intents to Be Purged:\n");
+            out.println("");
+            out.println("Reactive Routing Intents to Be Purged:\n");
             for (Key key: toBePurgedIntentKeys) {
-                System.out.println("    " + key.toString());
+                out.println("    " + key.toString());
             }
-            System.out.println("");
+            out.println("");
         }
     }
 
@@ -933,7 +934,7 @@ public class SlsNetReactiveRouting {
                 monitorBorderPeers();
                 break;
             case SLSNET_DUMP:
-                dump(event.subject());
+                dump(event.subject(), event.out());
                 break;
             default:
                 break;

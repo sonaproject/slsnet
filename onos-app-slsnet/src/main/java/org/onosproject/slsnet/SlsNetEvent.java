@@ -18,6 +18,9 @@ package org.onosproject.slsnet;
 
 import org.onosproject.event.AbstractEvent;
 
+import java.io.OutputStream;
+import java.io.PrintStream;
+
 /**
  * Describes an interface event.
  */
@@ -27,16 +30,36 @@ public class SlsNetEvent extends AbstractEvent<SlsNetEvent.Type, String> {
         SLSNET_UPDATED,  // Indicates an slsnet has been updated.
         SLSNET_IDLE,     // Indicates an slsnet idle loop
         SLSNET_DUMP      // request to dump internal info on the subject
+                         // to SlsNetEvent.out() as output stream
     }
+
+    private PrintStream printStream;  // for SLSNET_DUMP only
 
     /**
      * Creates an interface event with type and subject.
      *
      * @param type event type
-     * @param subject dummy subject interface
+     * @param subject subject for dump event or dummy
      */
     public SlsNetEvent(Type type, String subject) {
         super(type, subject);   /* subject is dummy */
     }
+
+    /**
+     * Creates an interface event with type, subject and output stream for dump.
+     *
+     * @param type event type
+     * @param subject subject for dump event
+     * @param out output stream to dump out
+     */
+    public SlsNetEvent(Type type, String subject, OutputStream out) {
+        super(type, subject);   /* subject is dummy */
+        printStream = new PrintStream(out, true);
+    }
+
+    public PrintStream out() {
+        return printStream;
+    }
+
 }
 

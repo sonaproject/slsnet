@@ -19,7 +19,6 @@ import org.apache.karaf.shell.commands.Argument;
 import org.apache.karaf.shell.commands.Command;
 import org.onosproject.cli.AbstractShellCommand;
 
-
 /**
  * CLI to interact with the SLSNET application.
  */
@@ -29,7 +28,7 @@ public class SlsNetCli extends AbstractShellCommand {
 
     protected static SlsNetService slsnet;
 
-    @Argument(index = 0, name = "command", description = "Command name: show, intents",
+    @Argument(index = 0, name = "command", description = "Command name: show, intents, refresh",
               required = true, multiValued = false)
     String command = null;
 
@@ -44,10 +43,14 @@ public class SlsNetCli extends AbstractShellCommand {
         }
         switch (command) {
         case "show":
-            show();
+            slsnet.dumpToStream("show", System.out);
             break;
         case "intents":
-            slsnet.dump("intents");
+            slsnet.dumpToStream("intents", System.out);
+            break;
+        case "refresh":
+            slsnet.triggerRefresh();
+            print("slsnet refresh triggered\n");
             break;
         default:
             print("unknown command: {}", command);
@@ -55,36 +58,5 @@ public class SlsNetCli extends AbstractShellCommand {
         }
     }
 
-    // Shows configuraions
-    protected void show() {
-        print("Static Configuration Flag:");
-        print("    ALLOW_ETH_ADDRESS_SELECTOR=%s", SlsNetService.ALLOW_ETH_ADDRESS_SELECTOR);
-        print("    VIRTUAL_GATEWAY_ETH_ADDRESS_SELECTOR=%s", SlsNetService.VIRTUAL_GATEWAY_ETH_ADDRESS_SELECTOR);
-        print("");
-        print("SlsNetAppId:");
-        print("    %s", slsnet.getAppId());
-        print("");
-        print("l2Networks:");
-        for (L2Network l2Network : slsnet.getL2Networks()) {
-            print("    %s", l2Network);
-        }
-        print("");
-        print("ipSubnets:");
-        for (IpSubnet ipSubnet : slsnet.getIpSubnets()) {
-            print("    %s", ipSubnet);
-        }
-        print("");
-        print("borderRoutes:");
-        for (Route route : slsnet.getBorderRoutes()) {
-            print("    %s", route);
-        }
-        print("");
-        print("virtualGatewayMacAddress:");
-        print("    %s", slsnet.getVirtualGatewayMacAddress());
-        print("");
-        print("virtualGatewayIpAddressed:");
-        print("    %s", slsnet.getVirtualGatewayIpAddresses());
-        print("");
-    }
-
 }
+

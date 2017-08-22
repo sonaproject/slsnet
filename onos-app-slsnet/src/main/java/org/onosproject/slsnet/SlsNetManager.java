@@ -67,6 +67,8 @@ import org.onosproject.net.packet.OutboundPacket;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.OutputStream;
+import java.io.PrintStream;
 import java.nio.ByteBuffer;
 import java.util.Iterator;
 import java.util.HashSet;
@@ -514,9 +516,46 @@ public class SlsNetManager extends ListenerRegistry<SlsNetEvent, SlsNetListener>
     }
 
     @Override
-    public void dump(String subject) {
-        log.info("slsnet dump: subject={}", subject);
-        process(new SlsNetEvent(SlsNetEvent.Type.SLSNET_DUMP, subject));
+    public void dumpToStream(String subject, OutputStream out) {
+        SlsNetEvent event = new SlsNetEvent(SlsNetEvent.Type.SLSNET_DUMP, subject, out);
+        dump(event.subject(), event.out());  // dump in itself
+        process(event);  // dump in sub modules
+    }
+
+    // Dump handler
+    protected void dump(String subject, PrintStream out) {
+        if (subject == "show") {
+            out.println("Static Configuration Flag:");
+            out.println("    ALLOW_ETH_ADDRESS_SELECTOR="
+                      + SlsNetService.ALLOW_ETH_ADDRESS_SELECTOR);
+            out.println("    VIRTUAL_GATEWAY_ETH_ADDRESS_SELECTOR="
+                      + SlsNetService.VIRTUAL_GATEWAY_ETH_ADDRESS_SELECTOR);
+            out.println("");
+            out.println("SlsNetAppId:");
+            out.println("    " + getAppId());
+            out.println("");
+            out.println("l2Networks:");
+            for (L2Network l2Network : getL2Networks()) {
+                out.println("    " + l2Network);
+            }
+            out.println("");
+            out.println("ipSubnets:");
+            for (IpSubnet ipSubnet : getIpSubnets()) {
+                out.println("    " + ipSubnet);
+            }
+            out.println("");
+            out.println("borderRoutes:");
+            for (Route route : getBorderRoutes()) {
+                out.println("    " + route);
+            }
+            out.println("");
+            out.println("virtualGatewayMacAddress:");
+            out.println("    " + getVirtualGatewayMacAddress());
+            out.println("");
+            out.println("virtualGatewayIpAddressed:");
+            out.println("    " + getVirtualGatewayIpAddresses());
+            out.println("");
+        }
     }
 
     // Refresh action thread and notifier
