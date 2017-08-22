@@ -54,8 +54,9 @@ import org.onosproject.net.flow.FlowRuleService;
 import org.onosproject.net.Host;
 import org.onosproject.net.host.HostService;
 import org.onosproject.net.intent.Constraint;
-import org.onosproject.net.intent.constraint.PartialFailureConstraint;
 import org.onosproject.net.intent.constraint.EncapsulationConstraint;
+import org.onosproject.net.intent.constraint.HashedPathSelectionConstraint;
+import org.onosproject.net.intent.constraint.PartialFailureConstraint;
 import org.onosproject.net.intent.Intent;
 import org.onosproject.net.intent.IntentService;
 import org.onosproject.net.intent.Key;
@@ -121,7 +122,7 @@ public class SlsNetReactiveRouting {
     protected SlsNetService slsnet;
 
     private static final ImmutableList<Constraint> REACTIVE_CONSTRAINTS
-            = ImmutableList.of(new PartialFailureConstraint());
+            = ImmutableList.of(new PartialFailureConstraint(), new  HashedPathSelectionConstraint());
 
     private Set<FlowRule> interceptFlowRules = new HashSet<>();
     private Map<IpPrefix, RouteIntent> routeIntents = Maps.newConcurrentMap();
