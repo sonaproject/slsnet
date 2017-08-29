@@ -1,4 +1,6 @@
 onos-app-slsnet/.idea
 onos-app-slsnet/*.iml
 onos-app-slsnet/target
-
+watchd/log/*
+watchcli/log/*
+*.pyc

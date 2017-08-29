@@ -333,3 +333,36 @@ If onos is updated, apply update for external app maven build, at onos/ source d
   - 이와 관련하여, Host의 ARP 메시지 발생시 관련 전송에 심한 지연이 나타남 (700~1700ms)
   - 지연이 있거나 drop 이 있는 듯
   - ** --> rate-limit 을 꺼야 함 ** (2017-08-10)
+
+
+### ONOS/SLSNET Monitoring Daemon and Client
+
+slsnetwatchd는 ONOS, SLSNET APP, Device, Link 에 대한 Monitoring 기능을 제공한다.
+
+```
+BRANCHED FROM: https://github.com/snsol2/sonaWatchd.git
+               commit 9edfdfa7c3b3de3e370d3061159c062f9f737f6c
+               at 2017-08-23 by Lee Yongjae, setup74@telcoware.com.
+```
+
+#### 설치방법
+ssh key 생성 및 배포를 위해서 setup tool을 사용한다.
+- 서버 실행 장비에서는 watchd/setup/ssh_key_setup.py 파일을 실행시킨다.
+- 클라이언트 실행 환경에서는 watchcli/setup/ssh_key_setup.py 파일을 실행시킨다.
+
+#### Server
+in watchd/
+     - 실행
+         ./slsnetwatcher.py start
+     - 종료
+         /slsnetwatcher.py stop
+     - 재시작
+         ./slsnetwatcher.py restart
+#### Client
+in watchcli/    
+     - 실행
+         ./cli_main.py
+     - 종료
+          cli main 화면에서 Esc 키 입력
+
+
