@@ -335,7 +335,7 @@ If onos is updated, apply update for external app maven build, at onos/ source d
   - ** --> rate-limit 을 꺼야 함 ** (2017-08-10)
 
 
-### ONOS/SLSNET Monitoring Daemon and Client
+## ONOS/SLSNET Monitoring Daemon and Client
 
 slsnetwatchd는 ONOS, SLSNET APP, Device, Link 에 대한 Monitoring 기능을 제공한다.
 
@@ -345,24 +345,21 @@ BRANCHED FROM: https://github.com/snsol2/sonaWatchd.git
                at 2017-08-23 by Lee Yongjae, setup74@telcoware.com.
 ```
 
-#### 설치방법
+### 설치방법
 ssh key 생성 및 배포를 위해서 setup tool을 사용한다.
-- 서버 실행 장비에서는 watchd/setup/ssh_key_setup.py 파일을 실행시킨다.
-- 클라이언트 실행 환경에서는 watchcli/setup/ssh_key_setup.py 파일을 실행시킨다.
+- 서버 실행 장비에서는 `watchd/setup/ssh_key_setup.py1 파일을 실행시킨다.
+- 클라이언트 실행 환경에서는 `watchcli/setup/ssh_key_setup.py` 파일을 실행시킨다.
 
-#### Server
+### Server
+
 in watchd/
-     - 실행
-         ./slsnetwatcher.py start
-     - 종료
-         /slsnetwatcher.py stop
-     - 재시작
-         ./slsnetwatcher.py restart
-#### Client
+- 실행: `./slsnetwatcher.py start`
+- 종료: `./slsnetwatcher.py stop`
+- 재시작: `./slsnetwatcher.py restart`
+
+### Client
 in watchcli/    
-     - 실행
-         ./cli_main.py
-     - 종료
-          cli main 화면에서 Esc 키 입력
+- 실행: `./slsnetwatchcli.py`
+- 종료: cli main 화면에서 Esc 키 입력
 
 
