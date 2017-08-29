@@ -135,13 +135,13 @@ class CLI():
                             header = []
                             header.append({'title':'Name', 'size':'30'})
                             header.append({'title':'Status', 'size':'8'})
-                            header.append({'title':'Monitor Item', 'size':'14'})
+                            header.append({'title':'MonItem', 'size':'7'})
                             data = []
                             for row in sys_ret:
                                 line = []
                                 line.append(row['name'])
-                                line.append(row['status'])
-                                line.append(row['monitor_item'])
+                                line.append(row['status'].upper())
+                                line.append(str(row['monitor_item']))
                                 data.append(line)
                             cls.draw_grid(header, data)
 
@@ -162,15 +162,15 @@ class CLI():
                                 header = []
                                 header.append({'title':'Id', 'size':'24'})
                                 header.append({'title':'Address', 'size':'24'})
-                                header.append({'title':'MonItem', 'size':'8'})
-                                header.append({'title':'State', 'size':'10'})
+                                header.append({'title':'Status', 'size':'8'})
+                                header.append({'title':'MonItem', 'size':'7'})
                                 data = []
                                 for row in sys_ret:
                                     line = []
                                     line.append(row['id'])
                                     line.append(row['address'])
-                                    line.append(row['monitor_item'])
-                                    line.append(row['status'])
+                                    line.append(row['status'].upper())
+                                    line.append(str(row['monitor_item']))
                                     data.append(line)
                                 cls.draw_grid(header, data)
 
@@ -190,14 +190,17 @@ class CLI():
                                 header.append({'title':'OpenflowId', 'size':'24'})
                                 header.append({'title':'ChannelId', 'size':'24'})
                                 header.append({'title':'Name', 'size':'8'})
-                                header.append({'title':'Available', 'size':'10'})
+                                header.append({'title':'Status', 'size':'8'})
+                                header.append({'title':'MonItem', 'size':'7'})
                                 data = []
                                 for row in sys_ret:
                                     line = []
                                     line.append(row['id'])
                                     line.append(row['channelId'])
                                     line.append(row['name'])
-                                    line.append(row['available'])
+                                    if row['available'] == 'true': line.append('OK')
+                                    else:                          line.append('NOK')
+                                    line.append(str(row['monitor_item']))
                                     data.append(line)
                                 cls.draw_grid(header, data)
 
@@ -217,14 +220,17 @@ class CLI():
                                 header.append({'title':'Src', 'size':'24'})
                                 header.append({'title':'Dst', 'size':'24'})
                                 header.append({'title':'Type', 'size':'8'})
-                                header.append({'title':'State', 'size':'10'})
+                                header.append({'title':'Status', 'size':'8'})
+                                header.append({'title':'MonItem', 'size':'7'})
                                 data = []
                                 for row in sys_ret:
                                     line = []
                                     line.append(row['src'])
                                     line.append(row['dst'])
                                     line.append(row['type'])
-                                    line.append(row['state'])
+                                    if row['state'] == 'ACTIVE': line.append('OK')
+                                    else:                        line.append('NOK')
+                                    line.append(str(row['monitor_item']))
                                     data.append(line)
                                 cls.draw_grid(header, data)
 

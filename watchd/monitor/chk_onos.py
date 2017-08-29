@@ -120,23 +120,6 @@ def onos_rest_check(conn, db_log, node_name, node_ip):
     return web_status, fail_reason
 
 
-def parse_openflow(line, hostname, is_monitor):
-    of_id = line.split(',')[0].split('=')[1]
-    available = line.split(',')[1].split('=')[1]
-    status = line.split(',')[2].split('=')[1].split(' ')[0]
-    role = line.split(',')[3].split('=')[1]
-    type = line.split(',')[4].split('=')[1]
-
-    if available == 'true':
-        available = True
-    else:
-        available = False
-
-    rest_json = {'hostname': hostname, 'of_id': of_id, 'available': available, 'status': status,
-                 'role': role, 'type': type, 'monitor_item': is_monitor}
-
-    return rest_json
-
 def onos_conn_check(conn, db_log, node_name, node_ip):
     # called on each ONOS node in NODE_INFO_TBL
     try:
@@ -209,6 +192,7 @@ def onos_conn_check(conn, db_log, node_name, node_ip):
             cluster_status = 'fail'
 
         # check devices
+        device_list = []
         device_status = 'ok'
         device_fail_reason = []
         device_rt = SshCommand.onos_ssh_exec(node_ip, 'devices')
@@ -224,6 +208,28 @@ def onos_conn_check(conn, db_log, node_name, node_ip):
                         if (len(s) >= 2):
                             device[s[0].strip()] = s[1].strip()
                     device_tbl[device['id']] = device
+ 
+                for id in CONF.onos()['device_list']:
+                    if id is '':
+                        continue;  # no config
+                    if id in device_tbl:
+                        device = device_tbl[id];
+                        device['monitor_item'] = True
+                        if device['available'] != 'true':
+                           device_status = 'nok'
+                           device_fail_reason.append(device)
+                        device_tbl.pop(id)
+                    else:
+                        device = { 'id':id, 'available':"false", 'channelId':'-',
+                                   'name':'-', 'role':'-', 'monitor_item':True }
+                        device_status = 'nok'
+                        device_fail_reason.append(device)
+                    device_list.append(device)
+
+                for device in device_tbl.values():
+                    device['monitor_item'] = False;
+                    device_list.append(device)
+ 
             except:
                 LOG.exception()
                 LOG.error("\'%s\' Connection Check Error(devices)", node_ip)
@@ -233,13 +239,13 @@ def onos_conn_check(conn, db_log, node_name, node_ip):
             device_status = 'fail'
 
         # check links
+        link_list = []
         link_status = 'ok'
         link_fail_reason = []
         link_rt = SshCommand.onos_ssh_exec(node_ip, 'links')
         link_tbl = dict()
         if link_rt is not None:
             try:
-                linklist = []
                 for line in link_rt.splitlines():
                     if not line.startswith('src=of'):
                         continue
@@ -249,21 +255,67 @@ def onos_conn_check(conn, db_log, node_name, node_ip):
                         if (len(s) >= 2):
                             link[s[0].strip()] = s[1].strip()
                     link_tbl[link['src'] + '-' + link['dst']] = link
+
+                for id in CONF.onos()['link_list']:
+                    if id is '':
+                        continue;  # no config
+
+                    link_matched = False
+
+                    if id in link_tbl:
+                        link = link_tbl[id];
+                        link['monitor_item'] = True
+                        if link['state'] != 'ACTIVE':
+                            link_status = 'nok'
+                            link_fail_reason.append(link)
+                        link_list.append(link)
+                        link_tbl.pop(id);
+                        link_matched = True
+
+                    rev_id = id
+                    if len(id.split('-')) == 2:
+                        rev_id = id.split('-')[1] + '-' + id.split('-')[0]
+                    if rev_id in link_tbl:
+                        link = link_tbl[rev_id];
+                        link['monitor_item'] = True
+                        if link['state'] != 'ACTIVE':
+                            link_status = 'nok'
+                            link_fail_reason.append(link)
+                        link_list.append(link)
+                        link_tbl.pop(rev_id);
+                        link_matched = True
+
+                    if not link_matched:
+                        if len(id.split('-')) == 2:
+                            link = {'src':id.split('-')[0], 'dst':id.split('-')[1],
+                                    'expected':'false', 'state':'-', 'type':"-",
+                                    'monitor_item':True }
+                        else:
+                            link = {'src':id, 'dst':'(invalid_id_format)',
+                                    'expected':'false', 'state':'-', 'type':"-",
+                                    'monitor_item':True }
+                        link_status = 'nok'
+                        link_fail_reason.append(link)
+                        link_list.append(link)
+
+                for link in link_tbl.values():
+                    link['monitor_item'] = False;
+                    link_list.append(link)
+ 
             except:
                 LOG.exception()
-                LOG.error("\'%s\' Connection Check Error(devices)", node_ip)
+                LOG.error("\'%s\' Connection Check Error(links)", node_ip)
                 link_status = 'fail'
         else:
-            LOG.error("\'%s\' Connection Check Error(devices)", node_ip)
+            LOG.error("\'%s\' Connection Check Error(links)", node_ip)
             link_status = 'fail'
-
 
         try:
             sql = 'UPDATE ' + DB.ONOS_TBL + \
                   ' SET ' + \
                   ' cluster = \"' + str(cluster_list) + '\",' \
-                  ' device = \"' + str(device_tbl.values()) + '\",' \
-                  ' link = \"' + str(link_tbl.values()) + '\"' \
+                  ' device = \"' + str(device_list) + '\",' \
+                  ' link = \"' + str(link_list) + '\"' \
                   ' WHERE nodename = \'' + node_name + '\''
             db_log.write_log('----- UPDATE ONOS CONNECTION INFO -----\n' + sql)
 
