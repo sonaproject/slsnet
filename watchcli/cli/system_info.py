@@ -43,13 +43,14 @@ class SYS():
     def get_sys_line_count(cls):
         # calc line count
         # 2 lines per ONOS node for detailed description
-        line_count = 0;
-        for key in cls.sys_list.keys():
-            if (cls.sys_list[key]['TYPE'] == 'ONOS'):
-                line_count += 2
-            else:
-                line_count += 1
-        return line_count
+        #line_count = 0;
+        #for key in cls.sys_list.keys():
+        #    if (cls.sys_list[key]['TYPE'] == 'ONOS'):
+        #        line_count += 2
+        #    else:
+        #        line_count += 1
+        #return line_count
+        return len(cls.sys_list)
 
     @classmethod
     def changed_sys_info(cls, new_info):

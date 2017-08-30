@@ -91,8 +91,8 @@ class SlsNetWatchD(Daemon):
                                 LOG.info('REST SERVER CHECK FAIL [' + str(i) + ']')
                                 if i == 3:
                                     LOG.info('fail to check rest server.')
-                                    alarm_event.push_event('slsnetwatcher', 'WATCHER_DISCONNECT', 'critical',
-                                                           'normal', 'slsnetwatcher server shutdown',
+                                    alarm_event.push_event('slsnetwatchd', 'WATCHER_DISCONNECT', 'critical',
+                                                           'normal', 'slsnetwatchd shutdown',
                                                            str(datetime.now()))
                                     conn.close()
                                     exitFlag = True
@@ -112,7 +112,7 @@ class SlsNetWatchD(Daemon):
 
                     time.sleep(CONF.watchdog()['interval'])
                 except:
-                    alarm_event.push_event('slsnetwatcher', 'WATCHER_DISCONNECT', 'critical', 'normal', 'slsnetwatcher server shutdown', str(datetime.now()))
+                    alarm_event.push_event('slsnetwatchd', 'WATCHER_DISCONNECT', 'critical', 'normal', 'slsnetwatchd shutdown', str(datetime.now()))
                     conn.close()
                     LOG.exception()
 
@@ -135,7 +135,7 @@ if __name__ == "__main__":
         elif 'stop' == sys.argv[1]:
             print "Stopping ..."
             try:
-                alarm_event.push_event('slsnetwatcher', 'WATCHER_DISCONNECT', 'critical', 'normal', 'slsnetwatcher server shutdown', str(datetime.now()))
+                alarm_event.push_event('slsnetwatchd', 'WATCHER_DISCONNECT', 'critical', 'normal', 'slsnetwatchd shutdown', str(datetime.now()))
             except:
                 pass
             daemon.stop()
@@ -143,7 +143,7 @@ if __name__ == "__main__":
         elif 'restart' == sys.argv[1]:
             print "Restaring ..."
             try:
-                alarm_event.push_event('slsnetwatcher', 'WATCHER_DISCONNECT', 'critical', 'normal', 'slsnetwatcher server shutdown', str(datetime.now()))
+                alarm_event.push_event('slsnetwatchd', 'WATCHER_DISCONNECT', 'critical', 'normal', 'slsnetwatchd shutdown', str(datetime.now()))
             except:
                 pass
             daemon.restart()

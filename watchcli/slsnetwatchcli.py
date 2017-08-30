@@ -17,7 +17,7 @@ from cli.flow_trace import TRACE
 from cli.log_lib import USER_LOG
 from cli.screen import SCREEN
 
-menu_list = ["CLI", "Monitoring Details", "Event History", "Quit"]
+menu_list = ["CLI", "Monitoring Details", "Event History", "Exit"]
 
 evt_thread = None
 conn_evt_thread = None
@@ -285,7 +285,7 @@ def select_menu():
                         except ResizeScreenError as e:
                             last_scene = e.scene
 
-                elif menu == 'Quit':
+                elif menu == 'Exit':
                     break
 
             SCREEN.draw_system(menu_list)

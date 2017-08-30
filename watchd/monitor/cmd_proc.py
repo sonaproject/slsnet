@@ -65,7 +65,7 @@ def get_event_list(url, auth):
         event_list = []
 
         for nodename, item, grade, pre_grade, reason, time in evt_list:
-            evt = {'event': 'occur', 'system': nodename, 'item': item, 'grade': grade, 'pre_grade': pre_grade, 'reason': 'fail_reason', 'time': time}
+            evt = {'event': 'occur', 'system': nodename, 'item': item, 'grade': grade, 'pre_grade': pre_grade, 'reason': reason, 'time': time}
             event_list.append(evt)
 
             res_body = {'Result': 'SUCCESS', 'Event list': event_list}

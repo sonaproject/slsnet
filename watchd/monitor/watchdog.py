@@ -66,9 +66,9 @@ def periodic(conn, pre_stat, db_log):
                                                              cur_info[node_name]['ONOS_DEVICE'], onos_device, device_reason)
                     onos_link = alarm_event.process_event(conn, db_log, node_name, type, 'ONOS_LINK',
                                                              cur_info[node_name]['ONOS_LINK'], onos_link, link_reason)
-                    #LOG.info('[' + node_name + '][ONOS_CLUSTER][' + onos_cluster + ']' + str(cluster_reason))
-                    #LOG.info('[' + node_name + '][ONOS_DEVICE][' + onos_device + ']' + str(device_reason))
-                    #LOG.info('[' + node_name + '][ONOS_LINK][' + onos_link + ']' + str(link_reason))
+                    LOG.info('[' + node_name + '][ONOS_CLUSTER][' + onos_cluster + ']' + str(cluster_reason))
+                    LOG.info('[' + node_name + '][ONOS_DEVICE][' + onos_device + ']' + str(device_reason))
+                    LOG.info('[' + node_name + '][ONOS_LINK][' + onos_link + ']' + str(link_reason))
 
                     # check app
                     onos_app, reason = chk_onos.onos_app_check(conn, db_log, node_name, node_ip)

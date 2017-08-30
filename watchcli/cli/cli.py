@@ -433,22 +433,23 @@ class CLI():
 
         cls.CLI_LOG.cli_log('---------------------------RECV RES---------------------------')
         cls.CLI_LOG.cli_log('RESPONSE CODE = ' + str(myResponse.status_code))
+        cls.CLI_LOG.cli_log('RESPONSE BODY = ' + str(myResponse.content))
 
         try:
             res = json.loads(myResponse.content.replace("\'", '"'))
             cls.CLI_LOG.cli_log(
                 'BODY = ' + json.dumps(res, sort_keys=True, indent=4))
 
-            cls.HISTORY_LOG.write_history("--- Current Event History Start ---")
+            cls.HISTORY_LOG.write_history("--- Current Event History Begin ---")
 
             for line in res['Event list']:
-                cls.HISTORY_LOG.write_history('[OCCUR_TIME : %s][%s][%s][%s] %s', line['time'], line['system'], line['item'],
-                                           line['pre_grade'] + '->' + line['grade'], line['reason'])
+                cls.HISTORY_LOG.write_history('[OCCUR_TIME : %s][%s][%s][%s] %s', \
+                       line['time'], line['system'], line['item'], \
+                       line['pre_grade'] + '->' + line['grade'], line['reason'])
 
-            cls.HISTORY_LOG.write_history("--- Current Event History END ---")
+            cls.HISTORY_LOG.write_history("--- Current Event History End ---")
 
         except:
-
             cls.CLI_LOG.cli_log('BODY = ' + myResponse.content)
 
         result = json.loads(myResponse.content)

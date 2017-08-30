@@ -217,13 +217,13 @@ def onos_conn_check(conn, db_log, node_name, node_ip):
                         device['monitor_item'] = True
                         if device['available'] != 'true':
                            device_status = 'nok'
-                           device_fail_reason.append(device)
+                           device_fail_reason.append('device ' + id + ' is NOT AVALIABLE')
                         device_tbl.pop(id)
                     else:
                         device = { 'id':id, 'available':"false", 'channelId':'-',
                                    'name':'-', 'role':'-', 'monitor_item':True }
                         device_status = 'nok'
-                        device_fail_reason.append(device)
+                        device_fail_reason.append('device ' + id + ' is NOT FOUND')
                     device_list.append(device)
 
                 for device in device_tbl.values():
@@ -258,44 +258,48 @@ def onos_conn_check(conn, db_log, node_name, node_ip):
 
                 for id in CONF.onos()['link_list']:
                     if id is '':
-                        continue;  # no config
-
-                    link_matched = False
+                        continue;
+                    if len(id.split('-')) != 2:
+                        link = {'src':id, 'dst':'(invalid_link_config)',
+                                'expected':'false', 'state':'-', 'type':"-",
+                                'monitor_item':True }
+                        link_status = 'nok'
+                        link_fail_reason.append('link ' + id + ' is configed as INVALID ID FORMAT')
+                        link_list.append(link)
+                        continue;
 
                     if id in link_tbl:
                         link = link_tbl[id];
                         link['monitor_item'] = True
                         if link['state'] != 'ACTIVE':
                             link_status = 'nok'
-                            link_fail_reason.append(link)
+                            link_fail_reason.append('link ' + id + ' is NOT ACTIVE')
                         link_list.append(link)
                         link_tbl.pop(id);
-                        link_matched = True
+                    else:
+                        link = {'src':id.split('-')[0], 'dst':id.split('-')[1],
+                                'expected':'false', 'state':'-', 'type':"-",
+                                'monitor_item':True }
+                        link_status = 'nok'
+                        link_fail_reason.append('link ' + id + ' is NOT FOUND')
+                        link_list.append(link)
 
-                    rev_id = id
-                    if len(id.split('-')) == 2:
-                        rev_id = id.split('-')[1] + '-' + id.split('-')[0]
+                    rev_id = id.split('-')[1] + '-' + id.split('-')[0]
                     if rev_id in link_tbl:
                         link = link_tbl[rev_id];
                         link['monitor_item'] = True
                         if link['state'] != 'ACTIVE':
                             link_status = 'nok'
-                            link_fail_reason.append(link)
+                            link_fail_reason.append('link' + rev_id + ' is NOT ACTIVE')
                         link_list.append(link)
-                        link_tbl.pop(rev_id);
-                        link_matched = True
-
-                    if not link_matched:
-                        if len(id.split('-')) == 2:
-                            link = {'src':id.split('-')[0], 'dst':id.split('-')[1],
-                                    'expected':'false', 'state':'-', 'type':"-",
-                                    'monitor_item':True }
-                        else:
-                            link = {'src':id, 'dst':'(invalid_id_format)',
-                                    'expected':'false', 'state':'-', 'type':"-",
-                                    'monitor_item':True }
+                        link_list.append(link)
+                        link_tbl.pop(rev_id)
+                    else:
+                        link = {'src':rev_id.split('-')[0], 'dst':rev_id.split('-')[1],
+                                'expected':'false', 'state':'-', 'type':"-",
+                                'monitor_item':True }
                         link_status = 'nok'
-                        link_fail_reason.append(link)
+                        link_fail_reason.append('link ' + rev_id + ' is NOT FOUND')
                         link_list.append(link)
 
                 for link in link_tbl.values():

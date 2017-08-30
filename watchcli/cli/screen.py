@@ -35,7 +35,8 @@ BOLD = '\033[1m'
 UNDERLINE = '\033[4m'
 OFF = '\033[0m'
 
-MAIN_WIDTH = 70
+MAIN_WIDTH = 80
+MAIN_CENTER = (MAIN_WIDTH / 2 - 2)
 
 ONOS_STATUS_ITEMS = ['PING', 'ONOS_CLUSTER', 'ONOS_DEVICE', 'ONOS_LINK', 'ONOS_APP', 'ONOS_REST']
 
@@ -165,7 +166,7 @@ class SCREEN():
             highlightText = curses.color_pair(1)
             normalText = curses.A_NORMAL
 
-            box_type.addstr(0, 22, ' MENU ', normalText)
+            box_type.addstr(0, MAIN_CENTER - 3, ' MENU ', normalText)
 
             for i in range(1, len(menu_list) + 1):
                 if i is selected_menu_no:
@@ -187,7 +188,7 @@ class SCREEN():
 
             normalText = curses.A_NORMAL
 
-            box_event.addstr(0, 22, ' EVENT ', normalText)
+            box_event.addstr(0, MAIN_CENTER - 3, ' EVENT ', normalText)
 
             if type == 'disconnect':
                 box_event.addstr(1, 2, '[Server shutdown] check server and restart', warn_color)
@@ -407,7 +408,7 @@ class SCREEN():
             status_text_NOK = curses.color_pair(3)
             normal_text = curses.A_NORMAL
 
-            box_sys.addstr(0, 16, ' MONITORING STATUS ', normal_text)
+            box_sys.addstr(0, MAIN_CENTER - 10, ' MONITORING STATUS ', normal_text)
 
             i = 1
 
@@ -447,15 +448,14 @@ class SCREEN():
                 #type = 'TYPE=' + SYS.sys_list[sys]['TYPE']
                 #box_sys.addstr(i, col, type)
                 #col += len(type) + 1
-                ip = '(IP=' + SYS.sys_list[sys]['IP'] + ')'
-                box_sys.addstr(i, col, ip)
-                col += len(ip) + 1
-
-                i += 1
+                #ip = '(IP=' + SYS.sys_list[sys]['IP'] + ')'
+                #box_sys.addstr(i, col, ip)
+                #col += len(ip) + 1
+                #i += 1
+                #col = 9;
 
                 # show monitoring details
                 if (SYS.sys_list[sys]["TYPE"] == 'ONOS'):
-                    col = 9;
                     box_sys.addstr(i, col, '(')
                     col += 1;
                     for key in ONOS_STATUS_ITEMS:
