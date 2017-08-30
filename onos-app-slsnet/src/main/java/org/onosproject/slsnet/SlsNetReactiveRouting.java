@@ -748,8 +748,8 @@ public class SlsNetReactiveRouting {
                                 context.inPacket().unparsed());
         }
         // be quiet on normal situation
-        log.info("slsnet reactive routing forward packet: dstHost={} outPacket={} srcCP={}",
-                 dstHost, outPacket, context.inPacket().receivedFrom());
+        log.info("slsnet reactive routing forward packet: dstHost={} outPacket={} srcCP={} dstCP={}",
+                 dstHost, outPacket, context.inPacket().receivedFrom(), dstHost.location());
         packetService.emit(outPacket);
     }
 

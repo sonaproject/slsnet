@@ -209,7 +209,7 @@ Or use [install_slsnet.sh](install.slsnet.sh) script in `slsnet` directory
 - `./install_slsnet.sh [netcfg-json-file]` to 
    - rebuild SLSNET app
    - install and activate SLSNET on onos
-   - install the network config json file (default: network-cfg.json) to /opt/onos/config/ 
+   - install the network config json file (default: SLSNET_NETCFG env or network-cfg.json) to /opt/onos/config/ 
    - restart ONOS to apply new SLSNET app and network config
 
 Following app are auto activated by SLSNET app's dependency
