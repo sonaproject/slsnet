@@ -21,22 +21,20 @@ then
 fi
 
 # build, reinistall and reactivate slsnet app
-{
+(
 cd onos-app-slsnet/
 mvn clean compile install || exit 1
 onos-app localhost reinstall! org.onosproject.slsnet target/onos-app-slsnet-1.11.0-SNAPSHOT.oar
 onos-app localhost activate org.onosproject.slsnet
-}
+)
 
-# reinstall network config: if argument exists, use it as config file
-if [ -n "$1" ]
-then
-    echo copy "$1" to $TARGET/config/network-cfg.json
-    sudo cp "$1" $TARGET/config/network-cfg.json
-else
-    echo copy network-cfg.json to $TARGET/config/
-    sudo cp network-cfg.json $TARGET/config/
-fi
+# reinstall network config
+# if argument exists, use it as config file
+# else if env SLSNET_NETCFG is defined use it
+# else use network-cfg.json file
+NETCFG_FILE=${1:-${SLSNET_NETCFG:-network-cfg.json}}
+echo copy "$NETCFG_FILE" to $TARGET/config/network-cfg.json
+sudo cp "$NETCFG_FILE" $TARGET/config/network-cfg.json
 
 # restart onos service
 sudo service onos restart
