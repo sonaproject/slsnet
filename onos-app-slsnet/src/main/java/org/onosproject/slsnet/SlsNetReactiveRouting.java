@@ -55,7 +55,7 @@ import org.onosproject.net.Host;
 import org.onosproject.net.host.HostService;
 import org.onosproject.net.intent.Constraint;
 import org.onosproject.net.intent.constraint.EncapsulationConstraint;
-import org.onosproject.net.intent.constraint.HashedPathSelectionConstraint;
+//import org.onosproject.net.intent.constraint.HashedPathSelectionConstraint;
 import org.onosproject.net.intent.constraint.PartialFailureConstraint;
 import org.onosproject.net.intent.Intent;
 import org.onosproject.net.intent.IntentService;
@@ -122,7 +122,7 @@ public class SlsNetReactiveRouting {
     protected SlsNetService slsnet;
 
     private static final ImmutableList<Constraint> REACTIVE_CONSTRAINTS
-            = ImmutableList.of(new PartialFailureConstraint(), new  HashedPathSelectionConstraint());
+            = ImmutableList.of(new PartialFailureConstraint());  //, new  HashedPathSelectionConstraint());
 
     private Set<FlowRule> interceptFlowRules = new HashSet<>();
     private Map<IpPrefix, RouteIntent> routeIntents = Maps.newConcurrentMap();
@@ -448,8 +448,11 @@ public class SlsNetReactiveRouting {
                 Set<ConnectPoint> newIngressPoints = new HashSet<>();
                 boolean ingressPointChanged = false;
                 for (ConnectPoint cp : intent.ingressPoints()) {
-                    if (slsnet.findL2Network(cp, VlanId.NONE) != null || !linkService.getIngressLinks(cp).isEmpty()) {
+                    if (slsnet.findL2Network(cp, VlanId.NONE) != null) {
                         newIngressPoints.add(cp);
+                    // TODO: all unknown ports against L2Networks are ignored
+                    //} else if (!linkService.getIngressLinks(cp).isEmpty()) {
+                    //    newIngressPoints.add(cp);  // just add ConnectPoint for link for intent system
                     } else {
                         log.info("slsnet reactive routing refresh route ingress cp of "
                                  + "not in 2Networks nor links: {}", cp);
@@ -748,8 +751,8 @@ public class SlsNetReactiveRouting {
                                 context.inPacket().unparsed());
         }
         // be quiet on normal situation
-        log.info("slsnet reactive routing forward packet: dstHost={} outPacket={} srcCP={}",
-                 dstHost, outPacket, context.inPacket().receivedFrom());
+        log.info("slsnet reactive routing forward packet: dstHost={} outPacket={} srcCP={} dstCP={}",
+                 dstHost, outPacket, context.inPacket().receivedFrom(), dstHost.location());
         packetService.emit(outPacket);
     }
 
@@ -761,6 +764,10 @@ public class SlsNetReactiveRouting {
      */
     private void setUpConnectivity(ConnectPoint srcCp, IpPrefix prefix, IpAddress nextHopIp,
                                    MacAddress treatmentSrcMac, EncapsulationType encap) {
+        // all unknown ports against L2Networks are ignored
+        if (slsnet.findL2Network(srcCp, VlanId.NONE) == null) {
+            return;
+        }
         MacAddress nextHopMac = null;
         ConnectPoint egressPoint = null;
         for (Host host : hostService.getHostsByIp(nextHopIp)) {

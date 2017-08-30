@@ -33,7 +33,9 @@ onos-app localhost activate org.onosproject.slsnet
 # else if env SLSNET_NETCFG is defined use it
 # else use network-cfg.json file
 NETCFG_FILE=${1:-${SLSNET_NETCFG:-network-cfg.json}}
-echo copy "$NETCFG_FILE" to $TARGET/config/network-cfg.json
+echo "install network config file: $NETCFG_FILE" 
+onos-netcfg localhost delete
+onos-netcfg localhost $NETCFG_FILE
 sudo cp "$NETCFG_FILE" $TARGET/config/network-cfg.json
 
 # restart onos service
