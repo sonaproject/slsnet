@@ -51,7 +51,7 @@ openflow
   switch 1 pipeline 203
     statistics collection-interval 10
     datapath-id 0x123 4
-    controller ipv4 10.10.108.140 port 6653 vrf management security none
+    controller ipv4 10.10.108.140 port 6653 security none
     of-port interface Ethernet1/1
     of-port interface Ethernet1/2
     of-port interface Ethernet1/3
