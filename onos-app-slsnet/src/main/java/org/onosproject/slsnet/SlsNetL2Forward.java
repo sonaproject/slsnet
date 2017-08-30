@@ -45,7 +45,7 @@ import org.onosproject.net.intent.Key;
 import org.onosproject.net.intent.MultiPointToSinglePointIntent;
 import org.onosproject.net.intent.SinglePointToMultiPointIntent;
 import org.onosproject.net.intent.constraint.EncapsulationConstraint;
-//import org.onosproject.net.intent.constraint.HashedPathSelectionConstraint;
+import org.onosproject.net.intent.constraint.HashedPathSelectionConstraint;
 import org.onosproject.net.intent.constraint.PartialFailureConstraint;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -88,7 +88,7 @@ public class SlsNetL2Forward {
     protected SlsNetService slsnet;
 
     public static final ImmutableList<Constraint> L2NETWORK_CONSTRAINTS =
-            ImmutableList.of(new PartialFailureConstraint());   //, new HashedPathSelectionConstraint());
+            ImmutableList.of(new PartialFailureConstraint(), new HashedPathSelectionConstraint());
 
     private Map<Key, SinglePointToMultiPointIntent> bctIntentsMap = Maps.newConcurrentMap();
     private Map<Key, MultiPointToSinglePointIntent> uniIntentsMap = Maps.newConcurrentMap();
