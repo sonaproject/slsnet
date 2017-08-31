@@ -43,7 +43,8 @@
         "ipSubnets" : [
            { "ipPrefix" : "192.168.100.0/24", "gatewayIp" : "192.168.100.1", "l2NetworkName" : "LEAF1" },
            { "ipPrefix" : "192.168.101.0/24", "gatewayIp" : "192.168.101.1", "l2NetworkName" : "LEAF2" },
-           { "ipPrefix" : "192.168.1.0/24", "gatewayIp" : "192.168.1.1", "l2NetworkName" : "LEAF2P" }
+           { "ipPrefix" : "192.168.1.0/24", "gatewayIp" : "192.168.1.1", "l2NetworkName" : "LEAF2P" },
+           { "ipPrefix" : "192.168.102.0/24", "gatewayIp" : "192.168.102.1", "l2NetworkName" : "LEAF2P" }
         ],
         "virtualGatewayMacAddress" : "00:00:00:00:00:01"
       }

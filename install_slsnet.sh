@@ -6,6 +6,9 @@
 
 TARGET=/opt/onos
 
+ONOS_VERSION=1.11.0-rc4
+SLSNET_VERSION=1.11.0-rc4
+
 # to reinstall ONOS, call this script with "-r" argument
 REINISTALL_ONOS=no
 if [ "$1" = '-r' ]
@@ -13,8 +16,9 @@ then
     echo reinistall ONOS from ../onos/
     sudo service onos stop
     sudo pkill java
-    sudo rm -rf /opt/onos-1.11.0-SNAPSHOT/
+    sudo rm -rf /opt/onos /opt/onos-${ONOS_VERSION}
     sudo tar -xzf ../onos/buck-out/gen/tools/package/onos-package/onos.tar.gz -C /opt
+    sudo ln -s /opt/onos-${ONOS_VERSION} /opt/onos
     sudo service onos start
     echo reinistall ONOS done
     exit 0
@@ -24,7 +28,8 @@ fi
 (
 cd onos-app-slsnet/
 mvn clean compile install || exit 1
-onos-app localhost reinstall! org.onosproject.slsnet target/onos-app-slsnet-1.11.0-SNAPSHOT.oar
+onos-app localhost uninstall org.onosproject.slsnet
+onos-app localhost install target/onos-app-slsnet-${SLSNET_VERSION}.oar
 onos-app localhost activate org.onosproject.slsnet
 )
 
