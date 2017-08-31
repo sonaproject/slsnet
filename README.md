@@ -197,13 +197,13 @@ in `onos-app-slsnet` directory
 - BUILD:
    - `mvn clean compile install`
 - INSTALL TO ONOS AND ACTIVATE APP:
-   - `onos-app localhost install target/onos-app-slsnet-1.11.0-SNAPSHOT.oar`
+   - `onos-app localhost install target/onos-app-slsnet-1.11.0-rc4.oar`
    - `onos-app localhost activate org.onosproject.slsnet`
 
 Or use [install_slsnet.sh](install.slsnet.sh) script in `slsnet` directory
 - Assuming
    - onos sources are located in ../onos
-   - onos is installed at /opt/onos-1.11.0-SNAPSHOT and /opt/onos is symbolic link to it
+   - onos is installed at /opt/onos-1.11.0-rc4 and /opt/onos is symbolic link to it
    - system is Redhat or CentOS and controllable with `service onos [start|stop]` command
 - `./install_slsnet.sh -r` to reinistall ONOS from `../onos/buck-out/gen/tools/package/onos-package/onos.tar.gz`
 - `./install_slsnet.sh [netcfg-json-file]` to 
