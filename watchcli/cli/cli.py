@@ -443,9 +443,15 @@ class CLI():
             cls.HISTORY_LOG.write_history("--- Current Event History Begin ---")
 
             for line in res['Event list']:
-                cls.HISTORY_LOG.write_history('[OCCUR_TIME : %s][%s][%s][%s] %s', \
+                reason_str = ''
+                if type(line['reason']) == list:
+                    reason_str = '\n-- ' + '\n-- '.join(line['reason']) + '\n';
+                else:
+                    reason_str = str(body['line'])
+
+                cls.HISTORY_LOG.write_history('[%s][%s][%s][%s->%s][%s]', \
                        line['time'], line['system'], line['item'], \
-                       line['pre_grade'] + '->' + line['grade'], line['reason'])
+                       line['pre_grade'], line['grade'], reason_str)
 
             cls.HISTORY_LOG.write_history("--- Current Event History End ---")
 

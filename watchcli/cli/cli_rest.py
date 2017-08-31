@@ -17,27 +17,27 @@ class RestHandler(BaseHTTPRequestHandler):
         try:
             request_sz = int(self.headers["Content-length"])
             request_str = self.rfile.read(request_sz)
-            request_obj = json.loads(request_str)
+            body = json.loads(request_str)
 
             LOG.debug_log('[REST-SERVER] CLIENT INFO = ' + str(self.client_address))
             LOG.debug_log('[REST-SERVER] RECV HEADER = \n' + str(self.headers))
-            LOG.debug_log('[REST-SERVER] RECV BODY = \n' + json.dumps(request_obj, sort_keys=True, indent=4))
+            LOG.debug_log('[REST-SERVER] RECV BODY = \n' + json.dumps(body, sort_keys=True, indent=4))
 
             if self.path.startswith('/test'):
-                t_id = request_obj['transaction_id']
+                t_id = body['transaction_id']
 
                 if os.path.exists('log/flowtrace_' + t_id):
                     os.remove('log/flowtrace_' + t_id)
                 result_file = open('log/flowtrace_' + t_id, 'w')
-                result_file.write(str(request_obj))
+                result_file.write(str(body))
                 result_file.close()
             elif self.path.startswith('/traffictest'):
-                t_id = request_obj['transaction_id']
+                t_id = body['transaction_id']
 
                 if os.path.exists('log/traffictest_' + t_id):
                     os.remove('log/traffictest_' + t_id)
                 result_file = open('log/traffictest_' + t_id, 'w')
-                result_file.write(str(request_obj))
+                result_file.write(str(body))
                 result_file.close()
 
             elif self.headers.getheader('Authorization') is None:
@@ -47,11 +47,17 @@ class RestHandler(BaseHTTPRequestHandler):
                 LOG.debug_log('[REST-SERVER] ' + self.path + ' not found')
 
             elif self.auth_pw(self.headers.getheader('Authorization')):
-                global_history_log.write_history('[%s][%s][%s][%s] %s', request_obj['system'], request_obj['item'], request_obj['grade'], request_obj['pre_grade'], request_obj['reason'])
+                reason_str = ''
+                if type(body['reason']) == list:
+                    reason_str = '\n-- ' + '\n-- '.join(body['reason']) + '\n'; 
+                else:
+                    reason_str = str(body['reason'])
+                global_history_log.write_history('[%s][%s][%s][%s->%s][%s]',
+                    body['time'], body['system'], body['item'], body['pre_grade'], body['grade'], reason_str)
 
-                if request_obj['system'] == 'slsnetwatcher' and request_obj['item'] == 'WATCHER_DISCONNECT':
+                if body['system'] == 'slsnetwatchd' and body['item'] == 'WATCHER_DISCONNECT':
                     global_conn_evt.set()
-                    LOG.debug_log('[REST-SERVER] ' + request_obj['reason'])
+                    LOG.debug_log('[REST-SERVER] ' + reason_str);
                 else:
                     global_evt.set()
             else:

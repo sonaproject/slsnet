@@ -96,6 +96,12 @@ class ConfReader:
     def alarm(self):
         value = dict()
         try:
+            value['mail_alarm'] = self.conf_map['ALARM']['mail_alarm'] in ['true','yes']
+            value['mail_server'] = self.conf_map['ALARM']['mail_server']
+            value['mail_tls'] = self.conf_map['ALARM']['mail_tls'] in ['true','yes']
+            value['mail_user'] = self.conf_map['ALARM']['mail_user']
+            value['mail_password'] = self.conf_map['ALARM']['mail_password']
+            value['mail_list'] = self.__list_opt(self.conf_map['ALARM']['mail_list'])
             return value
         except KeyError as KE:
             return dict({'fail': KE})

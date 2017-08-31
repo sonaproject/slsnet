@@ -5,6 +5,7 @@ from datetime import datetime
 from api.sona_log import LOG
 from api.watcherdb import DB
 from api.config import CONF
+import api.alarm as ALARM
 
 
 def process_event(conn, db_log, node_name, type, id, pre_value, cur_value, reason):
@@ -101,6 +102,18 @@ def push_event(node_name, item, grade, pre_grade, reason, time):
             except:
                 # Push event does not respond
                 pass
+
+        # send alarm notification
+        reason_str = ''
+        if type(reason) == list:
+            if len(reason) > 0:
+                 reason_str = '-- ' + '\n-- '.join(reason)
+        else:
+            reason_str = str(reason)
+        ALARM.send_alarm(node_name + ' ' + item + ' goes ' + grade.upper(),
+                         '%s %s state changed: %s -> %s\n%s'
+                         % (node_name, item, pre_grade.upper(), grade.upper(), reason_str))
+
     except:
         LOG.exception()
 

@@ -223,7 +223,7 @@ def onos_conn_check(conn, db_log, node_name, node_ip):
                         device = { 'id':id, 'available':"false", 'channelId':'-',
                                    'name':'-', 'role':'-', 'monitor_item':True }
                         device_status = 'nok'
-                        device_fail_reason.append('device ' + id + ' is NOT FOUND')
+                        device_fail_reason.append('device ' + id + ' is NOT AVAIALBE')
                     device_list.append(device)
 
                 for device in device_tbl.values():
@@ -281,7 +281,7 @@ def onos_conn_check(conn, db_log, node_name, node_ip):
                                 'expected':'false', 'state':'-', 'type':"-",
                                 'monitor_item':True }
                         link_status = 'nok'
-                        link_fail_reason.append('link ' + id + ' is NOT FOUND')
+                        link_fail_reason.append('link ' + id + ' is NOT AVAILABLE')
                         link_list.append(link)
 
                     rev_id = id.split('-')[1] + '-' + id.split('-')[0]
@@ -299,7 +299,7 @@ def onos_conn_check(conn, db_log, node_name, node_ip):
                                 'expected':'false', 'state':'-', 'type':"-",
                                 'monitor_item':True }
                         link_status = 'nok'
-                        link_fail_reason.append('link ' + rev_id + ' is NOT FOUND')
+                        link_fail_reason.append('link ' + rev_id + ' is NOT AVAILABLE')
                         link_list.append(link)
 
                 for link in link_tbl.values():

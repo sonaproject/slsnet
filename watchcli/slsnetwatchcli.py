@@ -208,6 +208,11 @@ def select_menu():
 
                     elif menu == 'Monitoring Details':
                         SCREEN.display_status()
+                        CLI.process_cmd("onos-conn cluster")
+                        CLI.process_cmd("onos-conn device")
+                        CLI.process_cmd("onos-conn link")
+                        CLI.process_cmd("onos-svc app")
+                        CLI.process_cmd("onos-svc rest")
 
                     elif menu == 'Event History':
                         SCREEN.display_event()

@@ -231,7 +231,7 @@ class SCREEN():
             LOG.exception_err_write()
 
     @classmethod
-    def display_event(cls, cnt=10):
+    def display_event(cls, cnt=20):
         try:
             cmd = 'tail -n ' + str(cnt) + ' log/event_history.log'
             result = Popen(cmd, stdout=PIPE, stderr=PIPE, shell=True)
@@ -241,7 +241,7 @@ class SCREEN():
                 LOG.debug_log("Cmd Fail, cause => %s", error)
                 print 'Failed to load file'
             else:
-                print '\n * Only the last 10 logs are printed.'
+                print '\n * Only the last ' + cnt + ' logs are printed.'
                 print ' * Please refer to the log file for details. (path = log/event_history.log)\n'
                 print output
         except:
