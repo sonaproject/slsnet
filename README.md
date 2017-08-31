@@ -355,7 +355,7 @@ If onos is updated, apply update for external app maven build, at onos/ source d
 slsnetwatchd는 ONOS, SLSNET APP, Device, Link 에 대한 Monitoring 기능을 제공
 
 
-기존의 SonaWatcher를 복제하여, 필요한 수정을 적용하고 slsnet/ repository 내에 `watchd/` `watchcli/` 로 추가
+기존의 SonaWatcher를 복제하여, 필요한 수정을 적용하고 slsnet/ repository 내에 [watchd/](watchd/) [watchcli/](watchcli/) 로 추가
 ```
 BRANCHED FROM: https://github.com/snsol2/sonaWatchd.git
                commit 9edfdfa7c3b3de3e370d3061159c062f9f737f6c
