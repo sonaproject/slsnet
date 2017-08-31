@@ -445,7 +445,8 @@ class CLI():
             for line in res['Event list']:
                 reason_str = ''
                 if type(line['reason']) == list:
-                    reason_str = '\n-- ' + '\n-- '.join(line['reason']) + '\n';
+                    if len(line['reason']) > 0:
+                        reason_str = '\n-- ' + '\n-- '.join(line['reason']);
                 else:
                     reason_str = str(body['line'])
 

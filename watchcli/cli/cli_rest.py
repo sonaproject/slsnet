@@ -49,7 +49,8 @@ class RestHandler(BaseHTTPRequestHandler):
             elif self.auth_pw(self.headers.getheader('Authorization')):
                 reason_str = ''
                 if type(body['reason']) == list:
-                    reason_str = '\n-- ' + '\n-- '.join(body['reason']) + '\n'; 
+                    if len(body['reason']) > 0:
+                        reason_str = '\n-- ' + '\n-- '.join(body['reason']); 
                 else:
                     reason_str = str(body['reason'])
                 global_history_log.write_history('[%s][%s][%s][%s->%s][%s]',

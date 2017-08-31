@@ -241,7 +241,7 @@ class SCREEN():
                 LOG.debug_log("Cmd Fail, cause => %s", error)
                 print 'Failed to load file'
             else:
-                print '\n * Only the last ' + cnt + ' logs are printed.'
+                print '\n * Only the last ' + str(cnt) + ' logs are printed.'
                 print ' * Please refer to the log file for details. (path = log/event_history.log)\n'
                 print output
         except:
