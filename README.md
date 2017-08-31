@@ -295,8 +295,23 @@ If onos is updated, apply update for external app maven build, at onos/ source d
   - Local Subnet - External Router 가 Route 에 따른 IP 통신을 모두 Reactive 방식으로 처리
 
 
+
 ### 분당 TB 에서의 증상 (Cisco 스위치 적용시의 증상)
 
+
+- Switch의 BGP 설정과의 간섭 문제 (Cleared)
+  - 기존 BGP 설정에서 처리하고 있던 IP 를 Openflow 로 처리하고자 설정 하면 의도치 않은 패킷 흐름이 발생
+  - 192.168.1.6 노드(BGP대역)의 포트를 Openflow port 로 변경 하고, SlsNet 에서 해당대역을 추가한뒤
+    같은 스위치 내에 있는, 192.168.101.3 노드(기존의 Non-BGP, Openflow-Only 대역)와 통신을 하게 하면
+    - FlowRule 상으로 동일 스위치 내에서 전송하는 FlowRule 이 내려가고
+    - Flow Stat 상에 Packet Count 에도 정상적으로 Count 되나
+    - 실제로는 Spine Swith 의 해당 Leaf Switch 연동 포트 쪽에서 패킷이 들어오는 형태로 전송 되어
+    - Reactive Routing에서 이를 처리하면서 들어온 포트로 내보내는 형태의 Invalid한 FlowRule 이 생성되는
+      문제가 발생
+  - 동일 노드에서 기존 BGP 대역의 192.168.1.6 주소가 아닌 새로운 대역의 IP 192.168.102.6 을 할당하면
+    정상적으로 처리됨
+  - --> 망구성시 BGP 대역과 Openflow 상의 처리 대역이 중복되지 않아여 한다. (2017-08-31)   
+  
 
 - Link 장애 테스트 (cleared)
   - Leaf switch 에서 spine switch 방향 port를 down 시키면, 다른쪽 spine switch 쪽으로 즉시 우회됨
