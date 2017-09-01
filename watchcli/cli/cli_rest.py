@@ -2,6 +2,7 @@ import json
 import base64
 import os
 import multiprocessing as multiprocess
+from datetime import datetime
 from BaseHTTPServer import BaseHTTPRequestHandler, HTTPServer
 
 from log_lib import LOG
@@ -53,10 +54,10 @@ class RestHandler(BaseHTTPRequestHandler):
                         reason_str = '\n-- ' + '\n-- '.join(body['reason']); 
                 else:
                     reason_str = str(body['reason'])
-                global_history_log.write_history('[%s][%s][%s][%s->%s][%s]',
+                global_history_log.write_history('[%s] %s %s changed from %s to %s %s',
                     body['time'], body['system'], body['item'], body['pre_grade'], body['grade'], reason_str)
 
-                if body['system'] == 'slsnetwatchd' and body['item'] == 'WATCHER_DISCONNECT':
+                if body['system'] == 'SlsNetWatchd' and body['item'] == 'Daemon':
                     global_conn_evt.set()
                     LOG.debug_log('[REST-SERVER] ' + reason_str);
                 else:
@@ -87,7 +88,7 @@ def run(evt, conn_evt, rest_evt, history_log):
     global_conn_evt = conn_evt
 
     LOG.debug_log("--- REST Server Start --- ")
-    global_history_log.write_history("--- Event History Start ---")
+    global_history_log.write_history("[%s] --- Event History Start ---", str(datetime.now()))
 
     try:
         server_address = ("", CONFIG.get_rest_port())

@@ -17,7 +17,7 @@ from cli.flow_trace import TRACE
 from cli.log_lib import USER_LOG
 from cli.screen import SCREEN
 
-menu_list = ["CLI", "Monitoring Details", "Event History", "Exit"]
+menu_list = ["Monitoring Details", "Event History", "CLI", "Exit"]
 
 evt_thread = None
 conn_evt_thread = None
@@ -54,7 +54,7 @@ def main():
 
     # set history log
     history_log = USER_LOG()
-    history_log.set_log('event_history.log', CONFIG.get_cli_log_rotate(), int(CONFIG.get_cli_log_backup()))
+    history_log.set_log('event_history.log', CONFIG.get_cli_log_rotate(), int(CONFIG.get_cli_log_backup()), time_prefix=False)
 
     # set cli log
     cli_log = USER_LOG()
@@ -201,7 +201,7 @@ def select_menu():
                 menu = menu_list[selected_menu_no - 1]
                 empty_cmd = 0
 
-                if menu in ['CLI', 'Monitoring Details', 'Event History']:
+                if menu in ['Monitoring Details', 'Event History', 'CLI']:
                     if menu == 'CLI':
                         SCREEN.display_header(menu_list[selected_menu_no - 1])
                         SCREEN.display_sys(True)

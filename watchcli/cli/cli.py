@@ -3,6 +3,7 @@ import requests
 import json
 import base64
 import readline
+from datetime import datetime
 
 from config import CONFIG
 from system_info import SYS
@@ -325,7 +326,7 @@ class CLI():
 
         header = {'Content-Type': 'application/json', 'Authorization': base64.b64encode(auth)}
 
-        cls.CLI_LOG.cli_log('---------------------------SEND CMD---------------------------')
+        cls.CLI_LOG.cli_log('send_rest:: SEND CMD ---------------------------')
 
         try:
             url = CONFIG.get_cmd_addr()
@@ -344,7 +345,7 @@ class CLI():
             LOG.exception_err_write()
             return -1, None
 
-        cls.CLI_LOG.cli_log('---------------------------RECV RES---------------------------')
+        cls.CLI_LOG.cli_log('send_rest:: RECV RES ---------------------------')
         cls.CLI_LOG.cli_log('RESPONSE CODE = ' + str(myResponse.status_code))
 
         try:
@@ -367,7 +368,7 @@ class CLI():
 
         header = {'Content-Type': 'application/json', 'Authorization': base64.b64encode(auth)}
 
-        cls.CLI_LOG.cli_log('---------------------------SEND CMD---------------------------')
+        cls.CLI_LOG.cli_log('send_regi:: SEND CMD  ---------------------------')
 
         try:
             if type == 'regi':
@@ -388,7 +389,7 @@ class CLI():
             LOG.exception_err_write()
             return False
 
-        cls.CLI_LOG.cli_log('---------------------------RECV RES---------------------------')
+        cls.CLI_LOG.cli_log('send_regi:: RECV RES ---------------------------')
         cls.CLI_LOG.cli_log('RESPONSE CODE = ' + str(myResponse.status_code))
 
         if myResponse.status_code == 200:
@@ -413,7 +414,7 @@ class CLI():
 
         header = {'Content-Type': 'application/json', 'Authorization': base64.b64encode(auth)}
 
-        cls.CLI_LOG.cli_log('---------------------------SEND CMD---------------------------')
+        cls.CLI_LOG.cli_log('get_event_list:: SEND CMD ---------------------------')
 
         try:
             url = CONFIG.get_event_list_uri()
@@ -431,7 +432,7 @@ class CLI():
             LOG.exception_err_write()
             return False
 
-        cls.CLI_LOG.cli_log('---------------------------RECV RES---------------------------')
+        cls.CLI_LOG.cli_log('get_event_list:: RECV RES ---------------------------')
         cls.CLI_LOG.cli_log('RESPONSE CODE = ' + str(myResponse.status_code))
         cls.CLI_LOG.cli_log('RESPONSE BODY = ' + str(myResponse.content))
 
@@ -440,24 +441,23 @@ class CLI():
             cls.CLI_LOG.cli_log(
                 'BODY = ' + json.dumps(res, sort_keys=True, indent=4))
 
-            cls.HISTORY_LOG.write_history("--- Current Event History Begin ---")
+            cls.HISTORY_LOG.write_history("[%s] --- Current Event History Begin ---", str(datetime.now()))
 
-            for line in res['Event list']:
+            for line in res['event_list']:
                 reason_str = ''
                 if type(line['reason']) == list:
                     if len(line['reason']) > 0:
                         reason_str = '\n-- ' + '\n-- '.join(line['reason']);
                 else:
-                    reason_str = str(body['line'])
+                    reason_str = str(line['reason'])
 
-                cls.HISTORY_LOG.write_history('[%s][%s][%s][%s->%s][%s]', \
-                       line['time'], line['system'], line['item'], \
-                       line['pre_grade'], line['grade'], reason_str)
+                cls.HISTORY_LOG.write_history('[%s] %s %s changed from %s to %s %s',
+                       line['time'], line['system'], line['item'], line['pre_grade'], line['grade'], reason_str)
 
-            cls.HISTORY_LOG.write_history("--- Current Event History End ---")
+            cls.HISTORY_LOG.write_history("[%s] --- Current Event History End ---", str(datetime.now()))
 
         except:
-            cls.CLI_LOG.cli_log('BODY = ' + myResponse.content)
+            LOG.exception_err_write()
 
         result = json.loads(myResponse.content)
 

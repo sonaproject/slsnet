@@ -55,21 +55,20 @@ class LOG():
 class USER_LOG():
     LOG = None
 
-    def set_log(self, file_name, rotate, backup):
+    def set_log(self, file_name, rotate, backup, time_prefix=True):
         self.LOG = logging.getLogger(file_name)
 
         if not os.path.exists(DEFAULT_LOG_PATH):
             os.makedirs(DEFAULT_LOG_PATH)
 
-        log_formatter = logging.Formatter('[%(asctime)s] %(message)s')
-
         file_name = DEFAULT_LOG_PATH + file_name
-
         file_handler = logging.handlers.TimedRotatingFileHandler(file_name,
                                                                  when=rotate,
                                                                  backupCount=backup)
-
-        file_handler.setFormatter(log_formatter)
+        if time_prefix:
+            file_handler.setFormatter(logging.Formatter('[%(asctime)s] %(message)s'))
+        else:
+            file_handler.setFormatter(logging.Formatter('%(message)s'))
 
         self.LOG.addHandler(file_handler)
         self.LOG.setLevel(logging.DEBUG)
@@ -93,3 +92,4 @@ class USER_LOG():
             self.LOG.debug(log % args)
         except:
             LOG.exception_err_write()
+

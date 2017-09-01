@@ -68,7 +68,7 @@ def get_event_list(url, auth):
             evt = {'event': 'occur', 'system': nodename, 'item': item, 'grade': grade, 'pre_grade': pre_grade, 'reason': reason, 'time': time}
             event_list.append(evt)
 
-            res_body = {'Result': 'SUCCESS', 'Event list': event_list}
+            res_body = {'Result': 'SUCCESS', 'event_list': event_list}
 
         return res_body
     except:

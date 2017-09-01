@@ -29,7 +29,10 @@ def send_alarm(subject, reason, time):
         if conf['mail_tls']:
             ms.starttls()
         ms.login('slsnetmailer','_slsnetmailer')
-        ms.sendmail(mail_from, mail_to, msg.as_string())
+        try:
+            ms.sendmail(mail_from, mail_to, msg.as_string())
+        except:
+            LOG.exception()
         ms.quit()
 
     if conf['slack_alarm']:
@@ -39,5 +42,8 @@ def send_alarm(subject, reason, time):
 
         LOG.info('Send Slack Alarm: channel=%s text=%s', ch, body)
         sc = SlackClient(conf['slack_token'])
-        sc.api_call("chat.postMessage", channel=ch, text=body)
+        try:
+            sc.api_call("chat.postMessage", channel=ch, text=body)
+        except:
+            LOG.exception()
 
