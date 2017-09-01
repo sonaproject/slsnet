@@ -137,14 +137,14 @@ def ssh_print(node, lines):
         if line != '':
             print "[Setup] %s; %s" % (node, line)
 
-
-def trace_node():
-    print "\n\n[Setup] Start to copy ssh-key to host systems for trace ......"
-
-    conf = CONF().get_system_info('HOST')
-    for node in str(conf['list']).replace(" ", "").split(","):
-        key_copy(node.split(":")[1], conf)
-        print "-- %s setup finish ------\n" % node
+# NO USE
+#def trace_node():
+#    print "\n\n[Setup] Start to copy ssh-key to host systems for trace ......"
+#
+#    conf = CONF().get_system_info('HOST')
+#    for node in str(conf['list']).replace(" ", "").split(","):
+#        key_copy(node.split(":")[1], conf)
+#        print "-- %s setup finish ------\n" % node
 
 
 def main(argv):
@@ -171,7 +171,8 @@ def main(argv):
     else:
         print "[Setup] ssh \'id_rsa\' and \'id_rsa.pub\' key files exist ......"
 
-    trace_node()
+    # NO USE
+    #trace_node()
 
 if __name__ == "__main__":
     main(sys.argv[1:])
