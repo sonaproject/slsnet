@@ -368,16 +368,15 @@ ssh key 생성 및 배포를 위해서 setup tool을 사용한다.
 - 클라이언트 실행 환경에서는 `watchcli/setup/ssh_key_setup.py` 파일을 실행시킨다.
 
 Python 환경 설정
-- Python2.7을 사용하며, 버전 호환성 문제를 피하기 위하여, /usr/local/bin/python  을 호출하여 사용한다.
+- Python2.7을 사용하며, 버전 호환성 문제를 피하기 위하여, `/usr/local/bin/python` 을 호출하여 사용한다.
   시스템에서 해당 이름으로 적절한 python을 symbolic link 하여 놓는다.
 - Pip install 명령을 사용하여, 다음 python package 를 install 한다.
-  - watchd 구동: SlackClient
-  - watchcli 구동:
+  - watchd: SlackClient
 
 기본적으로, watchd와 watchcli 는 모두 ONOS를 동작중인 노드에서 수행하는 형태로 설정되어 있다.
 - Remote 서버 연동형태로 구성하려면 각각의 config/ 에 있는 설정파일을 변경한다.
 
-모니터링 대상 Device, Link 를 지정하기 위해 반드시 watchd/config/config.ini 내 ONOS 섹션에 있는 device_list 와 link_list 를 설정하여야 한다.
+모니터링 대상 Device, Link 를 지정하기 위해 반드시 `watchd/config/config.ini` 내 `ONOS` 섹션에 있는 `device_list` 와 `link_list` 를 설정하여야 한다.
 
 
 ### Server
