@@ -152,5 +152,6 @@ class DB(object):
 
 DB_CONN = DB().connection()
 
-CONF_MAP = {'ONOS': CONF.onos }
+CONF_MAP = {'ONOS': CONF.onos,
+            'SITE': CONF.site }
 

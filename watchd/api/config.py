@@ -102,6 +102,9 @@ class ConfReader:
             value['mail_user'] = self.conf_map['ALARM']['mail_user']
             value['mail_password'] = self.conf_map['ALARM']['mail_password']
             value['mail_list'] = self.__list_opt(self.conf_map['ALARM']['mail_list'])
+            value['slack_alarm'] = self.conf_map['ALARM']['slack_alarm'] in ['true','yes']
+            value['slack_token'] = self.conf_map['ALARM']['slack_token']
+            value['slack_channel'] = self.conf_map['ALARM']['slack_channel']
             return value
         except KeyError as KE:
             return dict({'fail': KE})
@@ -109,6 +112,14 @@ class ConfReader:
     def get_pid_file(self):
         try:
             return str(self.conf_map['BASE']['pidfile'])
+        except KeyError as KE:
+            return dict({'fail': KE})
+
+    def site(self):
+        # dummy section for SITE event entry
+        value = dict()
+        try:
+            return value
         except KeyError as KE:
             return dict({'fail': KE})
 

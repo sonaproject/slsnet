@@ -35,11 +35,15 @@ def periodic(conn, pre_stat, db_log):
         db_log.write_log(sql)
         cur_grade = conn.cursor().execute(sql).fetchall()
 
+        old_nok_count = 0;
         for nodename, item, grade in cur_grade:
             if not cur_info.has_key(nodename):
                 cur_info[nodename] = {}
             cur_info[nodename][item] = grade
+            if grade != 'ok':
+                old_nok_count += 1
 
+        new_nok_count = 0;
         for node_name, node_ip, user_name, type, sub_type in node_list:
             #LOG.info('------------------------------------ ' + node_name + ' START ------------------------------------')
 
@@ -52,8 +56,9 @@ def periodic(conn, pre_stat, db_log):
             # ping check
             ping = net_check(node_ip)
             ping_reason = []
-            if ping == 'nok':
-                reason.append('ping transmit faild')
+            if ping != 'ok':
+                reason.append('ping check failed on ' + node_ip)
+                new_nok_count += 1
             ping = alarm_event.process_event(conn, db_log, node_name, type, 'PING', cur_info[node_name]['PING'], ping, ping_reason)
 
             if ping == 'ok':
@@ -66,21 +71,21 @@ def periodic(conn, pre_stat, db_log):
                                                              cur_info[node_name]['ONOS_DEVICE'], onos_device, device_reason)
                     onos_link = alarm_event.process_event(conn, db_log, node_name, type, 'ONOS_LINK',
                                                              cur_info[node_name]['ONOS_LINK'], onos_link, link_reason)
-                    LOG.info('[' + node_name + '][ONOS_CLUSTER][' + onos_cluster + ']' + str(cluster_reason))
-                    LOG.info('[' + node_name + '][ONOS_DEVICE][' + onos_device + ']' + str(device_reason))
-                    LOG.info('[' + node_name + '][ONOS_LINK][' + onos_link + ']' + str(link_reason))
+                    if onos_cluster != 'ok': new_nok_count += 1
+                    if onos_device != 'ok': new_nok_count += 1
+                    if onos_link != 'ok': new_nok_count += 1
 
                     # check app
                     onos_app, reason = chk_onos.onos_app_check(conn, db_log, node_name, node_ip)
                     onos_app = alarm_event.process_event(conn, db_log, node_name, type, 'ONOS_APP',
                                                          cur_info[node_name]['ONOS_APP'], onos_app, reason)
-                    #LOG.info('[' + node_name + '][ONOS_APP][' + onos_app + ']' + str(reason))
+                    if onos_app != 'ok': new_nok_count += 1
 
                     # check web
                     onos_rest, reason = chk_onos.onos_rest_check(conn, db_log, node_name, node_ip)
                     onos_rest = alarm_event.process_event(conn, db_log, node_name, type, 'ONOS_REST',
                                                          cur_info[node_name]['ONOS_REST'], onos_rest, reason)
-                    #LOG.info('[' + node_name + '][ONOS_REST][' + onos_rest + ']' + str(reason))
+                    if onos_rest != 'ok': new_nok_count += 1
 
             try:
                 sql = 'UPDATE ' + DB.STATUS_TBL + \
@@ -102,6 +107,12 @@ def periodic(conn, pre_stat, db_log):
 
             LOG.info('chk_onos[%s]: ping=%s cluster=%s device=%s link=%s app=%s rest=%s' %
                      (node_name, ping, onos_cluster, onos_device, onos_link, onos_app, onos_rest))
+
+        LOG.info('check periodic summary: old_nok_count=%d new_nok_count=%d',
+                 old_nok_count, new_nok_count)
+        if old_nok_count > 0 and new_nok_count == 0:
+            onos_rest = alarm_event.process_event(conn, db_log, 'All', 'SITE', 'Monitoring Items',
+                                                  'none', 'ok', []) 
 
     except:
         LOG.exception()

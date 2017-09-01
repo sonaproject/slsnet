@@ -83,7 +83,7 @@ def push_event(node_name, item, grade, pre_grade, reason, time):
     global history_log
 
     try:
-        history_log.write_log('[%s][%s][%s][%s] %s', node_name, item, grade, pre_grade, reason)
+        history_log.write_log('[%s][%s][%s->%s] %s', node_name, item, pre_grade, grade, reason)
 
         sql = 'SELECT * FROM ' + DB.REGI_SYS_TBL
 
@@ -110,12 +110,21 @@ def push_event(node_name, item, grade, pre_grade, reason, time):
                  reason_str = '-- ' + '\n-- '.join(reason)
         else:
             reason_str = str(reason)
-        ALARM.send_alarm(node_name + ' ' + item + ' goes ' + grade.upper(),
-                         '%s %s state changed: %s -> %s\n%s'
-                         % (node_name, item, pre_grade.upper(), grade.upper(), reason_str))
+        # set verb describing status change
+        event_verb = 'goes'
+        if pre_grade == 'none':
+           event_verb = 'is'
+        # check for gramatical number
+        if item[-1].lower() == 's':
+           if event_verb == 'goes': event_verb = 'go'
+           if event_verb == 'is': event_verb = 'are'
+          
+        ALARM.send_alarm(node_name + ' ' + item + ' '
+                         + event_verb + ' ' + grade.upper(), reason_str, time)
 
     except:
         LOG.exception()
 
 
-CONF_MAP = {'ONOS': CONF.onos }
+CONF_MAP = { 'ONOS': CONF.onos,
+             'SITE': CONF.site }
