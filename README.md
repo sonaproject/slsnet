@@ -389,6 +389,6 @@ in watchd/
 ### Client
 in watchcli/    
 - 실행: `./SlsNetWatchcli.py`
-- 종료: cli main 화면에서 Esc 키 입력
+- 종료: cli main 화면에서 Esc 키 입력 또는 Exit 메뉴 선택
 
 
