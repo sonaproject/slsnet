@@ -105,11 +105,11 @@ def periodic(conn, pre_stat, db_log):
             except:
                 LOG.exception()
 
-            LOG.info('chk_onos[%s]: ping=%s cluster=%s device=%s link=%s app=%s rest=%s' %
-                     (node_name, ping, onos_cluster, onos_device, onos_link, onos_app, onos_rest))
+            # do not version log on everthing is ok
+            if old_nok_count > 0:
+                LOG.info('chk_onos[%s]: ping=%s cluster=%s device=%s link=%s app=%s rest=%s' %
+                         (node_name, ping, onos_cluster, onos_device, onos_link, onos_app, onos_rest))
 
-        LOG.info('check periodic summary: old_nok_count=%d new_nok_count=%d',
-                 old_nok_count, new_nok_count)
         if old_nok_count > 0 and new_nok_count == 0:
             onos_rest = alarm_event.process_event(conn, db_log, 'All', 'SITE', 'Monitoring Items',
                                                   'none', 'ok', []) 
