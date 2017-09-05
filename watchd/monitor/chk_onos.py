@@ -292,7 +292,6 @@ def onos_conn_check(conn, db_log, node_name, node_ip):
                             link_status = 'nok'
                             link_fail_reason.append('Link' + rev_id + ' is DOWN')
                         link_list.append(link)
-                        link_list.append(link)
                         link_tbl.pop(rev_id)
                     else:
                         link = {'src':rev_id.split('-')[0], 'dst':rev_id.split('-')[1],
