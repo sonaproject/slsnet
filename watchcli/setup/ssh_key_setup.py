@@ -12,7 +12,7 @@ import os
 import sys
 import getopt
 
-CONFIG_FILE = '../config/trace_config.ini'
+CONFIG_FILE = os.getenv('SLSNET_WATCHCLI_TRC', '../config/trace_config.ini')
 REQUIREMENT_PKG = 'pexpect'
 SSH_TIMEOUT = 3
 HOME_DIR = os.getenv('HOME')
