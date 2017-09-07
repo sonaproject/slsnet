@@ -203,9 +203,10 @@ def select_menu():
 
                 if menu in ['Monitoring Details', 'Event History', 'CLI']:
                     if menu == 'CLI':
-                        SCREEN.display_header(menu_list[selected_menu_no - 1])
-                        SCREEN.display_sys(True)
-
+                        #SCREEN.display_header(menu_list[selected_menu_no - 1])
+                        #SCREEN.display_sys(True)
+                        SCREEN.display_help()
+                        
                     elif menu == 'Monitoring Details':
                         SCREEN.display_status()
                         CLI.process_cmd("onos-conn cluster")

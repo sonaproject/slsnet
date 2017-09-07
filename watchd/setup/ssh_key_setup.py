@@ -10,7 +10,7 @@ import os
 import sys
 import getopt
 
-CONFIG_FILE = '../config/config.ini'
+CONFIG_FILE = os.getenv('SLSNET_WATCHD_CFG', '../config/config.ini')
 REQUIREMENT_PKG = 'pexpect'
 SSH_TIMEOUT = 3
 HOME_DIR = os.getenv('HOME')

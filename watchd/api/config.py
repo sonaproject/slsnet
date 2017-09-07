@@ -2,34 +2,31 @@
 # All Rights Reserved.
 # SONA Monitoring Solutions.
 
+import os
+import sys
 import ConfigParser
 
-DEFAULT_CONF_FILE = "config/config.ini"
-
+DEFAULT_CONF_FILE = os.getenv('SLSNET_WATCHD_CFG', 'config/config.ini')
 
 class ConfReader:
     conf_map = dict()
 
     def __init__(self):
+        if not os.access(DEFAULT_CONF_FILE, os.R_OK):
+            print("cannot open config file for read: %s" % (DEFAULT_CONF_FILE));
+            sys.exit(1)
+      
         self.config = ConfigParser.ConfigParser()
-        self.config.read(self.__conf_file(None))
+        self.config.read(DEFAULT_CONF_FILE)
         self.__load_config_map()
 
     def __load_config_map(self):
         for section in self.config.sections():
             self.conf_map[section] = {key: value for key, value in self.config.items(section)}
 
-
     @staticmethod
     def __list_opt(value):
         return list(str(value).replace(" ", "").split(','))
-
-    @staticmethod
-    def __conf_file(file_name=None):
-        if file_name is not None:
-            return file_name
-        else:
-            return DEFAULT_CONF_FILE
 
     def base(self):
         value = dict()

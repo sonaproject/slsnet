@@ -1,3 +1,4 @@
+import os
 import ConfigParser
 
 COMMAND_SECTION_NAME = 'command'
@@ -29,8 +30,8 @@ CPT_LIST_KEY_NAME = 'list'
 CPT_ID_KEY_NAME = 'account'
 TRACE_BASE_BRIDGE = 'base_bridge'
 
-CLI_CONFIG_FILE = 'config/cli_config.ini'
-TRACE_CONFIG_FILE = 'config/trace_config.ini'
+CLI_CONFIG_FILE = os.getenv('SLSNET_WATCHCLI_CFG', 'config/cli_config.ini')
+TRACE_CONFIG_FILE = os.getenv('SLSNET_WATCHCLI_TRC', 'config/trace_config.ini')
 
 SSH_TIMEOUT = 'timeout'
 
