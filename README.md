@@ -378,7 +378,6 @@ Python 환경 설정
 - 환경 변수를 사용하여 설정 파일을 지정할 수 있다:
   - watchd 설정 파일: `SLSNET_WATCHD_CFG` (기본값: config/config.ini)
   - watchcli 설정 파일: `SLSNET_WATCHCLI_CFG` (기본값: config/cli_config.ini)
-  - watchcli trace 설정 파일: `SLSNET_WATCHCLI_TRC` (기본값: config/trace_config.ini)
 
 모니터링 대상 Device, Link 를 지정하기 위해 반드시 watchd 설정 파일의 `ONOS` 섹션에 있는 `device_list` 와 `link_list` 를 설정하여야 한다.
 
