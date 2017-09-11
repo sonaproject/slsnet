@@ -2,7 +2,6 @@ import os
 import ConfigParser
 
 COMMAND_SECTION_NAME = 'command'
-TRACE_SECTION_NAME = 'condition'
 REST_SECTION_NAME = 'rest-server'
 LOG_SECTION_NAME = 'log'
 SSH_SECTION_NAME = 'ssh'
@@ -24,14 +23,11 @@ COMMAND_OPT_KEY_NAME = 'option-list'
 CLI_LOG_KEY_NAME = 'cli_log'
 LOG_ROTATE_KEY_NAME = 'log_rotate_time'
 LOG_BACKUP_KEY_NAME = 'log_backup_count'
-TRACE_LOG_KEY_NAME = 'trace_log'
 
 CPT_LIST_KEY_NAME = 'list'
 CPT_ID_KEY_NAME = 'account'
-TRACE_BASE_BRIDGE = 'base_bridge'
 
 CLI_CONFIG_FILE = os.getenv('SLSNET_WATCHCLI_CFG', 'config/cli_config.ini')
-TRACE_CONFIG_FILE = os.getenv('SLSNET_WATCHCLI_TRC', 'config/trace_config.ini')
 
 SSH_TIMEOUT = 'timeout'
 
@@ -39,7 +35,6 @@ class CONFIG():
 
     LOG = None
     config_cli = ConfigParser.RawConfigParser()
-    config_trace = ConfigParser.RawConfigParser()
 
     @classmethod
     def init_config(cls, LOG):
@@ -47,7 +42,6 @@ class CONFIG():
         try:
             # read config
             cls.config_cli.read(CLI_CONFIG_FILE)
-            cls.config_trace.read(TRACE_CONFIG_FILE)
 
             return True
         except:
@@ -69,14 +63,6 @@ class CONFIG():
             cls.LOG.exception_err_write()
             return ''
 
-    #@classmethod
-    #def get_cnd_list(cls):
-    #    try:
-    #        return cls.config_trace.items(TRACE_SECTION_NAME)
-    #    except:
-    #        cls.LOG.exception_err_write()
-    #        return []
-
     @classmethod
     def cli_get_value(cls, section_name, key):
         try:
@@ -84,14 +70,6 @@ class CONFIG():
         except:
             cls.LOG.exception_err_write()
             return ''
-
-    #@classmethod
-    #def trace_get_value(cls, section_name, key):
-    #    try:
-    #        return cls.config_trace.get(section_name, key)
-    #    except:
-    #        cls.LOG.exception_err_write()
-    #        return ''
 
     @classmethod
     def get_config_instance(cls):
@@ -165,36 +143,5 @@ class CONFIG():
     @classmethod
     def get_cli_log_backup(cls):
         return cls.cli_get_value(LOG_SECTION_NAME, LOG_BACKUP_KEY_NAME)
-
-    @classmethod
-    def get_trace_log(cls):
-        return cls.trace_get_value(LOG_SECTION_NAME, TRACE_LOG_KEY_NAME)
-
-    @classmethod
-    def get_trace_log_rotate(cls):
-        return cls.trace_get_value(LOG_SECTION_NAME, LOG_ROTATE_KEY_NAME)
-
-    @classmethod
-    def get_trace_log_backup(cls):
-        return cls.trace_get_value(LOG_SECTION_NAME, LOG_BACKUP_KEY_NAME)
-
-    @classmethod
-    def get_ssh_timeout(cls):
-        try:
-            return cls.config_trace.getint(SSH_SECTION_NAME, SSH_TIMEOUT)
-        except:
-            return 5
-
-    @classmethod
-    def get_trace_cpt_list(cls):
-        return cls.trace_get_value(CPT_SECTION_NAME, CPT_LIST_KEY_NAME)
-
-    @classmethod
-    def get_trace_cpt_id(cls):
-        return cls.trace_get_value(CPT_SECTION_NAME, CPT_ID_KEY_NAME).split(':')[0]
-
-    @classmethod
-    def get_trace_base_bridge(cls):
-        return cls.trace_get_value(CPT_SECTION_NAME, TRACE_BASE_BRIDGE)
 
 

@@ -3,7 +3,6 @@ import platform
 from subprocess import Popen, PIPE
 
 from log_lib import LOG
-from flow_trace import TRACE
 from system_info import SYS
 from config import CONFIG
 from cli import CLI
@@ -120,32 +119,6 @@ class SCREEN():
             str_time = 'Last Check Time [' + SYS.last_check_time.split('.')[0] + ']'
             cls.set_main_str(SYS.get_sys_line_count() + 2 + 3 + len(menu_list) + 2 + 1, MAIN_WIDTH - len(str_time),
                              str_time, time_color)
-        except:
-            LOG.exception_err_write()
-
-    @classmethod
-    def draw_trace_warning(cls):
-        try:
-            warn_color = curses.color_pair(3)
-
-            str = 'Flow traces can not be executed on screens smaller than 100 * 25.'
-            cls.set_main_str(3, 3, str, warn_color)
-
-            str = 'After 3 seconds, it automatically switches to the main screen.'
-            cls.set_main_str(4, 3, str, warn_color)
-
-            import time
-            str = '>>> 3 seconds remaining >>>'
-            cls.set_main_str(6, 10, str, warn_color)
-            time.sleep(1)
-
-            str = '>>> 2 seconds remaining >>>'
-            cls.set_main_str(6, 10, str, warn_color)
-            time.sleep(1)
-
-            str = '>>> 1 second remaining >>> '
-            cls.set_main_str(6, 10, str, warn_color)
-            time.sleep(1)
         except:
             LOG.exception_err_write()
 
@@ -482,86 +455,6 @@ class SCREEN():
 
         return box_sys
 
-class FlowTraceView(Frame):
-    trace_history = []
-    real_trace = []
-
-    def __init__(self, screen):
-        try:
-            super(FlowTraceView, self).__init__(screen,
-                                                screen.height,
-                                                screen.width,
-                                                x=0, y=0,
-                                                hover_focus=True,
-                                                title=" FLOW TRACE ",
-                                                reduce_cpu=True)
-
-            self._screen = screen
-
-            layout_cpt = Layout([1])
-            self.add_layout(layout_cpt)
-
-            layout_cpt.add_widget(Text(" [NODE] ", "COMPUTE"))
-            layout_cpt.add_widget(Divider())
-
-            i = 0
-            for key, value in TRACE.trace_cond_list:
-                if i % 2 == 0:
-                    layout_line = Layout([1, 35, 3, 35, 1])
-                    self.add_layout(layout_line)
-
-                    layout_line.add_widget(Text(self.key_name(key), value), 1)
-                else:
-                    layout_line.add_widget(Text(self.key_name(key), value), 3)
-
-                i = i + 1
-
-            layout_btn = Layout([1, 3, 3, 3, 3])
-            self.add_layout(layout_btn)
-            layout_btn.add_widget(Divider(), 0)
-            layout_btn.add_widget(Divider(), 1)
-            layout_btn.add_widget(Divider(), 2)
-            layout_btn.add_widget(Divider(), 3)
-            layout_btn.add_widget(Divider(), 4)
-            layout_btn.add_widget(Button("Start Trace", self._ok), 1)
-            layout_btn.add_widget(Button("Clear All", self.reset), 2)
-            layout_btn.add_widget(Button("Menu", self._menu), 3)
-            layout_btn.add_widget(Button("Quit", self._quit), 4)
-            layout_btn.add_widget(Divider(height=2), 0)
-            layout_btn.add_widget(Divider(), 1)
-            layout_btn.add_widget(Divider(), 2)
-            layout_btn.add_widget(Divider(), 3)
-            layout_btn.add_widget(Divider(), 4)
-
-            layout_result = Layout([1], fill_frame=True)
-            self.add_layout(layout_result)
-            self._trace_result = TextBox(Widget.FILL_FRAME, name='Flow', label='[Flow]', as_string=True)
-            layout_result.add_widget(self._trace_result)
-            layout_result.add_widget(Divider())
-
-            self._list_view = ListBox(
-                5,
-                self.trace_history,
-                name="LIST_HISTORY",
-                label="[HISTORY]")
-            layout_history = Layout([1])
-            self.add_layout(layout_history)
-            layout_history.add_widget(self._list_view)
-
-            self.fix()
-
-            self.palette = defaultdict(
-                lambda: (Screen.COLOUR_WHITE, Screen.A_BOLD, Screen.COLOUR_CYAN))
-
-            self.palette["selected_focus_field"] = (Screen.COLOUR_WHITE, Screen.A_BOLD, Screen.COLOUR_YELLOW)
-            self.palette["title"] = (Screen.COLOUR_WHITE, Screen.A_BOLD, Screen.COLOUR_CYAN)
-            self.palette["edit_text"] = (Screen.COLOUR_BLACK, Screen.A_BOLD, Screen.COLOUR_CYAN)
-            self.palette["focus_edit_text"] = (Screen.COLOUR_BLACK, Screen.A_BOLD, Screen.COLOUR_YELLOW)
-            self.palette["focus_button"] = (Screen.COLOUR_WHITE, Screen.A_BOLD, Screen.COLOUR_YELLOW)
-            self.palette["label"] = (Screen.COLOUR_WHITE, Screen.A_BOLD, Screen.COLOUR_CYAN)
-
-        except:
-            LOG.exception_err_write()
 
     isKeypad = False
 
@@ -588,12 +481,6 @@ class FlowTraceView(Frame):
                 elif c == -102:
                     event.key_code = 46
 
-            # press enter at trace history
-            if self._list_view._has_focus and c == 10:
-                self.save()
-                self.start_trace((self.trace_history[len(self.trace_history) - self._list_view.value])[0],
-                                 self.real_trace[self._list_view.value - 1])
-
         return super(FlowTraceView, self).process_event(event)
 
     def key_name(self, key):
@@ -612,62 +499,8 @@ class FlowTraceView(Frame):
 
         return key
 
-    def reset(self):
-        super(FlowTraceView, self).reset()
-
-    def _ok(self):
-        self.save()
-
-        saved_data = ''
-        real_data = ''
-        for key, real_key in TRACE.trace_cond_list:
-            val = self.data[real_key].strip()
-
-            if val != '':
-                saved_data = saved_data + key + '=' + val + ','
-                real_data = real_data + real_key + '=' + val + ','
-
-        saved_data = saved_data[0:-1]
-        real_data = real_data[0:-1]
-
-        self.start_trace(saved_data, real_data)
-
-    def start_trace(self, saved_data, real_data):
-        try:
-            if (len(self.data['COMPUTE'].strip()) == 0):
-                self._scene.add_effect(PopUpDialog(self._screen, "Please enter a compute node name.", ["OK"]))
-                return
-
-            if not (TRACE.compute_list.has_key(self.data['COMPUTE'].strip())):
-                self._scene.add_effect(
-                    PopUpDialog(self._screen, 'No ' + self.data["COMPUTE"].strip() + '(COMPUTE NODE) registered',
-                                ["OK"]))
-                return
-
-            if len(saved_data) == 0:
-                self._scene.add_effect(PopUpDialog(self._screen, "Please enter a flow-trace condition.", ["OK"]))
-                return
-
-            num = len(self.trace_history) + 1
-            data = (saved_data, num)
-
-            self.trace_history.insert(0, data)
-            self.real_trace.append(real_data)
-
-            self._list_view.value = len(self.trace_history)
-
-            cmd_rt = TRACE.exec_trace(TRACE.compute_id, TRACE.compute_list[self.data['COMPUTE'].strip()], real_data)
-
-            self._trace_result.value = cmd_rt
-        except:
-            LOG.exception_err_write()
-
-    @staticmethod
-    def _menu():
-        SCREEN.menu_flag = True
-        raise StopApplication("User terminated app")
-
     @staticmethod
     def _quit():
         SCREEN.set_exit()
         raise StopApplication("User pressed quit")
+

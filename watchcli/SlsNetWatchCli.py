@@ -13,7 +13,6 @@ from cli.log_lib import LOG
 from cli.config import CONFIG
 from cli.system_info import SYS
 from cli.cli import CLI
-from cli.flow_trace import TRACE
 from cli.log_lib import USER_LOG
 from cli.screen import SCREEN
 
@@ -21,6 +20,7 @@ menu_list = ["Monitoring Details", "Event History", "CLI", "Exit"]
 
 evt_thread = None
 conn_evt_thread = None
+SLEEP_TIME = 0.5
 
 def main():
     global evt_thread
@@ -61,11 +61,6 @@ def main():
     cli_log.set_log('watchcli_cli.log', CONFIG.get_cli_log_rotate(), int(CONFIG.get_cli_log_backup()))
     CLI.set_cli_log(cli_log, history_log)
 
-    # set trace log
-    #trace_log = USER_LOG()
-    #trace_log.set_log('sonawatched_trace.log', CONFIG.get_trace_log_rotate(), int(CONFIG.get_trace_log_backup()))
-    #TRACE.set_trace_log(trace_log)
-
     # read log option
     LOG.set_log_config()
 
@@ -88,7 +83,7 @@ def main():
         child_pid = cli_rest.rest_server_start(evt, disconnect_evt, rest_evt, history_log)
     except:
         print 'Rest Server failed to start'
-        print 'Processing shutdown...'
+        #print 'Processing shutdown...'
         LOG.exception_err_write()
         SYS.set_sys_thr_flag(False)
         conn_evt_thread.join()
@@ -98,7 +93,7 @@ def main():
     # regi event
     if CLI.send_regi() == False:
         print 'Event registration failed'
-        print 'Processing shutdown...'
+        #print 'Processing shutdown...'
         LOG.exception_err_write()
         SYS.set_sys_thr_flag(False)
         conn_evt_thread.join()
@@ -108,7 +103,7 @@ def main():
     # get event list
     if CLI.get_event_list() == False:
         print 'Get Event List failed'
-        print 'Processing shutdown...'
+        #print 'Processing shutdown...'
         LOG.exception_err_write()
         SYS.set_sys_thr_flag(False)
         conn_evt_thread.join()
@@ -120,7 +115,7 @@ def main():
         res_code, sys_info = CLI.req_sys_info()
     except:
         print "Cannot connect rest server."
-        print 'Processing shutdown...'
+        #print 'Processing shutdown...'
         SYS.set_sys_thr_flag(False)
         conn_evt_thread.join()
         evt_thread.join()
@@ -129,7 +124,7 @@ def main():
     if res_code != 200:
         print "Rest server does not respond to the request."
         print "code = " + str(res_code)
-        print 'Processing shutdown...'
+        #print 'Processing shutdown...'
         if not SYS.disconnect_type == 'disconnect':
             CLI.send_regi('unregi')
         SYS.set_sys_thr_flag(False)
@@ -141,9 +136,6 @@ def main():
 
     # set command list
     CLI.set_cmd_list()
-
-    # set trace cond list
-    #TRACE.set_cnd_list()
 
     # set search list
     CLI.set_search_list()
@@ -157,7 +149,7 @@ def main():
     select_menu()
 
     # exit
-    print 'Processing shutdown...'
+    #print 'Processing shutdown...'
     if not SYS.disconnect_type == 'disconnect':
         CLI.send_regi('unregi')
 
@@ -260,7 +252,7 @@ def select_menu():
                             CLI.process_cmd(cmd)
 
                             while not CLI.get_cli_ret_flag():
-                                time.sleep(1)
+                                time.sleep(SLEEP_TIME)
 
                 elif menu == 'Flow Trace':
                     from asciimatics.screen import Screen
@@ -283,7 +275,6 @@ def select_menu():
                                 SCREEN.main_scr.timeout(-1)
                                 break
                             elif SCREEN.resize_err_flag:
-                                SCREEN.draw_trace_warning()
                                 SCREEN.screen_exit()
                                 SCREEN.menu_flag = True
                                 return
@@ -329,9 +320,8 @@ def listen_disconnect_evt(evt, rest_evt):
                 os.killpg(os.getpid(), signal.SIGKILL)
                 #os.kill(os.getpid(), signal.SIGKILL)
 
-            time.sleep(1)
-
-            rest_evt.wait(1)
+            time.sleep(SLEEP_TIME)
+            rest_evt.wait(SLEEP_TIME)
 
             if rest_evt.is_set():
                 LOG.debug_log('Get rest error event')
@@ -347,7 +337,7 @@ def listen_disconnect_evt(evt, rest_evt):
                 os.killpg(os.getpid(), signal.SIGKILL)
                 #os.kill(os.getpid(), signal.SIGKILL)
 
-            time.sleep(1)
+            time.sleep(SLEEP_TIME)
         except:
             LOG.exception_err_write()
 
@@ -362,7 +352,7 @@ def listen_evt(evt):
                 # system check
                 check_system()
 
-            time.sleep(1)
+            time.sleep(SLEEP_TIME)
         except:
             LOG.exception_err_write()
 

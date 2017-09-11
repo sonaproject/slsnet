@@ -9,7 +9,6 @@ DEFAULT_LOG_PATH = os.getcwd() + "/log/"
 
 class LOG():
     cli_log_flag = False
-    trace_log_flag = False
 
     LOG = logging.getLogger(__name__)
 
@@ -37,9 +36,6 @@ class LOG():
     def set_log_config(cls):
         if (CONFIG.get_cli_log().upper()) == 'ON':
             cls.cli_log_flag = True
-
-        #if (CONFIG.get_trace_log().upper()) == 'ON':
-        #    cls.trace_log_flag = True
 
     @classmethod
     def exception_err_write(cls):
@@ -72,13 +68,6 @@ class USER_LOG():
 
         self.LOG.addHandler(file_handler)
         self.LOG.setLevel(logging.DEBUG)
-
-    def trace_log(self, log):
-        try:
-            if LOG.trace_log_flag:
-                self.LOG.debug(log)
-        except:
-            LOG.exception_err_write()
 
     def cli_log(self, log):
         try:

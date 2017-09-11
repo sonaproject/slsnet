@@ -24,24 +24,7 @@ class RestHandler(BaseHTTPRequestHandler):
             LOG.debug_log('[REST-SERVER] RECV HEADER = \n' + str(self.headers))
             LOG.debug_log('[REST-SERVER] RECV BODY = \n' + json.dumps(body, sort_keys=True, indent=4))
 
-            if self.path.startswith('/test'):
-                t_id = body['transaction_id']
-
-                if os.path.exists('log/flowtrace_' + t_id):
-                    os.remove('log/flowtrace_' + t_id)
-                result_file = open('log/flowtrace_' + t_id, 'w')
-                result_file.write(str(body))
-                result_file.close()
-            elif self.path.startswith('/traffictest'):
-                t_id = body['transaction_id']
-
-                if os.path.exists('log/traffictest_' + t_id):
-                    os.remove('log/traffictest_' + t_id)
-                result_file = open('log/traffictest_' + t_id, 'w')
-                result_file.write(str(body))
-                result_file.close()
-
-            elif self.headers.getheader('Authorization') is None:
+            if self.headers.getheader('Authorization') is None:
                 LOG.debug_log('[REST-SERVER] no auth header received')
 
             elif not self.path.startswith('/event'):
