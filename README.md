@@ -364,8 +364,8 @@ BRANCHED FROM: https://github.com/snsol2/sonaWatchd.git
 
 ### 설치방법
 ssh key 생성 및 배포를 위해서 setup tool을 사용한다.
-- 서버 실행 장비에서는 `watchd/setup/ssh_key_setup.py1` 파일을 실행시킨다.
-- 클라이언트 실행 환경에서는 `watchcli/setup/ssh_key_setup.py` 파일을 실행시킨다.
+- 서버 실행 장비에서는 `watchd/ssh_key_setup.py` 파일을 실행시킨다.
+- ~~클라이언트 실행 환경에서는 `watchcli/ssh_key_setup.py` 파일을 실행시킨다.~~
 
 Python 환경 설정
 - Python2.7을 사용하며, 버전 호환성 문제를 피하기 위하여, `/usr/local/bin/python` 을 호출하여 사용한다.
@@ -374,10 +374,10 @@ Python 환경 설정
   - watchd: SlackClient
 
 기본적으로, watchd와 watchcli 는 모두 ONOS를 동작중인 노드에서 수행하는 형태로 설정되어 있다.
-- Remote 서버 연동형태로 구성하려면 각각의 config/ 에 있는 설정파일을 변경한다.
+- Remote 서버 연동형태로 구성하려면 각각의 설정파일을 변경한다.
 - 환경 변수를 사용하여 설정 파일을 지정할 수 있다:
-  - watchd 설정 파일: `SLSNET_WATCHD_CFG` (기본값: config/config.ini)
-  - watchcli 설정 파일: `SLSNET_WATCHCLI_CFG` (기본값: config/cli_config.ini)
+  - watchd 설정 파일: `SLSNET_WATCHD_CFG` (기본값: config.ini)
+  - watchcli 설정 파일: `SLSNET_WATCHCLI_CFG` (기본값: cli_config.ini)
 
 모니터링 대상 Device, Link 를 지정하기 위해 반드시 watchd 설정 파일의 `ONOS` 섹션에 있는 `device_list` 와 `link_list` 를 설정하여야 한다.
 

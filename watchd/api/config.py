@@ -6,7 +6,7 @@ import os
 import sys
 import ConfigParser
 
-DEFAULT_CONF_FILE = os.getenv('SLSNET_WATCHD_CFG', 'config/config.ini')
+DEFAULT_CONF_FILE = os.getenv('SLSNET_WATCHD_CFG', 'config.ini')
 
 class ConfReader:
     conf_map = dict()
