@@ -350,17 +350,19 @@ If onos is updated, apply update for external app maven build, at onos/ source d
   - ** --> rate-limit 을 꺼야 함 ** (2017-08-10)
 
 
-## ONOS/SLSNET Monitoring Daemon and Client
+## ONOS/SLSNET Monitoring 
 
-slsnetwatchd는 ONOS, SLSNET APP, Device, Link 에 대한 Monitoring 기능을 제공
+- watchd는 ONOS, SLSNET APP, Device, Link 에 대한 Monitoring 기능을 제공
+- watchcli 는 slsnetwatchd 에 접속하여, 상태를 조회하는 UI를 제공
+- checknet 는 설정 파일에 등록한 host에 들어가 ping 을 통해 host 간 전송상태를 확인하는 기능을 제공
 
-
-기존의 SonaWatcher를 복제하여, 필요한 수정을 적용하고 slsnet/ repository 내에 [watchd/](watchd/) [watchcli/](watchcli/) 로 추가
+* 기존의 SonaWatcher를 복제하여, 필요한 수정을 적용하고 slsnet/ repository 내에 [watchd/](watchd/) [watchcli/](watchcli/) 로 추가
 ```
 BRANCHED FROM: https://github.com/snsol2/sonaWatchd.git
                commit 9edfdfa7c3b3de3e370d3061159c062f9f737f6c
                at 2017-08-23 by Lee Yongjae, setup74@telcoware.com.
 ```
+
 
 ### 설치방법
 ssh key 생성 및 배포를 위해서 setup tool을 사용한다.
@@ -378,6 +380,7 @@ Python 환경 설정
 - 환경 변수를 사용하여 설정 파일을 지정할 수 있다:
   - watchd 설정 파일: `SLSNET_WATCHD_CFG` (기본값: config.ini)
   - watchcli 설정 파일: `SLSNET_WATCHCLI_CFG` (기본값: cli_config.ini)
+  - checknet 설정 파일: `SLSNET_CHECKNET_CFG` (기본값: checknet_config.ini)
 
 모니터링 대상 Device, Link 를 지정하기 위해 반드시 watchd 설정 파일의 `ONOS` 섹션에 있는 `device_list` 와 `link_list` 를 설정하여야 한다.
 
@@ -394,5 +397,7 @@ in watchcli/
 - 실행: `./SlsNetWatchcli.py`
 - 종료: cli main 화면에서 Esc 키 입력 또는 Exit 메뉴 선택
 
-
+### Check Network by Hosts-Hosts Ping
+in checknet/
+- 실행: `./SlsNetCheckNet` (수행후 종료)
 
