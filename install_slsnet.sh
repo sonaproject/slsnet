@@ -6,8 +6,8 @@
 
 TARGET=/opt/onos
 
-ONOS_VERSION=1.11.0-rc4
-SLSNET_VERSION=1.11.0-rc4
+ONOS_VERSION=1.11.0
+SLSNET_VERSION=1.11.0
 
 # to reinstall ONOS, call this script with "-r" argument
 REINISTALL_ONOS=no
