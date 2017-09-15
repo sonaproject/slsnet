@@ -9,6 +9,7 @@ import subprocess
 import os
 import sys
 import getopt
+import getpass
 
 CONFIG_FILE = os.getenv('SLSNET_WATCHD_CFG', 'config.ini')
 REQUIREMENT_PKG = 'pexpect'
@@ -79,8 +80,8 @@ class CONF:
 
 # create ssh public key
 def ssh_keygen():
-    print "[Setup] No ssh id_rsa and id_rsa.pub file ......"
-    print "[Setup] Make ssh id_rsa and id_rsa.pub file ......"
+    print "[Setup] No ssh id_rsa and id_rsa.pub file"
+    print "[Setup] Make ssh id_rsa and id_rsa.pub file"
 
     subprocess.call('ssh-keygen -t rsa -f ~/.ssh/id_rsa -P \'\' -q', shell=True)
 
@@ -92,57 +93,54 @@ def key_copy(node, conf):
           % (HOME_DIR, username, node)
     ssh_conn = pexpect.spawn(cmd)
 
+    print "[Setup] Set passwordless system login on %s@%s from local user" % (username, node)
+
     while True:
         rt = ssh_conn.expect(['password:', pexpect.EOF, pexpect.TIMEOUT], timeout=SSH_TIMEOUT)
         if rt == 0:
             if str(CONF().get_auto_passwd_flag()).lower() == 'no':
-                password = str(raw_input("\n[Setup] Input %s password: " % node))
-
+                password = str(getpass.getpass('\nPassword for %s@%s ?: ' % (username, node)))
             ssh_conn.sendline(password)
-
         elif rt == 1:
             ssh_print(node, ssh_conn.before.splitlines())
             break
         elif rt == 2:
             print "[Error] I either got key or connection timeout"
 
-    print '[Check] \"%s\" user of sudoer info' % username
+    if username != 'root':
+        print '[Setup] check if remote user is of sudoer: %s' % username
 
-    nopw_cmd = 'ssh -oStrictHostKeyChecking=no %s@%s ' \
-               'sudo grep %s /etc/sudoers | grep -v \'\#\''  \
-               % (username, node, username)
-    ssh_conn = pexpect.spawn(nopw_cmd)
+        nopw_cmd = 'ssh -oStrictHostKeyChecking=no %s@%s ' \
+                   'sudo grep %s /etc/sudoers | grep -v \'\#\''  \
+                   % (username, node, username)
+        ssh_conn = pexpect.spawn(nopw_cmd)
 
-    if ssh_conn.expect([pexpect.EOF], timeout=SSH_TIMEOUT) == 0:
-        if 'nopasswd' in str(ssh_conn.before.splitlines()).lower():
-            print '[Check Succ] sudoer set correctly... '
-            return
+        if ssh_conn.expect([pexpect.EOF], timeout=SSH_TIMEOUT) == 0:
+            if 'nopasswd' in str(ssh_conn.before.splitlines()).lower():
+                print '[Check Succ] sudoer set correctly... '
+                return
+            else:
+                print '[Check Fail] Please Set sudoer config for %s\n'\
+                      '    Insert \"%s ALL=(ALL) NOPASSWD:ALL\" in /etc/sudoers' \
+                      % (username, username)
         else:
-            print '[Fail Nopasswd] Please Set sudoer config for %s. \n' \
-                  '                Insert \"%s ALL=(ALL) NOPASSWD:ALL\" ' \
-                  'in /etc/sudoers' \
-                  % (username, username)
-    else:
-        ssh_print(node, ssh_conn.before.splitlines())
-
-    print '\n'
+            ssh_print(node, ssh_conn.before.splitlines())
 
 
 # ssh key copy to ONOS instance
 def key_copy_2onos(node, conf):
-    print "[Setup] ONOS(%s) Prune the node entry from the known hosts file ......" % node
+    print "[Setup] Prune the node entry from the known hosts file on %s" % node
     prune_ssh_key_cmd = 'ssh-keygen -f "%s/.ssh/known_hosts" -R %s:8101' % (HOME_DIR, node)
     subprocess.call(prune_ssh_key_cmd, shell=True)
-
-    print "[Setup] ONOS(%s) Setup passwordless login for the local user ......" % node
 
     id_pub_file = file(ID_RAS_FILE, 'r')
     ssh_key = id_pub_file.read().split(" ")[1]
     id_pub_file.close()
     username, password = conf['account'].split(":")
 
+    print "[Setup] Set passwordless ONOS login on %s@%s from local user" % (username, node)
     if ssh_key == '':
-        print "[Setup] Read id_ras.pub file Fail ......"
+        print "[Setup] Read id_ras.pub file Fail"
         exit(1)
 
     set_ssh_key_cmd = 'ssh %s@%s %s/bin/onos-user-key %s %s' % \
@@ -154,17 +152,16 @@ def key_copy_2onos(node, conf):
 def ssh_print(node, lines):
     for line in lines:
         if line != '':
-            print "[Setup] %s; %s" % (node, line)
+            print "%s" % line
 
 
 def onos():
-    print "\n\n[Setup] Start to copy ssh-key to ONOS systems ......"
-
     conf = CONF().get_system_info('ONOS')
     for node in str(conf['list']).replace(" ", "").split(","):
+        print "[Setup] Checking %s" % node
         key_copy(node.split(":")[1], conf)
         key_copy_2onos(node.split(":")[1], conf)
-        print "-- %s setup finish ------\n" % node
+        print ""
 
 
 def main(argv):
@@ -172,24 +169,26 @@ def main(argv):
     try:
         opts, args = getopt.getopt(argv, "h:c:",["config="])
     except getopt.GetoptError:
-        print "\n[Usage]"
-        print "./ssh_key_setup.py -c <config file>  or  " \
-              "./ssh_key_setup.py --config=<config file>\n\n"
+        print "Usage: ./ssh_key_setup.py -c <config file>"
         sys.exit(2)
 
     for opt, arg in opts:
-        if opt == '-h':
-            print "[Usage]  ./ssh_key_setup.py -c <config file>"
-        elif opt in ('-c', "--config"):
+        if opt in ('-c', "--config"):
             CONFIG_FILE = arg
+        else:
+            if opt != '-h':
+                print "unknown option: %s" % opt
+            print "Usage: ./ssh_key_setup.py -c <config file>"
+            sys.exit(2)
 
-    print "[Setup] ssh-key copy to start ......"
-
-    print "[Setup] checking ssh \'id_rsa\' and \'id_rsa.pub\' key files ......"
+    print ""
+    print "[Setup] Checking local user ssh key files"
     if not set(['id_rsa','id_rsa.pub']).issubset(os.listdir(SSH_DIR)):
+        print "Generate ssh \'id_rsa\' and \'id_rsa.pub\' key files"
         ssh_keygen()
     else:
-        print "[Setup] ssh \'id_rsa\' and \'id_rsa.pub\' key files exist ......"
+        print "Ssh Key files \'id_rsa\' and \'id_rsa.pub\' already exist"
+    print ""
 
     for node in str(CONF().get_setup_system('WATCHDOG')).replace(" ", "").split(","):
         if node.__eq__('ONOS'):
