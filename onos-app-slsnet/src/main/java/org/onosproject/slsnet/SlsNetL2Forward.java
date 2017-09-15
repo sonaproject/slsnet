@@ -162,7 +162,7 @@ public class SlsNetL2Forward {
         for (SinglePointToMultiPointIntent intent : bctIntentsMap.values()) {
             SinglePointToMultiPointIntent newIntent = newBctIntentsMap.get(intent.key());
             if (newIntent == null) {
-                log.info("slsnet l2forward withdraw broadcast intent: {}", intent);
+                log.info("slsnet l2forward withdraw broadcast intent: {}", intent.key().toString());
                 toBePurgedIntentKeys.add(intent.key());
                 intentService.withdraw(intent);
                 bctUpdated = true;
@@ -176,7 +176,7 @@ public class SlsNetL2Forward {
                     !oldIntent.selector().equals(intent.selector()) ||
                     !oldIntent.treatment().equals(intent.treatment()) ||
                     !oldIntent.constraints().equals(intent.constraints())) {
-                log.info("slsnet l2forward submit broadcast intent: {}", intent);
+                log.info("slsnet l2forward submit broadcast intent: {}", intent.key().toString());
                 toBePurgedIntentKeys.remove(intent.key());
                 intentService.submit(intent);
                 bctUpdated = true;
@@ -187,7 +187,7 @@ public class SlsNetL2Forward {
         for (MultiPointToSinglePointIntent intent : uniIntentsMap.values()) {
             MultiPointToSinglePointIntent newIntent = newUniIntentsMap.get(intent.key());
             if (newIntent == null) {
-                log.info("slsnet l2forward withdraw unicast intent: {}", intent);
+                log.info("slsnet l2forward withdraw unicast intent: {}", intent.key().toString());
                 toBePurgedIntentKeys.add(intent.key());
                 intentService.withdraw(intent);
                 uniUpdated = true;
@@ -201,7 +201,7 @@ public class SlsNetL2Forward {
                     !oldIntent.selector().equals(intent.selector()) ||
                     !oldIntent.treatment().equals(intent.treatment()) ||
                     !oldIntent.constraints().equals(intent.constraints())) {
-                log.info("slsnet l2forward submit unicast intent: {}", intent);
+                log.info("slsnet l2forward submit unicast intent: {}", intent.key().toString());
                 toBePurgedIntentKeys.remove(intent.key());
                 intentService.submit(intent);
                 uniUpdated = true;
@@ -223,13 +223,13 @@ public class SlsNetL2Forward {
             for (Key key : toBePurgedIntentKeys) {
                 Intent intentToPurge = intentService.getIntent(key);
                 if (intentToPurge == null) {
-                    log.info("slsnet l2forward purged intent: key={}", key);
+                    log.info("slsnet l2forward purged intent: key={}", key.toString());
                     purgedKeys.add(key);
                 } else {
                     switch (intentService.getIntentState(key)) {
                     case FAILED:
                     case WITHDRAWN:
-                        log.info("slsnet l2forward try to purge intent: key={}", key);
+                        log.info("slsnet l2forward try to purge intent: key={}", key.toString());
                         intentService.purge(intentToPurge);
                         break;
                     case INSTALL_REQ:

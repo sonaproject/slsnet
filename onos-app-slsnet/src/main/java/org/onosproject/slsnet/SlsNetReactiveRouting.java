@@ -16,7 +16,6 @@
 package org.onosproject.slsnet;
 
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Maps;
 import org.apache.felix.scr.annotations.Activate;
 import org.apache.felix.scr.annotations.Component;
 import org.apache.felix.scr.annotations.Deactivate;
@@ -80,8 +79,6 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Set;
 
 
@@ -125,36 +122,11 @@ public class SlsNetReactiveRouting {
             = ImmutableList.of(new PartialFailureConstraint(), new  HashedPathSelectionConstraint());
 
     private Set<FlowRule> interceptFlowRules = new HashSet<>();
-    private Map<IpPrefix, RouteIntent> routeIntents = Maps.newConcurrentMap();
     private Set<Key> toBePurgedIntentKeys = new HashSet<>();
             // NOTE: manage purged intents by key for intentService.getIntent() supports key only
 
     private final InternalSlsNetListener slsnetListener = new InternalSlsNetListener();
     private ReactiveRoutingProcessor processor = new ReactiveRoutingProcessor();
-
-    private class RouteIntent {
-        private MultiPointToSinglePointIntent intent;
-        private final IpAddress nextHopIp;
-        private final MacAddress nextHopMac;
-
-        RouteIntent(MultiPointToSinglePointIntent intent, IpAddress nextHopIp, MacAddress nextHopMac) {
-            this.intent = intent;
-            this.nextHopIp = nextHopIp;
-            this.nextHopMac = nextHopMac;
-        }
-        public MultiPointToSinglePointIntent intent() {
-            return intent;
-        }
-        public IpAddress nextHopIp() {
-            return nextHopIp;
-        }
-        public MacAddress nextHopMac() {
-            return nextHopMac;
-        }
-        public void setIntent(MultiPointToSinglePointIntent intent) {
-            this.intent = intent;
-        }
-    }
 
     @Activate
     public void activate() {
@@ -196,7 +168,7 @@ public class SlsNetReactiveRouting {
         //    intentService.withdraw(routeIntent.intent());
         //}
 
-        routeIntents.clear();
+        //routeIntents.clear();
         toBePurgedIntentKeys.clear();
 
         flowRuleService.removeFlowRulesById(reactiveAppId);
@@ -387,11 +359,11 @@ public class SlsNetReactiveRouting {
      * Refresh routes by examining network resource status.
      */
     private void refreshRouteIntents() {
-        Set<IpPrefix> prefixToRemove = new HashSet<>();
-
-        for (Map.Entry<IpPrefix, RouteIntent> entry : routeIntents.entrySet()) {
-            RouteIntent routeIntent = entry.getValue();
-            MultiPointToSinglePointIntent intent = routeIntent.intent();
+        for (Intent entry : intentService.getIntents()) {
+            if (!reactiveAppId.equals(entry.appId())) {
+                continue;
+            }
+            MultiPointToSinglePointIntent intent = (MultiPointToSinglePointIntent) entry;
             boolean clearIntent = true;  // mark to clear intent on dummy while loop breaks
             do {
                 // check if intents status is bad, then remove from routeIntents for future reinstall
@@ -403,7 +375,6 @@ public class SlsNetReactiveRouting {
                                  +  "remove and try to purge intent: key={}", intent.key());
                         // purge intents here without withdraw
                         intentService.purge(intentService.getIntent(intent.key()));
-                        prefixToRemove.add(entry.getKey());
                         toBePurgedIntentKeys.add(intent.key());
                         clearIntent = false;  // mark no clear and to exit loop for this intent
                         break;
@@ -429,22 +400,7 @@ public class SlsNetReactiveRouting {
                              + "remove intent for egress point not available: key={}", intent.key());
                     break;
                 }
-                // check if nextHopIp mac or connection point is changed
-                Set<Host> hosts = hostService.getHostsByIp(routeIntent.nextHopIp());
-                if (hosts.isEmpty()) {
-                    log.info("slsnet reactive routing refresh route intents; "
-                             + "remove intent for host entry not found: key={}", intent.key());
-                    break;
-                }
-                Host host = hosts.iterator().next();
-
-                if (!host.mac().equals(routeIntent.nextHopMac) ||
-                    !intent.egressPoint().equals((ConnectPoint) host.location())) {
-                    log.info("slsnet reactive routing refresh route intents; "
-                             + "remove intent for host mac or egress point changed: key={}", intent.key());
-                    break;
-                }
-                // check if ingress point set is changed
+                // MAY NEED TO CHECK: intent.egressPoint and intent.treatment's dstMac is valid against hosts
                 Set<ConnectPoint> newIngressPoints = new HashSet<>();
                 boolean ingressPointChanged = false;
                 for (ConnectPoint cp : intent.ingressPoints()) {
@@ -476,8 +432,7 @@ public class SlsNetReactiveRouting {
                             .build();
                     log.info("slsnet reactive routing refresh route update intent: key={} updatedIntent={}",
                             intent.key(), updatedIntent);
-                    toBePurgedIntentKeys.remove(updatedIntent.key());   // may remove from old purged entry
-                    routeIntent.setIntent(updatedIntent);
+                    toBePurgedIntentKeys.remove(intent.key());   // may remove from old purged entry
                     intentService.submit(updatedIntent);
                 }
                 // this intent is valid
@@ -488,13 +443,8 @@ public class SlsNetReactiveRouting {
             // remote entry for current status is not value
             if (clearIntent) {
                 intentService.withdraw(intentService.getIntent(intent.key()));
-                prefixToRemove.add(entry.getKey());
                 toBePurgedIntentKeys.add(intent.key());
             }
-        }
-        /* clean up intents */
-        for (IpPrefix prefix : prefixToRemove) {
-            routeIntents.remove(prefix);
         }
     }
 
@@ -540,7 +490,7 @@ public class SlsNetReactiveRouting {
         // check all intents of mine
         Set<Intent> myIntents = new HashSet<>();
         for (Intent intent : intentService.getIntents()) {
-            if (intent.appId().equals(reactiveAppId)) {
+            if (reactiveAppId.equals(intent.appId())) {
                 myIntents.add(intent);
             }
         }
@@ -761,6 +711,8 @@ public class SlsNetReactiveRouting {
      */
     private void setUpConnectivity(ConnectPoint srcCp, IpPrefix prefix, IpAddress nextHopIp,
                                    MacAddress treatmentSrcMac, EncapsulationType encap) {
+        Key key = Key.of(prefix.toString(), reactiveAppId);
+
         MacAddress nextHopMac = null;
         ConnectPoint egressPoint = null;
         for (Host host : hostService.getHostsByIp(nextHopIp)) {
@@ -776,75 +728,56 @@ public class SlsNetReactiveRouting {
             slsnet.requestMac(nextHopIp);
             return;
         }
+        TrafficTreatment treatment = generateSetMacTreatment(nextHopMac, treatmentSrcMac);
 
-        RouteIntent existingRouteIntent = routeIntents.get(prefix);
-        if (existingRouteIntent != null
-                && existingRouteIntent.intent().egressPoint().equals(egressPoint)
-                && existingRouteIntent.nextHopIp().equals(nextHopIp)
-                && existingRouteIntent.nextHopMac().equals(nextHopMac)) {
-            MultiPointToSinglePointIntent existingIntent = existingRouteIntent.intent();
-            log.trace("slsnet reactive routing update mp2p intent: prefix={} srcCp={}", prefix, srcCp);
-            Set<ConnectPoint> ingressPoints = existingIntent.ingressPoints();
-            if (!ingressPoints.contains(srcCp) && ingressPoints.add(srcCp)) {
-                MultiPointToSinglePointIntent updatedIntent =
-                        MultiPointToSinglePointIntent.builder()
-                                .appId(reactiveAppId)
-                                .key(existingIntent.key())
-                                .selector(existingIntent.selector())
-                                .treatment(existingIntent.treatment())
-                                .ingressPoints(ingressPoints)
-                                .egressPoint(egressPoint)
-                                .priority(existingIntent.priority())
-                                .constraints(buildConstraints(REACTIVE_CONSTRAINTS, encap))
-                                .build();
-
-                log.trace("slsnet reactive routing update mp2p intent: prefix={} srcCp={} updatedIntent={}",
-                          prefix, srcCp, updatedIntent);
-                toBePurgedIntentKeys.remove(updatedIntent.key());
-                routeIntents.put(prefix, new RouteIntent(updatedIntent, nextHopIp, nextHopMac));
-                intentService.submit(updatedIntent);
+        TrafficSelector.Builder selector = DefaultTrafficSelector.builder();
+        if (SlsNetService.VIRTUAL_GATEWAY_ETH_ADDRESS_SELECTOR) {
+            selector.matchEthDst(slsnet.getVirtualGatewayMacAddress());
+        }
+        if (prefix.isIp4()) {
+            selector.matchEthType(Ethernet.TYPE_IPV4);
+            if (prefix.prefixLength() > 0) {
+                selector.matchIPDst(prefix);
             }
-            // If adding ingressConnectPoint to ingressPoints failed, it
-            // because between the time interval from checking existing intent
-            // to generating new intent, onos updated this intent due to other
-            // packet-in and the new intent also includes the
-            // ingressConnectPoint. This will not affect reactive routing.
         } else {
-            Key key = Key.of(prefix.toString(), reactiveAppId);
-            TrafficSelector.Builder selector = DefaultTrafficSelector.builder();
-            if (SlsNetService.VIRTUAL_GATEWAY_ETH_ADDRESS_SELECTOR) {
-               selector.matchEthDst(slsnet.getVirtualGatewayMacAddress());
+            selector.matchEthType(Ethernet.TYPE_IPV6);
+            if (prefix.prefixLength() > 0) {
+                selector.matchIPv6Dst(prefix);
             }
-            if (prefix.isIp4()) {
-                selector.matchEthType(Ethernet.TYPE_IPV4);
-                if (prefix.prefixLength() > 0) {
-                    selector.matchIPDst(prefix);
-                }
-            } else {
-                selector.matchEthType(Ethernet.TYPE_IPV6);
-                if (prefix.prefixLength() > 0) {
-                    selector.matchIPv6Dst(prefix);
-                }
-            }
-            Set<ConnectPoint> ingressPoints = new HashSet<>();
-            ingressPoints.add(srcCp);
-            MultiPointToSinglePointIntent newIntent = MultiPointToSinglePointIntent.builder()
-                    .appId(reactiveAppId)
-                    .key(key)
-                    .selector(selector.build())
-                    .treatment(generateSetMacTreatment(nextHopMac, treatmentSrcMac))
-                    .ingressPoints(ingressPoints)
-                    .egressPoint(egressPoint)
-                    .priority(reactivePriority(prefix.prefixLength(), slsnet.PRI_REACTIVE_ROUTE))
-                    .constraints(buildConstraints(REACTIVE_CONSTRAINTS, encap))
-                    .build();
+        }
 
-           log.trace("slsnet reactive routing generate mp2p intent: prefix={} srcCp={} "
-                     + "newIntent={} nextHopIp={} nextHopMac={}", prefix, srcCp, newIntent, nextHopIp, nextHopMac);
-           toBePurgedIntentKeys.remove(newIntent.key());
-           routeIntents.put(prefix, new RouteIntent(newIntent, nextHopIp, nextHopMac));
-           intentService.submit(newIntent);
-       }
+        // check and merge already existing ingress points
+        Set<ConnectPoint> ingressPoints = new HashSet<>();
+        MultiPointToSinglePointIntent existingIntent = (MultiPointToSinglePointIntent) intentService.getIntent(key);
+        if (existingIntent != null) {
+            ingressPoints.addAll(existingIntent.ingressPoints());
+            if (ingressPoints.add(srcCp)  /* alread exists and dst not changed */
+                    && egressPoint == existingIntent.egressPoint()
+                    && treatment == existingIntent.treatment()) {
+                log.warn("slsnet reactive routing srcCP is already in mp2p intent: prefix={} srcCp={}", prefix, srcCp);
+                return;
+            }
+            log.trace("slsnet reactive routing update mp2p intent: prefix={} srcCp={}", prefix, srcCp);
+        } else {
+            log.trace("slsnet reactive routing create mp2p intent: prefix={} srcCp={}", prefix, srcCp);
+            ingressPoints.add(srcCp);
+        }
+
+        MultiPointToSinglePointIntent newIntent = MultiPointToSinglePointIntent.builder()
+            .key(key)
+            .appId(reactiveAppId)
+            .selector(selector.build())
+            .treatment(treatment)
+            .ingressPoints(ingressPoints)
+            .egressPoint(egressPoint)
+            .priority(reactivePriority(prefix.prefixLength(), slsnet.PRI_REACTIVE_ROUTE))
+            .constraints(buildConstraints(REACTIVE_CONSTRAINTS, encap))
+            .build();
+        log.trace("slsnet reactive routing submmit mp2p intent: prefix={} srcCp={} "
+                  + "newIntent={} nextHopIp={} nextHopMac={}", prefix, ingressPoints, newIntent, nextHopIp, nextHopMac);
+        toBePurgedIntentKeys.remove(newIntent.key());
+        //routeIntents.put(prefix, new RouteIntent(newIntent, nextHopIp, nextHopMac));
+        intentService.submit(newIntent);
     }
 
     // generate treatement to target
@@ -886,12 +819,14 @@ public class SlsNetReactiveRouting {
     private void dump(String subject, PrintStream out) {
         if (subject == "intents") {
             out.println("Reactive Routing Route Intents:\n");
-            for (Map.Entry<IpPrefix, RouteIntent> entry: routeIntents.entrySet()) {
-                out.println("    " + entry.getKey().toString()
-                          + " to " + entry.getValue().intent().egressPoint().toString()
-                          + " " + entry.getValue().nextHopMac().toString()
-                          + " (" + entry.getValue().nextHopIp().toString()
-                          + ") from " + entry.getValue().intent().ingressPoints().toString());
+            for (Intent entry : intentService.getIntents()) {
+                if (reactiveAppId.equals(entry.appId())) {
+                    MultiPointToSinglePointIntent intent = (MultiPointToSinglePointIntent) entry;
+                    out.println("    " + intent.key().toString()
+                                + " to " + intent.egressPoint().toString()
+                                + " set " + intent.treatment().immediate().toString()
+                                + " from " + intent.ingressPoints().toString());
+                }
             }
             out.println("");
 

@@ -15,7 +15,7 @@ if [ "$1" = '-r' ]
 then
     echo reinistall ONOS from ../onos/
     sudo service onos stop
-    sudo pkill java
+    #sudo pkill java
     sudo rm -rf /opt/onos /opt/onos-${ONOS_VERSION}
     sudo tar -xzf ../onos/buck-out/gen/tools/package/onos-package/onos.tar.gz -C /opt
     sudo ln -s /opt/onos-${ONOS_VERSION} /opt/onos
@@ -25,13 +25,10 @@ then
 fi
 
 # build, reinistall and reactivate slsnet app
-(
-cd onos-app-slsnet/
-mvn clean compile install || exit 1
+( cd onos-app-slsnet/; mvn clean compile install || exit 1 )
 onos-app localhost uninstall org.onosproject.slsnet
-onos-app localhost install target/onos-app-slsnet-${SLSNET_VERSION}.oar
+onos-app localhost install onos-app-slsnet/target/onos-app-slsnet-${SLSNET_VERSION}.oar
 onos-app localhost activate org.onosproject.slsnet
-)
 
 # reinstall network config
 # if argument exists, use it as config file
@@ -44,5 +41,5 @@ onos-netcfg localhost $NETCFG_FILE
 sudo cp "$NETCFG_FILE" $TARGET/config/network-cfg.json
 
 # restart onos service
-sudo service onos restart
+#sudo service onos restart
 
