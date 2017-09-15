@@ -136,7 +136,7 @@ class CLI():
                             header = []
                             header.append({'title':'Name', 'size':'30'})
                             header.append({'title':'Status', 'size':'8'})
-                            header.append({'title':'MonItem', 'size':'7'})
+                            header.append({'title':'MonItem', 'size':'8'})
                             data = []
                             for row in sys_ret:
                                 line = []
@@ -164,7 +164,7 @@ class CLI():
                                 header.append({'title':'Id', 'size':'24'})
                                 header.append({'title':'Address', 'size':'24'})
                                 header.append({'title':'Status', 'size':'8'})
-                                header.append({'title':'MonItem', 'size':'7'})
+                                header.append({'title':'MonItem', 'size':'8'})
                                 data = []
                                 for row in sys_ret:
                                     line = []
@@ -192,7 +192,7 @@ class CLI():
                                 header.append({'title':'ChannelId', 'size':'24'})
                                 header.append({'title':'Name', 'size':'8'})
                                 header.append({'title':'Status', 'size':'8'})
-                                header.append({'title':'MonItem', 'size':'7'})
+                                header.append({'title':'MonItem', 'size':'8'})
                                 data = []
                                 for row in sys_ret:
                                     line = []
@@ -222,7 +222,7 @@ class CLI():
                                 header.append({'title':'Dst', 'size':'24'})
                                 header.append({'title':'Type', 'size':'8'})
                                 header.append({'title':'Status', 'size':'8'})
-                                header.append({'title':'MonItem', 'size':'7'})
+                                header.append({'title':'MonItem', 'size':'8'})
                                 data = []
                                 for row in sys_ret:
                                     line = []
@@ -287,7 +287,7 @@ class CLI():
                 for col in line:
                     if col.upper() == 'OK':
                         cmd = BLUE + '%-' + header[i]['size'] + 's' + OFF + '|'
-                    elif col.upper() == 'NOK' or col.upper() == 'NO':
+                    elif col.upper() == 'NOK' or col.upper() == 'NO' or col.upper() == 'FAIL':
                         cmd = RED + '%-' + header[i]['size'] + 's' + OFF + '|'
                     else:
                         cmd = '%-' + header[i]['size'] + 's|'
