@@ -839,8 +839,8 @@ public class SlsNetReactiveRouting {
                 out.println("    " + key.toString());
             }
             out.println("");
-        }
-        else if (subject == "reactive-intents") {
+
+        } else if (subject == "reactive-intents") {
             out.println("Reactive Routing Route Intents:\n");
             for (Intent entry : intentService.getIntents()) {
                 if (reactiveAppId.equals(entry.appId())) {

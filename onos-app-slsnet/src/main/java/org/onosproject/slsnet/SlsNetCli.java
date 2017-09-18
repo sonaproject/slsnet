@@ -28,7 +28,8 @@ public class SlsNetCli extends AbstractShellCommand {
 
     protected static SlsNetService slsnet;
 
-    @Argument(index = 0, name = "command", description = "Command name: show, intents, reactive-intents, refresh, flush",
+    @Argument(index = 0, name = "command",
+              description = "Command name: show, intents, reactive-intents, refresh, flush",
               required = true, multiValued = false)
     String command = null;
 
