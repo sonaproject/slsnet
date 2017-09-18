@@ -13,6 +13,7 @@ import traceback
 import ConfigParser
 import getpass
 import signal
+import time
 
 
 CONFIG_FILE = os.getenv('SLSNET_CHECKNET_CFG', 'checknet_config.ini')
@@ -179,31 +180,7 @@ def sig_handler(signum, frame):
     os._exit(1)
 
 
-def main(prog_name, argv):
-    global CONFIG_FILE
-    global conf
-
-    try:
-        opts, args = getopt.getopt(argv, 'h:c:')
-    except getopt.GetoptError:
-        print 'Usage: %s [-c <checknet_cfg>]' % (prog_name)
-        sys.exit(2)
-
-    for opt, arg in opts:
-        if opt == '-h':
-            print 'Usage: %s [-c <checknet_cfg>]' % (prog_name)
-            sys.exit(2)
-        elif opt in ('-c'):
-            CONFIG_FILE = arg
-
-    conf = ConfReader(CONFIG_FILE)    
-    if conf.base['default_passwd'] == '':
-        conf.set_default_passwd(getpass.getpass('default passwd for ssh %s@<hosts> ?: ' \
-                                                % conf.base['default_id']))
-
-    signal.signal(signal.SIGTERM, sig_handler)
-    signal.signal(signal.SIGINT, sig_handler)
-
+def do_check():
     for host_name in sorted(conf.host.keys()):
         host = conf.host[host_name]
         if host['no_ssh']:
@@ -222,7 +199,56 @@ def main(prog_name, argv):
         else:
             print '@%s(%s): FAIL (ping to the ssh_ip failed)' % (host['name'], host['ip'])
 
-         
+
+def main(prog_name, argv):
+    global CONFIG_FILE
+    global conf
+    loop_count_max = 1
+    loop_interval_sec = 30
+    help_msg = 'Usage: %s [-l <loop_count_max(default:1,infinit:0)>] [-i <loop_interval_sec(default:30)>] [-c <checknet_cfg>]' % (prog_name)
+
+    try:
+        opts, args = getopt.getopt(argv, 'hl:i:c:')
+    except getopt.GetoptError:
+        print help_msg
+        sys.exit(2)
+
+    for opt, arg in opts:
+        if opt == '-l':
+            loop_count_max = int(arg)
+        elif opt == '-i':
+            loop_interval_sec = int(arg)
+        elif opt == '-c':
+            CONFIG_FILE = arg
+        else:
+            if opt != '-h':
+                print 'unknown option: %s' % opt
+            print help_msg
+            sys.exit(2)
+
+    conf = ConfReader(CONFIG_FILE)    
+    try:
+        if conf.base['default_passwd'] == '':
+            conf.set_default_passwd(getpass.getpass('default passwd for ssh %s@<hosts> ?: ' \
+                                                    % conf.base['default_id']))
+    except:
+        print ""  # close prompt line
+        sys.exit(3)       
+
+    # NOTE: sig handler should be registerd after password input
+    #       for on interrupt getpass should return back from noecho/raw input mode
+    signal.signal(signal.SIGTERM, sig_handler)
+    signal.signal(signal.SIGINT, sig_handler)
+
+    loop_count = 0
+    while loop_count_max == 0 or loop_count < loop_count_max:
+        loop_count += 1
+        print '[CHECK COUNT: %s]' % loop_count
+        do_check()
+        print ''
+        time.sleep(loop_interval_sec)
+
+ 
 if __name__ == "__main__":
     main(sys.argv[0], sys.argv[1:])
     pass
