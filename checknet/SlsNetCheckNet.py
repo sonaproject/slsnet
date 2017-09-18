@@ -203,9 +203,12 @@ def do_check():
 def main(prog_name, argv):
     global CONFIG_FILE
     global conf
+
     loop_count_max = 1
-    loop_interval_sec = 30
-    help_msg = 'Usage: %s [-l <loop_count_max(default:1,infinit:0)>] [-i <loop_interval_sec(default:30)>] [-c <checknet_cfg>]' % (prog_name)
+    loop_interval_sec = 10
+
+    help_msg = 'Usage: %s [-l <loop_count_max(default:%d,infinit:0)>] [-i <loop_interval_sec(default:%d)>] [-c <checknet_cfg>]' \
+               % (prog_name, loop_count_max, loop_interval_sec)
 
     try:
         opts, args = getopt.getopt(argv, 'hl:i:c:')

@@ -851,6 +851,18 @@ public class SlsNetReactiveRouting {
             }
             out.println("");
         }
+        else if (subject == "reactive-intents") {
+            out.println("Reactive Routing Route Intents:\n");
+            for (Intent entry : intentService.getIntents()) {
+                if (reactiveAppId.equals(entry.appId())) {
+                    MultiPointToSinglePointIntent intent = (MultiPointToSinglePointIntent) entry;
+                    out.println("    " + intent.key().toString()
+                                + " to " + intent.egressPoint().toString()
+                                + " set " + intent.treatment().immediate().toString()
+                                + " from " + intent.ingressPoints().toString());
+                }
+            }
+        }
     }
 
     // Listener

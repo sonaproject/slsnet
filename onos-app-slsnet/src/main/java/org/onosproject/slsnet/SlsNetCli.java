@@ -28,7 +28,7 @@ public class SlsNetCli extends AbstractShellCommand {
 
     protected static SlsNetService slsnet;
 
-    @Argument(index = 0, name = "command", description = "Command name: show, intents, refresh, flush",
+    @Argument(index = 0, name = "command", description = "Command name: show, intents, reactive-intents, refresh, flush",
               required = true, multiValued = false)
     String command = null;
 
@@ -47,6 +47,9 @@ public class SlsNetCli extends AbstractShellCommand {
             break;
         case "intents":
             slsnet.dumpToStream("intents", System.out);
+            break;
+        case "reactive-intents":
+            slsnet.dumpToStream("reactive-intents", System.out);
             break;
         case "refresh":
             slsnet.triggerRefresh();
