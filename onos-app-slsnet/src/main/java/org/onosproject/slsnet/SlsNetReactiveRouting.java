@@ -134,10 +134,7 @@ public class SlsNetReactiveRouting {
         log.info("slsnet reactive routing starting with app id {}", reactiveAppId.toString());
 
         // NOTE: may not clear at init for MIGHT generate pending_remove garbages
-        // clear all previous intents and flow rules
-        //withdrawAllReactiveIntents();
-        //flowRuleService.removeFlowRulesById(reactiveAppId);
-        //checkIntentsPurge();
+        //       use flush event from slsnet cli command
 
         processor = new ReactiveRoutingProcessor();
         packetService.addProcessor(processor, PacketProcessor.director(2));
@@ -159,16 +156,8 @@ public class SlsNetReactiveRouting {
         withdrawIntercepts();
 
         // NOTE: may not clear at init for MIGHT generate pending_remove garbages
-        // withdraw all my intents and flow rules
-        //withdrawAllReactiveIntents();
-        // OR
-        //for (RouteIntent routeIntent : routeIntents.values()) {
-        //    log.info("slsnet l2forward withdraw unicast intent: {}", intent);
-        //    toBePurgedIntentKeys.add(routeIntent.intent().key());
-        //    intentService.withdraw(routeIntent.intent());
-        //}
+        //       use flush event from slsnet cli command
 
-        //routeIntents.clear();
         toBePurgedIntentKeys.clear();
 
         flowRuleService.removeFlowRulesById(reactiveAppId);
