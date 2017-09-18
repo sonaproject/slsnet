@@ -863,6 +863,10 @@ public class SlsNetReactiveRouting {
                 refreshRouteIntents();
                 checkIntentsPurge();
                 break;
+            case SLSNET_FLUSH:
+                withdrawAllReactiveIntents();
+                checkIntentsPurge();
+                break;
             case SLSNET_IDLE:
                 refreshIntercepts();
                 refreshRouteIntents();

@@ -430,6 +430,7 @@ public class SlsNetL2Forward {
                 dump(event.subject(), event.out());
                 break;
             default:
+                // NOTE: nothing to do on SLSNET_FLUSH
                 break;
             }
         }

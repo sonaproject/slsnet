@@ -144,6 +144,7 @@ public class SlsNetManager extends ListenerRegistry<SlsNetEvent, SlsNetListener>
     // Refresh monitor thread
     private Object refreshMonitor = new Object();
     private boolean doRefresh = false;
+    private boolean doFlush = false;
     private InternalRefreshThread refreshThread;
 
     // Listener for Service Events
@@ -564,8 +565,9 @@ public class SlsNetManager extends ListenerRegistry<SlsNetEvent, SlsNetListener>
         public void run() {
             while (true) {
                 boolean doRefreshMarked = false;
+                boolean doFlushMarked = false;
                 synchronized (refreshMonitor) {
-                    if (!doRefresh) {
+                    if (!doRefresh && !doFlush) {
                         try {
                             refreshMonitor.wait(IDLE_INTERVAL_MSEC);
                         } catch (InterruptedException e) {
@@ -573,6 +575,8 @@ public class SlsNetManager extends ListenerRegistry<SlsNetEvent, SlsNetListener>
                     }
                     doRefreshMarked = doRefresh;
                     doRefresh = false;
+                    doFlushMarked = doFlush;
+                    doFlush = false;
                 }
                 if (doRefreshMarked) {
                     try {
@@ -580,7 +584,16 @@ public class SlsNetManager extends ListenerRegistry<SlsNetEvent, SlsNetListener>
                     } catch (Exception e) {
                         log.warn("slsnet refresh failed: exception={}", e);
                     }
-                } else {
+                }
+                if (doFlushMarked) {
+                    try {
+                        log.info("slsnet flush execute");
+                        process(new SlsNetEvent(SlsNetEvent.Type.SLSNET_FLUSH, "flush"));
+                    } catch (Exception e) {
+                        log.warn("slsnet flush failed: exception={}", e);
+                    }
+                }
+                if (!doRefreshMarked && !doFlushMarked) {
                     try {
                         if (!refresh()) {
                             process(new SlsNetEvent(SlsNetEvent.Type.SLSNET_IDLE, "idle"));
@@ -597,6 +610,14 @@ public class SlsNetManager extends ListenerRegistry<SlsNetEvent, SlsNetListener>
     public void triggerRefresh() {
         synchronized (refreshMonitor) {
             doRefresh = true;
+            refreshMonitor.notifyAll();
+        }
+    }
+
+    @Override
+    public void triggerFlush() {
+        synchronized (refreshMonitor) {
+            doFlush = true;
             refreshMonitor.notifyAll();
         }
     }

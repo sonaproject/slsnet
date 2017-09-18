@@ -28,7 +28,7 @@ public class SlsNetCli extends AbstractShellCommand {
 
     protected static SlsNetService slsnet;
 
-    @Argument(index = 0, name = "command", description = "Command name: show, intents, refresh",
+    @Argument(index = 0, name = "command", description = "Command name: show, intents, refresh, flush",
               required = true, multiValued = false)
     String command = null;
 
@@ -51,6 +51,10 @@ public class SlsNetCli extends AbstractShellCommand {
         case "refresh":
             slsnet.triggerRefresh();
             print("slsnet refresh triggered\n");
+            break;
+        case "flush":
+            slsnet.triggerFlush();
+            print("slsnet flush triggered\n");
             break;
         default:
             print("unknown command: {}", command);

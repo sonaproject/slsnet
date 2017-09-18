@@ -197,4 +197,9 @@ public interface SlsNetService
      */
     void triggerRefresh();
 
+    /**
+     * trigger to send Flush Notification to all sub modules.
+     */
+    void triggerFlush();
+
 }
