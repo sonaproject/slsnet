@@ -134,7 +134,7 @@ public class SlsNetNeighbour {
             // TODO: may need to check if from valid l2Network or border gateway
             log.trace("slsnet neightbour request on virtualGatewayAddress {}; response to {} {}",
                       context.target(), context.inPort(), context.vlan());
-            context.reply(slsnet.getVirtualGatewayMacAddress());
+            context.reply(slsnet.getVMac());
             return;
         }
 
@@ -181,7 +181,7 @@ public class SlsNetNeighbour {
         if (l2Network != null) {
             // TODO: need to check and update slsnet.L2Network
             MacAddress dstMac = context.dstMac();
-            if (dstMac.equals(slsnet.getVirtualGatewayMacAddress())) {
+            if (dstMac.equals(slsnet.getVMac())) {
                 log.trace("slsnet neightbour response message to virtual gateway; drop: {} {}",
                           context.inPort(), context.vlan());
                 context.drop();

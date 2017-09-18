@@ -58,6 +58,7 @@ public interface SlsNetService
     static final boolean ALLOW_IPV6 = false;
     static final boolean ALLOW_ETH_ADDRESS_SELECTOR = true;
     static final boolean VIRTUAL_GATEWAY_ETH_ADDRESS_SELECTOR = false;
+    static final boolean REACTIVE_ADD_REVERSE_FLOW = true;
 
     /**
      * Gets appId.
@@ -93,14 +94,14 @@ public interface SlsNetService
      *
      * @return mac address of virtual gateway
      */
-    MacAddress getVirtualGatewayMacAddress();
+    MacAddress getVMac();
 
     /**
      * Get Virtual Gateway Ip Addresses for Local Subnet Virtual Gateway.
      *
      * @return ip addresses of virtual gateway from ipSubnets
      */
-    Set<IpAddress> getVirtualGatewayIpAddresses();
+    Set<IpAddress> getVIps();
 
     /**
      * Evaluates whether an Interface belongs to l2Networks.

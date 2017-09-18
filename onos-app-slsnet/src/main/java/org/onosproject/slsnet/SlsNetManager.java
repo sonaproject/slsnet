@@ -364,12 +364,12 @@ public class SlsNetManager extends ListenerRegistry<SlsNetEvent, SlsNetListener>
     }
 
     @Override
-    public MacAddress getVirtualGatewayMacAddress() {
+    public MacAddress getVMac() {
         return virtualGatewayMacAddress;
     }
 
     @Override
-    public Set<IpAddress> getVirtualGatewayIpAddresses() {
+    public Set<IpAddress> getVIps() {
         return ImmutableSet.copyOf(virtualGatewayIpAddresses);
     }
 
@@ -531,6 +531,8 @@ public class SlsNetManager extends ListenerRegistry<SlsNetEvent, SlsNetListener>
                       + SlsNetService.ALLOW_ETH_ADDRESS_SELECTOR);
             out.println("    VIRTUAL_GATEWAY_ETH_ADDRESS_SELECTOR="
                       + SlsNetService.VIRTUAL_GATEWAY_ETH_ADDRESS_SELECTOR);
+            out.println("    REACTIVE_ADD_REVERSE_FLOW="
+                      + SlsNetService.REACTIVE_ADD_REVERSE_FLOW);
             out.println("");
             out.println("SlsNetAppId:");
             out.println("    " + getAppId());
@@ -551,10 +553,10 @@ public class SlsNetManager extends ListenerRegistry<SlsNetEvent, SlsNetListener>
             }
             out.println("");
             out.println("virtualGatewayMacAddress:");
-            out.println("    " + getVirtualGatewayMacAddress());
+            out.println("    " + getVMac());
             out.println("");
             out.println("virtualGatewayIpAddressed:");
-            out.println("    " + getVirtualGatewayIpAddresses());
+            out.println("    " + getVIps());
             out.println("");
         }
     }
