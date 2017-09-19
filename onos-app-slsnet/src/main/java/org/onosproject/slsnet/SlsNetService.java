@@ -58,7 +58,7 @@ public interface SlsNetService
     static final boolean ALLOW_IPV6 = false;
     static final boolean ALLOW_ETH_ADDRESS_SELECTOR = true;
     static final boolean VIRTUAL_GATEWAY_ETH_ADDRESS_SELECTOR = false;
-    static final boolean REACTIVE_ADD_REVERSE_FLOW = true;
+    static final boolean REACTIVE_SINGLE_TO_SINGLE = true;
 
     /**
      * Gets appId.

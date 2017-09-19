@@ -528,11 +528,11 @@ public class SlsNetManager extends ListenerRegistry<SlsNetEvent, SlsNetListener>
         if (subject == "show") {
             out.println("Static Configuration Flag:");
             out.println("    ALLOW_ETH_ADDRESS_SELECTOR="
-                      + SlsNetService.ALLOW_ETH_ADDRESS_SELECTOR);
+                        + SlsNetService.ALLOW_ETH_ADDRESS_SELECTOR);
             out.println("    VIRTUAL_GATEWAY_ETH_ADDRESS_SELECTOR="
-                      + SlsNetService.VIRTUAL_GATEWAY_ETH_ADDRESS_SELECTOR);
-            out.println("    REACTIVE_ADD_REVERSE_FLOW="
-                      + SlsNetService.REACTIVE_ADD_REVERSE_FLOW);
+                        + SlsNetService.VIRTUAL_GATEWAY_ETH_ADDRESS_SELECTOR);
+            out.println("    REACTIVE_SINGLE_TO_SINGLE="
+                        + SlsNetService.REACTIVE_SINGLE_TO_SINGLE);
             out.println("");
             out.println("SlsNetAppId:");
             out.println("    " + getAppId());

@@ -618,10 +618,37 @@ public class SlsNetReactiveRouting {
                                            ConnectPoint srcCp, IpAddress srcIp, IpAddress dstIp) {
         /* check reactive handling and forward packet */
         log.trace("slsnet reactive routing ip packet: srcCp={} srcIp={} dstIp={} srcCp={}", srcCp, srcIp, dstIp);
+
         EncapsulationType encap = EncapsulationType.NONE;
+
+        // prefix and nextHop for local Subnet
+        IpPrefix srcPrefix = srcIp.toIpPrefix();
+        IpPrefix dstPrefix = dstIp.toIpPrefix();
+        IpAddress srcNextHop = srcIp;
+        IpAddress dstNextHop = dstIp;
+
+        // check subnet local or route
         IpSubnet srcSubnet = slsnet.findIpSubnet(srcIp);
+        if (srcSubnet == null) {
+            Route route = slsnet.findBorderRoute(srcIp);
+            if (route == null) {
+                log.warn("slsnet reactive routing route unknown: srcIp={}", srcIp);
+                return;
+            }
+            srcPrefix = route.prefix();
+            srcNextHop = route.nextHop();
+        }
         IpSubnet dstSubnet = slsnet.findIpSubnet(dstIp);
-        ConnectPoint dstCp = null;
+        if (dstSubnet == null) {
+            Route route = slsnet.findBorderRoute(dstIp);
+            if (route == null) {
+                log.warn("slsnet reactive routing route unknown: dstIp={}", dstIp);
+                return;
+            }
+            dstPrefix = route.prefix();
+            dstNextHop = route.nextHop();
+        }
+
         if (dstSubnet != null) {
             // destination is local subnet ip
             if (SlsNetService.ALLOW_ETH_ADDRESS_SELECTOR && dstSubnet.equals(srcSubnet)) {
@@ -630,8 +657,7 @@ public class SlsNetReactiveRouting {
                 if (l2Network != null && l2Network.l2Forward()) {
                     // NOTE: no reactive route action but do forward packet for L2Forward do not handle packet
                     // update mac only if dstMac is virtualGatewayMac, else assume valid mac already for the l2 network
-                    forwardPacketToDstIp(context, dstIp,
-                                         ethPkt.getDestinationMAC().equals(slsnet.getVMac()));
+                    forwardPacketToDstIp(context, dstIp, ethPkt.getDestinationMAC().equals(slsnet.getVMac()));
                     return;
                 }
                 // may use ethPkt's ethSrc mac as srcMac BUT NEED to resolve conflict with inter-subnet case */
@@ -640,7 +666,6 @@ public class SlsNetReactiveRouting {
             if (encap == EncapsulationType.NONE && srcSubnet != null) {
                encap = srcSubnet.encapsulation();
             }
-            dstCp = setUpConnectivity(srcCp, dstIp.toIpPrefix(), dstIp, slsnet.getVMac(), encap);
         } else {
             // destination is external network
             if (srcSubnet == null) {
@@ -648,37 +673,10 @@ public class SlsNetReactiveRouting {
                          srcIp, dstIp);
                 return;
             }
-            Route route = slsnet.findBorderRoute(dstIp);
-            if (route == null) {
-                log.warn("slsnet reactive routing route unknown: dstIp={}", dstIp);
-                return;
-            }
             encap = srcSubnet.encapsulation();
-            dstCp = setUpConnectivity(srcCp, route.prefix(), route.nextHop(), slsnet.getVMac(), encap);
         }
 
-        if (dstCp != null && slsnet.REACTIVE_ADD_REVERSE_FLOW) {
-            // auto add reverse flow intent to relieve intent update race condition
-            if (srcSubnet != null) {
-                // source is local subnet ip;  no eaqual subnet case reaches here
-                encap = srcSubnet.encapsulation();
-                if (encap == EncapsulationType.NONE && dstSubnet != null) {
-                   encap = dstSubnet.encapsulation();
-                }
-                setUpConnectivity(dstCp, srcIp.toIpPrefix(), srcIp, slsnet.getVMac(), encap);
-            } else {
-                // source is external network; destination should be local for both NON-LOCAL case should not reach here
-                Route route = slsnet.findBorderRoute(srcIp);
-                if (route == null) {
-                    log.warn("slsnet reactive routing reverse route unknown: srcIp={}", srcIp);
-                    return;
-                } else {
-                    encap = dstSubnet.encapsulation();
-                    setUpConnectivity(dstCp, route.prefix(), route.nextHop(), slsnet.getVMac(), encap);
-                }
-            }
-        }
-
+        setUpConnectivity(srcCp, srcPrefix, dstPrefix, dstNextHop, slsnet.getVMac(), encap);
         forwardPacketToDstIp(context, dstIp, true);
     }
 
@@ -720,13 +718,18 @@ public class SlsNetReactiveRouting {
     /**
      * Update intents for connectivity.
      *
-     * ToHost: prefix = destHostIp.toIpPrefix(), nextHopIp = destHostIp
-     * ToInternet: prefix = route.prefix(), nextHopIp = route.nextHopIp
+     * ToHost: dstPrefix = dstHostIp.toIpPrefix(), nextHopIp = destHostIp
+     * ToInternet: dstPrefix = route.prefix(), nextHopIp = route.nextHopIp
      * returns egressCp found or null
      */
-    private ConnectPoint setUpConnectivity(ConnectPoint srcCp, IpPrefix prefix, IpAddress nextHopIp,
-                                           MacAddress treatmentSrcMac, EncapsulationType encap) {
-        Key key = Key.of(prefix.toString(), reactiveAppId);
+    private ConnectPoint setUpConnectivity(ConnectPoint srcCp, IpPrefix srcPrefix, IpPrefix dstPrefix,
+                                           IpAddress nextHopIp, MacAddress treatmentSrcMac, EncapsulationType encap) {
+        Key key;
+        if (slsnet.REACTIVE_SINGLE_TO_SINGLE) {
+            key = Key.of(srcPrefix.toString() + "-to-" + dstPrefix.toString(), reactiveAppId);
+        } else {
+            key = Key.of(dstPrefix.toString(), reactiveAppId);
+        }
 
         MacAddress nextHopMac = null;
         ConnectPoint egressPoint = null;
@@ -738,7 +741,8 @@ public class SlsNetReactiveRouting {
             }
         }
         if (nextHopMac == null || egressPoint == null) {
-            log.info("slsnet reactive routing nextHopCP and Mac unknown: prefix={} nextHopIp={}", prefix, nextHopIp);
+            log.info("slsnet reactive routing nextHopCP and Mac unknown: srcPrefix={} dstPrefix={} nextHopIp={}",
+                     srcPrefix, dstPrefix, nextHopIp);
             hostService.startMonitoringIp(nextHopIp);
             slsnet.requestMac(nextHopIp);
             return null;
@@ -749,15 +753,15 @@ public class SlsNetReactiveRouting {
         if (SlsNetService.VIRTUAL_GATEWAY_ETH_ADDRESS_SELECTOR) {
             selector.matchEthDst(slsnet.getVMac());
         }
-        if (prefix.isIp4()) {
+        if (dstPrefix.isIp4()) {
             selector.matchEthType(Ethernet.TYPE_IPV4);
-            if (prefix.prefixLength() > 0) {
-                selector.matchIPDst(prefix);
+            if (dstPrefix.prefixLength() > 0) {
+                selector.matchIPDst(dstPrefix);
             }
         } else {
             selector.matchEthType(Ethernet.TYPE_IPV6);
-            if (prefix.prefixLength() > 0) {
-                selector.matchIPv6Dst(prefix);
+            if (dstPrefix.prefixLength() > 0) {
+                selector.matchIPv6Dst(dstPrefix);
             }
         }
 
@@ -769,12 +773,15 @@ public class SlsNetReactiveRouting {
             if (ingressPoints.add(srcCp)  /* alread exists and dst not changed */
                     && egressPoint == existingIntent.egressPoint()
                     && treatment == existingIntent.treatment()) {
-                log.warn("slsnet reactive routing srcCP is already in mp2p intent: prefix={} srcCp={}", prefix, srcCp);
+                log.warn("slsnet reactive routing srcCP is already in mp2p intent: srcPrefix={} dstPrefix={} srcCp={}",
+                         srcPrefix, dstPrefix, srcCp);
                 return egressPoint;
             }
-            log.info("slsnet reactive routing update mp2p intent: prefix={} srcCp={}", prefix, srcCp);
+            log.info("slsnet reactive routing update mp2p intent: srcPrefix={} dstPrefix={} srcCp={}",
+                     srcPrefix, dstPrefix, srcCp);
         } else {
-            log.info("slsnet reactive routing create mp2p intent: prefix={} srcCp={}", prefix, srcCp);
+            log.info("slsnet reactive routing create mp2p intent: srcPrefix={} dstPrefix={} srcCp={}",
+                     srcPrefix, dstPrefix, srcCp);
             ingressPoints.add(srcCp);
         }
 
@@ -785,11 +792,12 @@ public class SlsNetReactiveRouting {
             .treatment(treatment)
             .ingressPoints(ingressPoints)
             .egressPoint(egressPoint)
-            .priority(reactivePriority(prefix.prefixLength(), slsnet.PRI_REACTIVE_ROUTE))
+            .priority(reactivePriority(dstPrefix.prefixLength(), slsnet.PRI_REACTIVE_ROUTE))
             .constraints(buildConstraints(REACTIVE_CONSTRAINTS, encap))
             .build();
-        log.info("slsnet reactive routing submmit mp2p intent: prefix={} srcCp={} "
-                 + "newIntent={} nextHopIp={} nextHopMac={}", prefix, ingressPoints, newIntent, nextHopIp, nextHopMac);
+        log.info("slsnet reactive routing submmit mp2p intent: srcPrefix={} dstPrefix={} srcCp={} "
+                 + "newIntent={} nextHopIp={} nextHopMac={}",
+                 srcPrefix, dstPrefix, ingressPoints, newIntent, nextHopIp, nextHopMac);
         toBePurgedIntentKeys.remove(newIntent.key());
         intentService.submit(newIntent);
         return egressPoint;
