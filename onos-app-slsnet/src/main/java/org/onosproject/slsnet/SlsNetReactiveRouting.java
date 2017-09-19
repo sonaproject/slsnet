@@ -738,7 +738,7 @@ public class SlsNetReactiveRouting {
             }
         }
         if (nextHopMac == null || egressPoint == null) {
-            log.trace("slsnet reactive routing nextHopCP and Mac unknown: prefix={} nextHopIp={}", prefix, nextHopIp);
+            log.info("slsnet reactive routing nextHopCP and Mac unknown: prefix={} nextHopIp={}", prefix, nextHopIp);
             hostService.startMonitoringIp(nextHopIp);
             slsnet.requestMac(nextHopIp);
             return null;
@@ -772,9 +772,9 @@ public class SlsNetReactiveRouting {
                 log.warn("slsnet reactive routing srcCP is already in mp2p intent: prefix={} srcCp={}", prefix, srcCp);
                 return egressPoint;
             }
-            log.trace("slsnet reactive routing update mp2p intent: prefix={} srcCp={}", prefix, srcCp);
+            log.info("slsnet reactive routing update mp2p intent: prefix={} srcCp={}", prefix, srcCp);
         } else {
-            log.trace("slsnet reactive routing create mp2p intent: prefix={} srcCp={}", prefix, srcCp);
+            log.info("slsnet reactive routing create mp2p intent: prefix={} srcCp={}", prefix, srcCp);
             ingressPoints.add(srcCp);
         }
 
@@ -788,8 +788,8 @@ public class SlsNetReactiveRouting {
             .priority(reactivePriority(prefix.prefixLength(), slsnet.PRI_REACTIVE_ROUTE))
             .constraints(buildConstraints(REACTIVE_CONSTRAINTS, encap))
             .build();
-        log.trace("slsnet reactive routing submmit mp2p intent: prefix={} srcCp={} "
-                  + "newIntent={} nextHopIp={} nextHopMac={}", prefix, ingressPoints, newIntent, nextHopIp, nextHopMac);
+        log.info("slsnet reactive routing submmit mp2p intent: prefix={} srcCp={} "
+                 + "newIntent={} nextHopIp={} nextHopMac={}", prefix, ingressPoints, newIntent, nextHopIp, nextHopMac);
         toBePurgedIntentKeys.remove(newIntent.key());
         intentService.submit(newIntent);
         return egressPoint;

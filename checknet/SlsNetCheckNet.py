@@ -111,6 +111,51 @@ def local_ping_check_for_ssh(host):
         return False
 
 
+def ssh_ping_check_all(host):
+    try:
+        ping_timeout = conf.base['ping_timeout']
+        #if sys.platform == 'darwin':
+        #    timeout = timeout * 1000
+
+        target_list = ""
+        for target_name in sorted(conf.host.keys()):
+            target_list += " " + target_name + "=" + conf.host[target_name]['ip']
+
+        cmd = 'echo PING; for n in %s; do name=`echo $n | cut -d= -f1`; ip=`echo $n | cut -d= -f2`; echo -n "-- %s %s -> $name $ip: "; ping -c1 -w3 -n $ip | awk "/time=/{ print \\"OK \\" substr(\\$7,6), \\$8 \\"\\"; exit} ENDFILE { print \\"FAIL ping timeout\\" }"; done' \
+              % (target_list, host['name'], host['ip'])
+
+        ssh_cmd = "ssh -oStrictHostKeyChecking=no %s@%s '%s'" % (host['id'], host['ssh_ip'], cmd)
+
+        ssh_conn = pexpect.spawn(ssh_cmd)
+        ping_happen = False
+        rt = -1
+        while rt <= 1:
+            rt = ssh_conn.expect(['password:', 'PING', pexpect.EOF, pexpect.TIMEOUT],
+                                 timeout=conf.base['ssh_timeout'])
+            if rt == 0:
+                ssh_conn.sendline(host['passwd'])
+            elif rt == 1:
+                ping_happen = True
+            elif rt == 2:
+                if ping_happen:
+                    ssh_conn.wait()
+                    for line in ssh_conn.before.splitlines()[1:]:
+                        if line != '':
+                            print "%s" % line
+                else:
+                    print '-- ssh failed (might be incorrect password)'
+                break
+            elif rt == 3:
+                print '-- ssh timeout'
+                break
+           
+    except:
+        exc_type, exc_value, exc_traceback = sys.exc_info()
+        lines = traceback.format_exception(exc_type, exc_value, exc_traceback)
+        print ''.join('   || ' + line for line in lines)
+        print "-- ssh execption" 
+
+
 def ssh_ping_check(host, target):
     try:
         ping_timeout = conf.base['ping_timeout']
@@ -187,6 +232,17 @@ def do_check():
             continue
         elif local_ping_check_for_ssh(host):
             print '@%s(%s)' % (host['name'], host['ssh_ip'])
+            ssh_ping_check_all(host)
+        else:
+            print '@%s(%s): FAIL (ping to the ssh_ip failed)' % (host['name'], host['ip'])
+
+def do_check_old():
+    for host_name in sorted(conf.host.keys()):
+        host = conf.host[host_name]
+        if host['no_ssh']:
+            continue
+        elif local_ping_check_for_ssh(host):
+            print '@%s(%s)' % (host['name'], host['ssh_ip'])
             for target_name in sorted(conf.host.keys()):
                 target = conf.host[target_name]
                 success, reason = ssh_ping_check(host, target)
@@ -232,7 +288,7 @@ def main(prog_name, argv):
     conf = ConfReader(CONFIG_FILE)    
     try:
         if conf.base['default_passwd'] == '':
-            conf.set_default_passwd(getpass.getpass('default passwd for ssh %s@<hosts> ?: ' \
+            conf.set_default_passwd(getpass.getpass('default password for %s@<hosts> ?: ' \
                                                     % conf.base['default_id']))
     except:
         print ""  # close prompt line
@@ -243,13 +299,34 @@ def main(prog_name, argv):
     signal.signal(signal.SIGTERM, sig_handler)
     signal.signal(signal.SIGINT, sig_handler)
 
+    loop_count_max_str = ''
+    loop_interval_str = ''
+    if loop_count_max != 1:
+        if loop_count_max == 0:
+            loop_count_max_str = ' count_max=unlimited'
+        else:
+            loop_count_max_str = ' count_max=%d' % loop_count_max
+        loop_interval_str = ' interval=%dsecs' % loop_interval_sec
+
     loop_count = 0
     while loop_count_max == 0 or loop_count < loop_count_max:
         loop_count += 1
-        print '[CHECK COUNT: %s]' % loop_count
+
+        print '[CHECK NET] count=%d begin=%s]' \
+              % (loop_count, time.strftime('%Y-%m-%d_%H:%M:%S'))
+        begin_time = time.time()
+
         do_check()
-        print ''
-        time.sleep(loop_interval_sec)
+
+        elapsed_time = time.time() - begin_time
+        print '[CHECK NET] count=%d end=%s elapsed=%.3fsecs%s%s]' \
+              % (loop_count, time.strftime('%Y-%m-%d_%H:%M:%S'), 
+                 elapsed_time, loop_count_max_str, loop_interval_str)
+
+        if loop_count_max == 0 or loop_count < loop_count_max:
+            print ''
+            if elapsed_time < loop_interval_sec:
+                time.sleep(loop_interval_sec - elapsed_time)
 
  
 if __name__ == "__main__":
