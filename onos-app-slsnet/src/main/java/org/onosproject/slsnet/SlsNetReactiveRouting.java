@@ -677,6 +677,7 @@ public class SlsNetReactiveRouting {
         }
 
         setUpConnectivity(srcCp, srcPrefix, dstPrefix, dstNextHop, slsnet.getVMac(), encap);
+
         forwardPacketToDstIp(context, dstIp, true);
     }
 
@@ -720,10 +721,17 @@ public class SlsNetReactiveRouting {
      *
      * ToHost: dstPrefix = dstHostIp.toIpPrefix(), nextHopIp = destHostIp
      * ToInternet: dstPrefix = route.prefix(), nextHopIp = route.nextHopIp
-     * returns egressCp found or null
+     * returns intent submited or not
      */
-    private ConnectPoint setUpConnectivity(ConnectPoint srcCp, IpPrefix srcPrefix, IpPrefix dstPrefix,
-                                           IpAddress nextHopIp, MacAddress treatmentSrcMac, EncapsulationType encap) {
+    private boolean setUpConnectivity(ConnectPoint srcCp, IpPrefix srcPrefix, IpPrefix dstPrefix,
+                                      IpAddress nextHopIp, MacAddress treatmentSrcMac, EncapsulationType encap) {
+        if (!linkService.getLinks(srcCp).isEmpty()) {
+            log.warn("slsnet reactive routing skip intent on srcCp of link: "
+                     + "srcCp={} srcPrefix={} dstPrefix={} nextHopIp={}",
+                     srcCp, srcPrefix, dstPrefix, nextHopIp);
+            return false;
+        }
+
         Key key;
         if (slsnet.REACTIVE_SINGLE_TO_SINGLE) {
             key = Key.of(srcPrefix.toString() + "-to-" + dstPrefix.toString(), reactiveAppId);
@@ -745,7 +753,7 @@ public class SlsNetReactiveRouting {
                      srcPrefix, dstPrefix, nextHopIp);
             hostService.startMonitoringIp(nextHopIp);
             slsnet.requestMac(nextHopIp);
-            return null;
+            return false;
         }
         TrafficTreatment treatment = generateSetMacTreatment(nextHopMac, treatmentSrcMac);
 
@@ -770,12 +778,12 @@ public class SlsNetReactiveRouting {
         MultiPointToSinglePointIntent existingIntent = (MultiPointToSinglePointIntent) intentService.getIntent(key);
         if (existingIntent != null) {
             ingressPoints.addAll(existingIntent.ingressPoints());
-            if (ingressPoints.add(srcCp)  /* alread exists and dst not changed */
-                    && egressPoint == existingIntent.egressPoint()
-                    && treatment == existingIntent.treatment()) {
+            if (!ingressPoints.add(srcCp)  /* alread exists and dst not changed */
+                    && egressPoint.equals(existingIntent.egressPoint())
+                    && treatment.equals(existingIntent.treatment())) {
                 log.warn("slsnet reactive routing srcCP is already in mp2p intent: srcPrefix={} dstPrefix={} srcCp={}",
                          srcPrefix, dstPrefix, srcCp);
-                return egressPoint;
+                return false;
             }
             log.info("slsnet reactive routing update mp2p intent: srcPrefix={} dstPrefix={} srcCp={}",
                      srcPrefix, dstPrefix, srcCp);
@@ -800,7 +808,7 @@ public class SlsNetReactiveRouting {
                  srcPrefix, dstPrefix, ingressPoints, newIntent, nextHopIp, nextHopMac);
         toBePurgedIntentKeys.remove(newIntent.key());
         intentService.submit(newIntent);
-        return egressPoint;
+        return true;
     }
 
     // generate treatement to target

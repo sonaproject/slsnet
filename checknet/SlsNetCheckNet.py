@@ -129,15 +129,17 @@ def ssh_ping_check_all(host):
         #      FAIL (>= conf.base['ping_fail_sec'])
 
         ssh_conn = pexpect.spawn(ssh_cmd)
+        expect_timeout = conf.base['ssh_timeout_sec']
         ping_happen = False
         rt = -1
         while rt <= 1:
             rt = ssh_conn.expect(['password:', 'PING', pexpect.EOF, pexpect.TIMEOUT],
-                                 timeout=conf.base['ssh_timeout_sec'])
+                                 timeout=expect_timeout)
             if rt == 0:
                 ssh_conn.sendline(host['passwd'])
             elif rt == 1:
                 ping_happen = True
+                expect_timeout = 1000  # wait ping checks
             elif rt == 2:
                 if ping_happen:
                     ssh_conn.wait()
@@ -292,12 +294,12 @@ def main(prog_name, argv):
     loop_count = 0
     while loop_count_max == 0 or loop_count < loop_count_max:
         loop_count += 1
-        print '[CHECK NET COUNT %d] begin=%s]' \
+        print '[CHECK NET COUNT %d] begin=%s' \
               % (loop_count, time.strftime('%Y-%m-%d_%H:%M:%S'))
         begin_time = time.time()
         do_check()
         elapsed_time = time.time() - begin_time
-        print '[CHECK NET COUNT %d] elapsed=%.3fsecs%s%s]' \
+        print '[CHECK NET COUNT %d] elapsed=%.3fsecs%s%s' \
               % (loop_count, elapsed_time, loop_count_max_str, loop_interval_str)
         if loop_count_max == 0 or loop_count < loop_count_max:
             print ''
