@@ -117,8 +117,11 @@ def ssh_ping_check_all(host):
         for target_name in sorted(conf.host.keys()):
             target_list += " " + target_name + "=" + conf.host[target_name]['ip']
 
-        cmd = 'echo PING; for n in %s; do name=`echo $n | cut -d= -f1`; ip=`echo $n | cut -d= -f2`; echo -n " $name:"; ping -c1 -w%d -n $ip | awk "/time=/{ if (substr(\\$7,6) < %f) { printf \\"OK  \\" } else { printf \\"LATE\\" } exit} ENDFILE { printf \\"FAIL\\" }"; done' \
-              % (target_list, ping_fail_sec, ping_late_msec)
+        #cmd = 'echo PING; for n in %s; do name=`echo $n | cut -d= -f1`; ip=`echo $n | cut -d= -f2`; echo -n " $name:"; ping -c1 -w%d -n $ip | awk "/time=/{ if (substr(\\$7,6) < %f) { printf \\"OK  \\" } else { printf \\"LATE\\" } exit} ENDFILE { printf \\"FAIL\\" }"; done' \
+
+        cmd = 'echo PING; for n in %s; do name=`echo $n | cut -d= -f1`; ip=`echo $n | cut -d= -f2`; echo -n " $name:"; ping -c1 -w%d -n $ip | awk "/time=/{ t = substr(\\$7,6); if (t < %f) { printf \\"OK  \\" } else { printf \\"%%-4s\\", t } exit} ENDFILE { printf \\"FAIL\\" }"; done' \
+               % (target_list, ping_fail_sec, ping_late_msec)
+
         ssh_cmd = "ssh -oStrictHostKeyChecking=no %s@%s '%s'" % (host['id'], host['ssh_ip'], cmd)
 
         sys.stdout.write("@%s:" % host['name'])
