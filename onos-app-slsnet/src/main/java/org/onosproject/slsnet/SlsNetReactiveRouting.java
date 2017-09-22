@@ -54,7 +54,6 @@ import org.onosproject.net.Host;
 import org.onosproject.net.host.HostService;
 import org.onosproject.net.intent.Constraint;
 import org.onosproject.net.intent.constraint.EncapsulationConstraint;
-import org.onosproject.net.intent.constraint.HashedPathSelectionConstraint;
 import org.onosproject.net.intent.constraint.PartialFailureConstraint;
 import org.onosproject.net.intent.Intent;
 import org.onosproject.net.intent.IntentService;
@@ -119,7 +118,9 @@ public class SlsNetReactiveRouting {
     protected SlsNetService slsnet;
 
     private static final ImmutableList<Constraint> REACTIVE_CONSTRAINTS
-            = ImmutableList.of(new PartialFailureConstraint(), new  HashedPathSelectionConstraint());
+            = ImmutableList.of(new PartialFailureConstraint());
+            // NOTE: SHOULD NOT use HashedPathSelectionConstraint
+            //       for unpredictable srcCp of Link appears as reactive packet traffic
 
     private Set<FlowRule> interceptFlowRules = new HashSet<>();
     private Set<Key> toBePurgedIntentKeys = new HashSet<>();
@@ -384,7 +385,8 @@ public class SlsNetReactiveRouting {
                              + "remove intent for no device: key={}", intent.key());
                     break;
                 }
-                if (slsnet.findL2Network(intent.egressPoint(), VlanId.NONE) == null) {
+                if (slsnet.findL2Network(intent.egressPoint(), VlanId.NONE) == null &&
+                    linkService.getEgressLinks(intent.egressPoint()).isEmpty()) {
                     log.info("slsnet reactive routing refresh route intents; "
                              + "remove intent for egress point not available: key={}", intent.key());
                     break;
@@ -393,7 +395,8 @@ public class SlsNetReactiveRouting {
                 Set<ConnectPoint> newIngressPoints = new HashSet<>();
                 boolean ingressPointChanged = false;
                 for (ConnectPoint cp : intent.ingressPoints()) {
-                    if (slsnet.findL2Network(cp, VlanId.NONE) != null || !linkService.getIngressLinks(cp).isEmpty()) {
+                    if (deviceService.isAvailable(cp.deviceId()) &&
+                        (slsnet.findL2Network(cp, VlanId.NONE) != null || !linkService.getIngressLinks(cp).isEmpty())) {
                         newIngressPoints.add(cp);
                     } else {
                         log.info("slsnet reactive routing refresh route ingress cp of "
@@ -725,12 +728,14 @@ public class SlsNetReactiveRouting {
      */
     private boolean setUpConnectivity(ConnectPoint srcCp, IpPrefix srcPrefix, IpPrefix dstPrefix,
                                       IpAddress nextHopIp, MacAddress treatmentSrcMac, EncapsulationType encap) {
-        if (!linkService.getLinks(srcCp).isEmpty()) {
-            log.warn("slsnet reactive routing skip intent on srcCp of link: "
+        /*
+        if (slsnet.findL2Network(srcCp, VlanId.NONE) == null) {
+            log.warn("slsnet reactive routing skip intent on srcCp not in L2Network: "
                      + "srcCp={} srcPrefix={} dstPrefix={} nextHopIp={}",
                      srcCp, srcPrefix, dstPrefix, nextHopIp);
             return false;
         }
+        */
 
         Key key;
         if (slsnet.REACTIVE_SINGLE_TO_SINGLE) {
