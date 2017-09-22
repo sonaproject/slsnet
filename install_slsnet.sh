@@ -1,28 +1,12 @@
 #!/bin/sh
 # install_slsnet.sh - to rebuild and reinstall slsnet app 
-# USAGE: install_slsnet.sh [-r] [network-cfg.json]
+# USAGE: install_slsnet.sh [network-cfg.json]
 # PREPARE: run "onos-buck-publish-local" in ONOS source directory
 # ASSUME: onos source is at ../onos
 
 TARGET=/opt/onos
 
-ONOS_VERSION=1.11.0
 SLSNET_VERSION=1.11.0
-
-# to reinstall ONOS, call this script with "-r" argument
-REINISTALL_ONOS=no
-if [ "$1" = '-r' ]
-then
-    echo reinistall ONOS from ../onos/
-    sudo service onos stop
-    #sudo pkill java
-    sudo rm -rf /opt/onos /opt/onos-${ONOS_VERSION}
-    sudo tar -xzf ../onos/buck-out/gen/tools/package/onos-package/onos.tar.gz -C /opt
-    sudo ln -s /opt/onos-${ONOS_VERSION} /opt/onos
-    sudo service onos start
-    echo reinistall ONOS done
-    exit 0
-fi
 
 # build, reinistall and reactivate slsnet app
 ( cd onos-app-slsnet/; mvn clean compile install || exit 1 )
