@@ -1,5 +1,5 @@
 #!/bin/sh
-# USAGE: install_onos.sh [-u] [onos_tar_file]
+# USAGE: install_onos.sh [-r] [onos_tar_file]
 #    -r  stop and remove only
 # ASSUME: onos packet tar file is at ../onos/
 
