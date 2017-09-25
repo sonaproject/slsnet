@@ -246,6 +246,9 @@ def main(prog_name, argv):
     global CONFIG_FILE
     global conf
 
+    # change to script directory for relative CONFIG_FILE path
+    os.chdir(os.path.dirname(os.path.realpath(sys.argv[0])))
+
     loop_count_max = 1
     loop_interval_sec = 10
 

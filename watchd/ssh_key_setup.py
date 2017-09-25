@@ -166,6 +166,10 @@ def onos():
 
 def main(argv):
     global CONFIG_FILE
+
+    # change to script directory for relative CONFIG_FILE path
+    os.chdir(os.path.dirname(os.path.realpath(sys.argv[0])))
+ 
     try:
         opts, args = getopt.getopt(argv, "h:c:",["config="])
     except getopt.GetoptError:

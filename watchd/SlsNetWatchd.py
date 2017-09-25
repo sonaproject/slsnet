@@ -118,6 +118,10 @@ class SlsNetWatchD(Daemon):
 
 
 if __name__ == "__main__":
+
+    # change to script directory for relative CONFIG_FILE path
+    os.chdir(os.path.dirname(os.path.realpath(sys.argv[0])))
+
     history_log = USER_LOG()
     history_log.set_log('event_history.log', CONF.base()['log_rotate_time'], CONF.base()['log_backup_count'])
     alarm_event.set_history_log(history_log)

@@ -26,6 +26,9 @@ def main():
     global evt_thread
     global conn_evt_thread
 
+    # change to script directory for relative CONFIG_FILE path
+    os.chdir(os.path.dirname(os.path.realpath(sys.argv[0])))
+
     try:
         from PIL import Image
     except:
