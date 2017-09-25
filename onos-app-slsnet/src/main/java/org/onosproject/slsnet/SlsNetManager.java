@@ -533,6 +533,10 @@ public class SlsNetManager extends ListenerRegistry<SlsNetEvent, SlsNetListener>
                         + SlsNetService.VIRTUAL_GATEWAY_ETH_ADDRESS_SELECTOR);
             out.println("    REACTIVE_SINGLE_TO_SINGLE="
                         + SlsNetService.REACTIVE_SINGLE_TO_SINGLE);
+            out.println("    REACTIVE_ALLOW_LINK_CP="
+                        + SlsNetService.REACTIVE_ALLOW_LINK_CP);
+            out.println("    REACTIVE_HASHED_PATH_SELECTION="
+                        + SlsNetService.REACTIVE_HASHED_PATH_SELECTION);
             out.println("");
             out.println("SlsNetAppId:");
             out.println("    " + getAppId());

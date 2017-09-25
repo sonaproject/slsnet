@@ -55,6 +55,7 @@ import org.onosproject.net.host.HostService;
 import org.onosproject.net.intent.Constraint;
 import org.onosproject.net.intent.constraint.EncapsulationConstraint;
 import org.onosproject.net.intent.constraint.PartialFailureConstraint;
+import org.onosproject.net.intent.constraint.HashedPathSelectionConstraint;
 import org.onosproject.net.intent.Intent;
 import org.onosproject.net.intent.IntentService;
 import org.onosproject.net.intent.Key;
@@ -117,8 +118,9 @@ public class SlsNetReactiveRouting {
     @Reference(cardinality = ReferenceCardinality.MANDATORY_UNARY)
     protected SlsNetService slsnet;
 
-    private static final ImmutableList<Constraint> REACTIVE_CONSTRAINTS
+    private ImmutableList<Constraint> reactiveConstraints
             = ImmutableList.of(new PartialFailureConstraint());
+            //= ImmutableList.of();
             // NOTE: SHOULD NOT use HashedPathSelectionConstraint
             //       for unpredictable srcCp of Link appears as reactive packet traffic
 
@@ -136,6 +138,13 @@ public class SlsNetReactiveRouting {
 
         // NOTE: may not clear at init for MIGHT generate pending_remove garbages
         //       use flush event from slsnet cli command
+
+        if (slsnet.REACTIVE_HASHED_PATH_SELECTION) {
+            reactiveConstraints = ImmutableList.of(new PartialFailureConstraint(),
+                                                   new HashedPathSelectionConstraint());
+        } else {
+            reactiveConstraints = ImmutableList.of(new PartialFailureConstraint());
+        }
 
         processor = new ReactiveRoutingProcessor();
         packetService.addProcessor(processor, PacketProcessor.director(2));
@@ -233,12 +242,15 @@ public class SlsNetReactiveRouting {
         }
 
         if (!newInterceptFlowRules.equals(interceptFlowRules)) {
+            // NOTE: DO NOT REMOVE INTERCEPT FLOW RULES FOR FAILED DEVICE FLOW UPDATE MIGHT BE BLOCKED
+            /*
             interceptFlowRules.stream()
                 .filter(rule -> !newInterceptFlowRules.contains(rule))
                 .forEach(rule -> {
                     flowRuleService.removeFlowRules(rule);
                     log.info("slsnet reactive routing remove intercept flow rule: {}", rule);
                 });
+            */
             newInterceptFlowRules.stream()
                 .filter(rule -> !interceptFlowRules.contains(rule))
                 .forEach(rule -> {
@@ -311,40 +323,6 @@ public class SlsNetReactiveRouting {
         return rule;
     }
 
-    // JUST FOR FLOW RULE TEST ONLY
-    /*
-    private FlowRule generateTestFlowRule(DeviceId deviceId, IpPrefix prefix) {
-        TrafficSelector.Builder selector = DefaultTrafficSelector.builder();
-        if (SlsNetService.VIRTUAL_GATEWAY_ETH_ADDRESS_SELECTOR) {
-            selector.matchEthDst(slsnet.getVMac());
-        }
-        if (prefix.isIp4()) {
-            selector.matchEthType(Ethernet.TYPE_IPV4);
-            if (prefix.prefixLength() > 0) {
-                selector.matchIPDst(prefix);
-            }
-        } else {
-            selector.matchEthType(Ethernet.TYPE_IPV6);
-            if (prefix.prefixLength() > 0) {
-                selector.matchIPv6Dst(prefix);
-            }
-        }
-        FlowRule rule = DefaultFlowRule.builder()
-                .forDevice(deviceId)
-                .withPriority(reactivePriority(prefix.prefixLength(), slsnet.PRI_REACTIVE_INTERCEPT))
-                .withSelector(selector.build())
-                .withTreatment(DefaultTrafficTreatment.builder()
-                        .setEthSrc(MacAddress.valueOf("11:22:33:44:55:66"))
-                        .setEthDst(MacAddress.valueOf("12:34:56:78:9a:bc"))
-                        .setOutput(PortNumber.portNumber(1))
-                        .build())
-                .fromApp(reactiveAppId)
-                .makePermanent()
-                .forTable(0).build();
-        return rule;
-    }
-    */
-
     /**
      * Refresh routes by examining network resource status.
      */
@@ -353,89 +331,96 @@ public class SlsNetReactiveRouting {
             if (!reactiveAppId.equals(entry.appId())) {
                 continue;
             }
+
             MultiPointToSinglePointIntent intent = (MultiPointToSinglePointIntent) entry;
-            boolean clearIntent = true;  // mark to clear intent on dummy while loop breaks
-            do {
-                // check if intents status is bad
-                try {
-                    switch (intentService.getIntentState(intent.key())) {
-                    case FAILED:
-                    case WITHDRAWN:
-                        log.warn("slsnet reactive routing intent found failed or withdrawn; "
-                                 +  "remove and try to purge intent: key={}", intent.key());
-                        // purge intents here without withdraw
-                        intentService.purge(intentService.getIntent(intent.key()));
-                        toBePurgedIntentKeys.add(intent.key());
-                        clearIntent = false;  // mark no clear and to exit loop for this intent
-                        break;
-                    default:
-                        // no action
-                        break;
-                    }
-                } catch (Exception e) {
-                    log.warn("slsnet reactive routing intent status lookup failed: error={}", e);
-                    clearIntent = false;  // this intent seems invalidated; no action
-                }
-                if (!clearIntent) {
-                    break;
-                }
-                // dummy loop to break on remove cases
-                if (!deviceService.isAvailable(intent.egressPoint().deviceId())) {
-                    log.info("slsnet reactive routing refresh route intents; "
-                             + "remove intent for no device: key={}", intent.key());
-                    break;
-                }
-                if (slsnet.findL2Network(intent.egressPoint(), VlanId.NONE) == null &&
-                    linkService.getEgressLinks(intent.egressPoint()).isEmpty()) {
-                    log.info("slsnet reactive routing refresh route intents; "
-                             + "remove intent for egress point not available: key={}", intent.key());
-                    break;
-                }
-                // MAY NEED TO CHECK: intent.egressPoint and intent.treatment's dstMac is valid against hosts
-                Set<ConnectPoint> newIngressPoints = new HashSet<>();
-                boolean ingressPointChanged = false;
-                for (ConnectPoint cp : intent.ingressPoints()) {
-                    if (deviceService.isAvailable(cp.deviceId()) &&
-                        (slsnet.findL2Network(cp, VlanId.NONE) != null || !linkService.getIngressLinks(cp).isEmpty())) {
-                        newIngressPoints.add(cp);
-                    } else {
-                        log.info("slsnet reactive routing refresh route ingress cp of "
-                                 + "not in 2Networks nor links: {}", cp);
-                        ingressPointChanged = true;
-                    }
-                }
-                if (newIngressPoints.isEmpty()) {
-                    log.info("slsnet reactive routing refresh route intents; "
-                              + "remove intent for no ingress nor egress point available: key={}", intent.key());
-                    break;
-                }
-                // update ingress points
-                if (ingressPointChanged) {
-                    MultiPointToSinglePointIntent updatedIntent =
-                        MultiPointToSinglePointIntent.builder()
-                            .appId(reactiveAppId)
-                            .key(intent.key())
-                            .selector(intent.selector())
-                            .treatment(intent.treatment())
-                            .ingressPoints(newIngressPoints)
-                            .egressPoint(intent.egressPoint())
-                            .priority(intent.priority())
-                            .constraints(intent.constraints())
-                            .build();
-                    log.info("slsnet reactive routing refresh route update intent: key={} updatedIntent={}",
-                            intent.key(), updatedIntent);
-                    toBePurgedIntentKeys.remove(intent.key());   // may remove from old purged entry
-                    intentService.submit(updatedIntent);
-                }
-                // this intent is valid
-                clearIntent = false;
 
-            } while (false);
+            if (!intentService.isLocal(intent.key())) {
+                if (toBePurgedIntentKeys.contains(intent.key())) {
+                    toBePurgedIntentKeys.remove(intent.key());  // clear non local intent
+                }
+                continue;
+            }
 
-            // remote entry for current status is not value
-            if (clearIntent) {
+            try {
+                switch (intentService.getIntentState(intent.key())) {
+                //case FAILED:   // failed intent is not auto removed
+                case WITHDRAWN:
+                    log.warn("slsnet reactive routing intent found failed or withdrawn; "
+                             +  "remove and try to purge intent: key={}", intent.key());
+                    // purge intents here without withdraw
+                    intentService.purge(intentService.getIntent(intent.key()));
+                    toBePurgedIntentKeys.add(intent.key());
+                    continue;
+                default: // no action
+                    break;
+                }
+            } catch (Exception e) {
+                log.warn("slsnet reactive routing intent status lookup failed: error={}", e);
+                continue;  // this intent seems invalid; no action
+            }
+
+            // dummy loop to break on remove cases
+            if (!deviceService.isAvailable(intent.egressPoint().deviceId())) {
+                log.info("slsnet reactive routing refresh route intents; "
+                         + "remove intent for no device: key={}", intent.key());
                 intentService.withdraw(intentService.getIntent(intent.key()));
                 toBePurgedIntentKeys.add(intent.key());
+                continue;
+            }
+            if (!(slsnet.findL2Network(intent.egressPoint(), VlanId.NONE) != null ||
+                  (slsnet.REACTIVE_ALLOW_LINK_CP &&
+                   !linkService.getEgressLinks(intent.egressPoint()).isEmpty()))) {
+                log.info("slsnet reactive routing refresh route intents; "
+                         + "remove intent for egress point not available: key={}", intent.key());
+                intentService.withdraw(intentService.getIntent(intent.key()));
+                toBePurgedIntentKeys.add(intent.key());
+                continue;
+            }
+
+            // MAY NEED TO CHECK: intent.egressPoint and intent.treatment's dstMac is valid against hosts
+            if (slsnet.REACTIVE_SINGLE_TO_SINGLE && !slsnet.REACTIVE_ALLOW_LINK_CP) {
+                // single path intent only; no need to check ingress points
+                continue;
+            }
+
+            Set<ConnectPoint> newIngressPoints = new HashSet<>();
+            boolean ingressPointChanged = false;
+            for (ConnectPoint cp : intent.ingressPoints()) {
+                if (deviceService.isAvailable(cp.deviceId()) &&
+                    (slsnet.findL2Network(cp, VlanId.NONE) != null ||
+                     (slsnet.REACTIVE_ALLOW_LINK_CP &&
+                      !linkService.getIngressLinks(cp).isEmpty()))) {
+                    newIngressPoints.add(cp);
+                } else {
+                    log.info("slsnet reactive routing refresh route ingress cp of "
+                             + "not in 2Networks nor links: {}", cp);
+                    ingressPointChanged = true;
+                }
+            }
+            if (newIngressPoints.isEmpty()) {
+                log.info("slsnet reactive routing refresh route intents; "
+                          + "remove intent for no ingress nor egress point available: key={}", intent.key());
+                intentService.withdraw(intentService.getIntent(intent.key()));
+                toBePurgedIntentKeys.add(intent.key());
+                continue;
+            }
+            // update ingress points
+            if (ingressPointChanged) {
+                MultiPointToSinglePointIntent updatedIntent =
+                    MultiPointToSinglePointIntent.builder()
+                        .appId(reactiveAppId)
+                        .key(intent.key())
+                        .selector(intent.selector())
+                        .treatment(intent.treatment())
+                        .ingressPoints(newIngressPoints)
+                        .egressPoint(intent.egressPoint())
+                        .priority(intent.priority())
+                        .constraints(intent.constraints())
+                        .build();
+                log.info("slsnet reactive routing refresh route update intent: key={} updatedIntent={}",
+                        intent.key(), updatedIntent);
+                toBePurgedIntentKeys.remove(intent.key());   // may remove from old purged entry
+                intentService.submit(updatedIntent);
             }
         }
     }
@@ -443,15 +428,19 @@ public class SlsNetReactiveRouting {
     public void checkIntentsPurge() {
         // check intents to be purge
         if (!toBePurgedIntentKeys.isEmpty()) {
-            Set<Key> purgedKeys = new HashSet<>();
+            Set<Key> removeKeys = new HashSet<>();
             for (Key key : toBePurgedIntentKeys) {
+                if (!intentService.isLocal(key)) {
+                    removeKeys.add(key);
+                    continue;
+                }
                 Intent intentToPurge = intentService.getIntent(key);
                 if (intentToPurge == null) {
                     log.info("slsnet reactive routing purged intent: key={}", key);
-                    purgedKeys.add(key);
+                    removeKeys.add(key);
                 } else {
                     switch (intentService.getIntentState(key)) {
-                    case FAILED:
+                    // case FAILED:  // not auto removed
                     case WITHDRAWN:
                         log.info("slsnet reactive routing try to purge intent: key={}", key);
                         intentService.purge(intentToPurge);
@@ -461,8 +450,8 @@ public class SlsNetReactiveRouting {
                     case INSTALLING:
                     case RECOMPILING:
                     case COMPILING:
-                        log.warn("slsnet reactive routing withdraw intent to purge: key={}", key);
-                        intentService.withdraw(intentToPurge);
+                        log.warn("slsnet reactive routing not to purge for active intent: key={}", key);
+                        removeKeys.add(key);
                         break;
                     case WITHDRAW_REQ:
                     case WITHDRAWING:
@@ -474,12 +463,13 @@ public class SlsNetReactiveRouting {
                     }
                 }
             }
-            toBePurgedIntentKeys.removeAll(purgedKeys);
+            toBePurgedIntentKeys.removeAll(removeKeys);
         }
     }
 
     public void withdrawAllReactiveIntents() {
-        // check all intents of mine
+        // check all intents of this app
+        // NOTE: cli calls are handling within the cli called node only; so should not user inents.isLocal()
         Set<Intent> myIntents = new HashSet<>();
         for (Intent intent : intentService.getIntents()) {
             if (reactiveAppId.equals(intent.appId())) {
@@ -490,7 +480,6 @@ public class SlsNetReactiveRouting {
         for (Intent intent : myIntents) {
             switch (intentService.getIntentState(intent.key())) {
             case FAILED:
-                intentService.withdraw(intent);  // TO BE TESTED IF NEEDED
                 intentService.purge(intent);
                 toBePurgedIntentKeys.add(intent.key());
                 break;
@@ -728,20 +717,19 @@ public class SlsNetReactiveRouting {
      */
     private boolean setUpConnectivity(ConnectPoint srcCp, IpPrefix srcPrefix, IpPrefix dstPrefix,
                                       IpAddress nextHopIp, MacAddress treatmentSrcMac, EncapsulationType encap) {
-        /*
-        if (slsnet.findL2Network(srcCp, VlanId.NONE) == null) {
-            log.warn("slsnet reactive routing skip intent on srcCp not in L2Network: "
-                     + "srcCp={} srcPrefix={} dstPrefix={} nextHopIp={}",
-                     srcCp, srcPrefix, dstPrefix, nextHopIp);
-            return false;
-        }
-        */
-
         Key key;
         if (slsnet.REACTIVE_SINGLE_TO_SINGLE) {
             key = Key.of(srcPrefix.toString() + "-to-" + dstPrefix.toString(), reactiveAppId);
         } else {
             key = Key.of(dstPrefix.toString(), reactiveAppId);
+        }
+
+        if (!(slsnet.findL2Network(srcCp, VlanId.NONE) != null ||
+             (slsnet.REACTIVE_ALLOW_LINK_CP && !linkService.getIngressLinks(srcCp).isEmpty()))) {
+           log.warn("slsnet reactive routing on srcCp not in L2Network nor link; ignore: "
+                     + "srcCp={} srcPrefix={} dstPrefix={} nextHopIp={}",
+                     srcCp, srcPrefix, dstPrefix, nextHopIp);
+                return false;
         }
 
         MacAddress nextHopMac = null;
@@ -783,7 +771,7 @@ public class SlsNetReactiveRouting {
         MultiPointToSinglePointIntent existingIntent = (MultiPointToSinglePointIntent) intentService.getIntent(key);
         if (existingIntent != null) {
             ingressPoints.addAll(existingIntent.ingressPoints());
-            if (!ingressPoints.add(srcCp)  /* alread exists and dst not changed */
+            if (!ingressPoints.add(srcCp)  // alread exists and dst not changed
                     && egressPoint.equals(existingIntent.egressPoint())
                     && treatment.equals(existingIntent.treatment())) {
                 log.warn("slsnet reactive routing srcCP is already in mp2p intent: srcPrefix={} dstPrefix={} srcCp={}",
@@ -806,7 +794,7 @@ public class SlsNetReactiveRouting {
             .ingressPoints(ingressPoints)
             .egressPoint(egressPoint)
             .priority(reactivePriority(dstPrefix.prefixLength(), slsnet.PRI_REACTIVE_ROUTE))
-            .constraints(buildConstraints(REACTIVE_CONSTRAINTS, encap))
+            .constraints(buildConstraints(reactiveConstraints, encap))
             .build();
         log.info("slsnet reactive routing submmit mp2p intent: srcPrefix={} dstPrefix={} srcCp={} "
                  + "newIntent={} nextHopIp={} nextHopMac={}",

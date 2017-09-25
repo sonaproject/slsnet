@@ -87,7 +87,7 @@ public class SlsNetL2Forward {
     protected SlsNetService slsnet;
 
     public static final ImmutableList<Constraint> L2NETWORK_CONSTRAINTS =
-            ImmutableList.of(new PartialFailureConstraint())
+            ImmutableList.of(new PartialFailureConstraint());
 
     private Map<Key, SinglePointToMultiPointIntent> bctIntentsMap = Maps.newConcurrentMap();
     private Map<Key, MultiPointToSinglePointIntent> uniIntentsMap = Maps.newConcurrentMap();
