@@ -249,7 +249,7 @@ def main(prog_name, argv):
     # change to script directory for relative CONFIG_FILE path
     os.chdir(os.path.dirname(os.path.realpath(sys.argv[0])))
 
-    loop_count_max = 1
+    loop_count_max = 0
     loop_interval_sec = 10
 
     help_msg = 'Usage: %s [-l <loop_count_max(default:%d,infinit:0)>] [-i <loop_interval_sec(default:%d)>] [-c <checknet_cfg>]' \
