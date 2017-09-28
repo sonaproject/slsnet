@@ -12,6 +12,9 @@ SLSNET_VERSION=1.11.0
 ( cd onos-app-slsnet/; mvn clean compile install || exit 1 )
 onos-app localhost uninstall org.onosproject.slsnet
 onos-app localhost install onos-app-slsnet/target/onos-app-slsnet-${SLSNET_VERSION}.oar
+onos-app localhost activate org.onosproject.openflow-base
+onos-app localhost activate org.onosproject.lldpprovider
+onos-app localhost activate org.onosproject.hostprovider
 onos-app localhost activate org.onosproject.slsnet
 
 # reinstall network config

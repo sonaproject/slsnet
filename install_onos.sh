@@ -39,5 +39,5 @@ sudo service onos start
 
 
 # to make cluster
-# sudo onos-form-cluster 192.168.1.5 192.168.0.3 1921.168.1.2
+# sudo onos-form-cluster 192.168.1.5 192.168.0.3 192.168.1.2
 
