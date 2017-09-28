@@ -43,6 +43,9 @@ def periodic(conn, pre_stat, db_log):
             if grade != 'ok':
                 old_nok_count += 1
 
+        user = 'user';
+        passwd = 'rocks';
+
         new_nok_count = 0;
         for node_name, node_ip, user_name, type, sub_type in node_list:
             #LOG.info('------------------------------------ ' + node_name + ' START ------------------------------------')

@@ -1,28 +1,59 @@
+import requests
+import json
+import base64
+
 from api.sona_log import LOG
 from api.watcherdb import DB
 from api.config import CONF
 from api.sbapi import SshCommand
 
 
+# /onos/v1/applications
+# N/A for rest apis /onos/v1/web:list
+# /onos/v1/clusters
+# /onos/v1/devices
+# /onos/v1/links
+
+def onos_api_req(node_ip, url_path):
+    try:
+        url = "http://%s:%d/%s" % (node_ip, CONF.onos()['api_port'], url_path)
+        auth = CONF.onos()['api_user_passwd'].split(':')
+        timeout = CONF.onos()['api_timeout_sec']
+           
+        #LOG.info('ONOS API REQUEST: url=%s auth=%s timeout=%s', url, auth, timeout)
+        rsp = requests.get(url, auth=(auth[0], auth[1]), timeout=timeout)
+        #LOG.info('ONOS API RESPONSE: status=%s body=%s', str(rsp.status_code), rsp.content)
+
+    except:
+        # req timeout
+        LOG.exception()
+        return -1, None
+
+    if rsp.status_code != 200:
+        return -2, None
+
+    try:
+        body = json.loads(rsp.content.replace("\'", '"'))
+        return rsp.status_code, body
+
+    except:
+        LOG.exception()
+        return -2, None
+
+
 def onos_app_check(conn, db_log, node_name, node_ip):
     try:
-        app_rt = SshCommand.onos_ssh_exec(node_ip, 'apps -a -s')
-
         status = 'ok'
         app_active_list = list()
 
         app_list = []
         fail_reason = []
 
-        if app_rt is not None:
-            for line in app_rt.splitlines():
-                app_active_list.append(line.split(".")[2].split()[0])
-
-            # do not use cpman
-            #if not 'cpman' in app_active_list:
-            #    # activate cpman
-            #    LOG.info('Cpman does not exist. Activate cpman')
-            #    SshCommand.onos_ssh_exec(node_ip, 'app activate org.onosproject.cpman')
+        ret, rsp = onos_api_req(node_ip, 'onos/v1/applications')
+        if rsp is not None:
+            for app_rsp in rsp['applications']:
+                if app_rsp['state'] == 'ACTIVE':
+                    app_active_list.append(app_rsp['name'].replace('org.onosproject.', ''))
 
             for app in CONF.onos()['app_list']:
                 if app in app_active_list:
@@ -335,132 +366,4 @@ def onos_conn_check(conn, db_log, node_name, node_ip):
 
     return cluster_status, device_status, link_status, cluster_fail_reason, device_fail_reason, link_fail_reason
 
-# NOT USED
-def controller_traffic_check(conn, db_log, node_name, node_ip, pre_stat):
-    try:
-        summary_rt = SshCommand.onos_ssh_exec(node_ip, 'summary')
-
-        in_packet = 0
-        out_packet = 0
-
-        cpman_stat_list = list()
-        controller_traffic = 'ok'
-        reason = []
-
-        desc = ''
-        ratio = 0
-
-        if summary_rt is not None:
-            data_ip = str(summary_rt).split(',')[0].split('=')[1]
-
-            try:
-                sql = 'SELECT hostname, of_id FROM ' + DB.OPENSTACK_TBL
-                nodes_info = conn.cursor().execute(sql).fetchall()
-
-                for hostname, of_id in nodes_info:
-                    cmd = 'cpman-stats-list ' + data_ip + ' control_message ' + of_id
-
-                    stat_rt = SshCommand.onos_ssh_exec(node_ip, cmd)
-
-                    rest_json = {'hostname': str(hostname), 'of_id': str(of_id), 'inbound': '-',
-                                 'outbound': '-', 'mod': '-', 'removed': '-', 'request': '-', 'reply': '-'}
-
-                    if stat_rt is not None:
-                        if not str(stat_rt).startswith('Failed'):
-                            for line in stat_rt.splitlines():
-                                type = line.split(',')[0].split('=')[1]
-                                avg_cnt = int(line.split(',')[2].split('=')[1])
-
-                                if type == 'INBOUND_PACKET':
-                                    in_packet = in_packet + avg_cnt
-                                    in_p = avg_cnt
-                                elif type == 'OUTBOUND_PACKET':
-                                    out_packet = out_packet + avg_cnt
-                                    out_p = avg_cnt
-                                elif type == 'FLOW_MOD_PACKET':
-                                    mod_p = avg_cnt
-                                elif type == 'FLOW_REMOVED_PACKET':
-                                    remove_p = avg_cnt
-                                elif type == 'REQUEST_PACKET':
-                                    req_p = avg_cnt
-                                elif type == 'REPLY_PACKET':
-                                    res_p = avg_cnt
-
-                            rest_json = {'hostname': str(hostname), 'of_id': str(of_id), 'inbound': in_p,
-                                         'outbound': out_p, 'mod': mod_p,'removed': remove_p,'request': req_p,'reply': res_p}
-                        else:
-                            reason.append(rest_json)
-                            controller_traffic = 'fail'
-                    else:
-                        reason.append(rest_json)
-                        controller_traffic = 'fail'
-
-                    cpman_stat_list.append(rest_json)
-
-                for_save_in = in_packet
-                for_save_out = out_packet
-
-                if not dict(pre_stat).has_key(node_name):
-                    controller_traffic = '-'
-
-                    in_out_dic = dict()
-                    in_out_dic['in_packet'] = for_save_in
-                    in_out_dic['out_packet'] = for_save_out
-
-                    pre_stat[node_name] = in_out_dic
-                else:
-                    in_packet = in_packet - int(dict(pre_stat)[node_name]['in_packet'])
-                    out_packet = out_packet - int(dict(pre_stat)[node_name]['out_packet'])
-
-                    if in_packet <= CONF.alarm()['controller_traffic_minimum_inbound']:
-                        desc = 'Minimum increment for status check = ' + str(
-                            CONF.alarm()['controller_traffic_minimum_inbound'])
-                        controller_traffic = '-'
-                    else:
-                        if in_packet == 0 and out_packet == 0:
-                            ratio = 100
-                        elif in_packet <= 0 or out_packet < 0:
-                            LOG.info('Controller Traffic Ratio Fail.')
-                            ratio = 0
-                        else:
-                            ratio = float(out_packet) * 100 / in_packet
-
-                        LOG.info('[CPMAN][' + node_name + '] Controller Traffic Ratio = ' + str(ratio) + '(' + str(out_packet) + '/' + str(in_packet) + ')')
-                        desc = 'Controller Traffic Ratio = ' + str(ratio) + '(' + str(out_packet) + '/' + str(in_packet) + ')\n'
-
-                        if ratio < float(CONF.alarm()['controller_traffic_ratio']):
-                            controller_traffic = 'nok'
-
-                        in_out_dic = dict()
-                        in_out_dic['in_packet'] = for_save_in
-                        in_out_dic['out_packet'] = for_save_out
-
-                        pre_stat[node_name] = in_out_dic
-            except:
-                LOG.exception()
-                controller_traffic = 'fail'
-        else:
-            controller_traffic = 'fail'
-
-        controller_json = {'status': controller_traffic, 'stat_list': cpman_stat_list, 'minimum_inbound_packet': CONF.alarm()['controller_traffic_minimum_inbound'], 'current_inbound_packet': in_packet,
-                     'current_outbound_packet': out_packet, 'period': CONF.watchdog()['interval'], 'ratio': format(ratio, '.2f'), 'description': desc, 'threshold': CONF.alarm()['controller_traffic_ratio']}
-
-        if not controller_traffic == 'ok':
-            reason.append(controller_json)
-
-        try:
-            sql = 'UPDATE ' + DB.ONOS_TBL + \
-                  ' SET traffic_stat = \"' + str(controller_json) + '\"' + \
-                  ' WHERE nodename = \'' + node_name + '\''
-            db_log.write_log('----- UPDATE CONTROLLER TRAFFIC INFO -----\n' + sql)
-
-            if DB.sql_execute(sql, conn) != 'SUCCESS':
-                db_log.write_log('[FAIL] CONTROLLER TRAFFIC Update Fail.')
-        except:
-            LOG.exception()
-    except:
-        LOG.exception()
-        controller_traffic = 'fail'
-
-    return controller_traffic, pre_stat, reason
 

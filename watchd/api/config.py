@@ -11,7 +11,6 @@ DEFAULT_CONF_FILE = os.getenv('SLSNET_WATCHD_CFG', 'config.ini')
 class ConfReader:
     conf_map = dict()
 
-
     def init(self):
         if not os.access(DEFAULT_CONF_FILE, os.R_OK):
             print("cannot open config file for read: %s" % (DEFAULT_CONF_FILE));
@@ -19,11 +18,9 @@ class ConfReader:
       
         self.config = ConfigParser.ConfigParser()
         self.config.read(DEFAULT_CONF_FILE)
-        self.__load_config_map()
-
-    def __load_config_map(self):
         for section in self.config.sections():
             self.conf_map[section] = {key: value for key, value in self.config.items(section)}
+
 
     @staticmethod
     def __list_opt(value):
@@ -78,6 +75,9 @@ class ConfReader:
         value = dict()
         try:
             value['list'] = self.__list_opt(self.conf_map['ONOS']['list'])
+            value['api_port'] = int(self.conf_map['ONOS']['api_port'])
+            value['api_user_passwd'] = str(self.conf_map['ONOS']['api_user_passwd'])  # format: user:passwd
+            value['api_timeout_sec'] = int(self.conf_map['ONOS']['api_timeout_sec'])
             value['account'] = str(self.conf_map['ONOS']['account'])
             value['app_list'] = self.__list_opt(self.conf_map['ONOS']['app_list'])
             value['rest_list'] = self.__list_opt(self.conf_map['ONOS']['rest_list'])
