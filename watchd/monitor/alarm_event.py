@@ -68,7 +68,7 @@ def occur_event(conn, db_log, node_name, item, pre_grade, cur_grade, reason):
         if DB.sql_execute(sql, conn) != 'SUCCESS':
             db_log.write_log('[FAIL] EVENT INFO DB Update Fail.')
 
-        push_event(node_name, item, cur_grade, pre_grade, reason, time)
+        push_event(node_name, item, cur_grade, pre_grade, reason, time, False)
     except:
         LOG.exception()
 
@@ -79,7 +79,7 @@ def set_history_log(log):
     history_log = log
 
 
-def push_event(node_name, item, grade, pre_grade, reason, time):
+def push_event(node_name, item, grade, pre_grade, reason, time, flush_alarm):
     global history_log
 
     try:
@@ -103,27 +103,23 @@ def push_event(node_name, item, grade, pre_grade, reason, time):
                 # Push event does not respond
                 pass
 
-        # send alarm notification
         reason_str = ''
         if type(reason) == list:
             if len(reason) > 0:
                  reason_str = '-- ' + '\n-- '.join(reason)
         else:
             reason_str = str(reason)
-        # set verb describing status change
-        event_verb = 'goes'
-        if pre_grade == 'none':
-           event_verb = 'is'
-        # check for gramatical number
-        if item[-1].lower() == 's':
-           if event_verb == 'goes': event_verb = 'go'
-           if event_verb == 'is': event_verb = 'are'
-          
-        ALARM.send_alarm(node_name + ' ' + item + ' '
-                         + event_verb + ' ' + grade.upper(), reason_str, time)
+
+        ALARM.queue_alarm(node_name + ' ' + item + ' ' + grade.upper(), reason_str, time)
+        if flush_alarm:
+            ALARM.flush_pending_alarm()
 
     except:
         LOG.exception()
+
+
+def flush_event_alarm():
+    ALARM.flush_pending_alarm()
 
 
 CONF_MAP = { 'ONOS': CONF.onos,

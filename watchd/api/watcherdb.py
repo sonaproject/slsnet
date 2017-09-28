@@ -9,6 +9,8 @@ import sqlite3
 from sona_log import LOG
 from config import CONF
 
+CONF_MAP = {'ONOS': CONF.onos, 'SITE': CONF.site }
+
 class DB(object):
     NODE_INFO_TBL = 't_nodes'
     REGI_SYS_TBL = 't_regi'
@@ -18,7 +20,6 @@ class DB(object):
 
     common_event_list = ['PING']
     onos_event_list = ['ONOS_CLUSTER', 'ONOS_DEVICE', 'ONOS_LINK', 'ONOS_APP', 'ONOS_REST']
-
     item_list = ", ".join(common_event_list + onos_event_list)
 
     @staticmethod
@@ -150,8 +151,4 @@ class DB(object):
 
         return 'FAIL'
 
-DB_CONN = DB().connection()
-
-CONF_MAP = {'ONOS': CONF.onos,
-            'SITE': CONF.site }
 

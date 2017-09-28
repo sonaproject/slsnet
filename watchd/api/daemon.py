@@ -7,9 +7,7 @@ import os
 import time
 import atexit
 import subprocess
-
 from signal import SIGTERM
-
 from sona_log import LOG
 
 
@@ -55,7 +53,7 @@ class Daemon(object):
         pid = str(os.getpid())
 
         LOG.info("--- Daemon START ---")
-        sys.stderr.write("\nstarted with pid %s\n" % pid)
+        sys.stderr.write("Started with pid %s\n" % pid)
         sys.stderr.flush()
 
         if self.pidfile:

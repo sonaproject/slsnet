@@ -23,12 +23,10 @@ from api.watcherdb import DB
 from api.daemon import Daemon
 
 
-PIDFILE = CONF.get_pid_file()
-
 class SlsNetWatchD(Daemon):
     def exit(self):
         try:
-            pf = file(PIDFILE, 'r')
+            pf = file(CONF.get_pid_file(), 'r')
             pid = int(pf.read().strip())
             pf.close()
 
@@ -46,12 +44,14 @@ class SlsNetWatchD(Daemon):
             LOG.exception()
 
     def run(self):
+        # be quiet on db_log
         db_log = USER_LOG()
-        db_log.set_log('db.log', CONF.base()['log_rotate_time'], CONF.base()['log_backup_count'])
+        #b_log.set_log('db.log', CONF.base()['log_rotate_time'], CONF.base()['log_backup_count'])
 
         pre_stat = dict()
 
         # DB initiation
+        DB_CONN = DB().connection()
         DB.db_initiation(db_log)
 
         # Start RESTful server
@@ -73,7 +73,7 @@ class SlsNetWatchD(Daemon):
 
             conn = DB.connection()
 
-            alarm_event.push_event('SlsNetWatchd', 'Daemon', 'up', 'none', [], str(datetime.now()))
+            alarm_event.push_event('SlsNetWatchd', 'PROC', 'up', 'none', [], str(datetime.now()), False)
 
             exitFlag = False
             while True:
@@ -93,7 +93,7 @@ class SlsNetWatchD(Daemon):
                                 LOG.info('REST SERVER CHECK FAIL [' + str(i) + ']')
                                 if i == 3:
                                     LOG.info('fail to check rest server.')
-                                    alarm_event.push_event('SlsNetwatchd', 'Daemon', 'down', 'up', [], str(datetime.now()))
+                                    alarm_event.push_event('SlsNetwatchd', 'PROC', 'down', 'up', [], str(datetime.now()), True)
                                     conn.close()
                                     exitFlag = True
                                     self.exit()
@@ -112,7 +112,7 @@ class SlsNetWatchD(Daemon):
 
                     time.sleep(CONF.watchdog()['interval'])
                 except:
-                    alarm_event.push_event('SlsNetWatchd', 'Daemon', 'down', 'normal', [], str(datetime.now()))
+                    alarm_event.push_event('SlsNetWatchd', 'PROC', 'down', 'normal', [], str(datetime.now()), False)
                     conn.close()
                     LOG.exception()
 
@@ -121,40 +121,33 @@ if __name__ == "__main__":
 
     # change to script directory for relative CONFIG_FILE path
     os.chdir(os.path.dirname(os.path.realpath(sys.argv[0])))
-
+     
+    CONF.init()
+    LOG.init(CONF.base()['log_file_name'])
     history_log = USER_LOG()
     history_log.set_log('event_history.log', CONF.base()['log_rotate_time'], CONF.base()['log_backup_count'])
     alarm_event.set_history_log(history_log)
 
-    daemon = SlsNetWatchD(PIDFILE)
+    daemon = SlsNetWatchD(CONF.get_pid_file())
 
     if len(sys.argv) == 2:
 
         if 'start' == sys.argv[1]:
-            try:
-                daemon.start()
-            except:
-                pass
+            daemon.start()
 
         elif 'stop' == sys.argv[1]:
             print "Stopping ..."
-            try:
-                alarm_event.push_event('SlsNetWatchd', 'Daemon', 'down', 'up', [], str(datetime.now()))
-            except:
-                pass
+            alarm_event.push_event('SlsNetWatchd', 'PROC', 'down', 'up', [], str(datetime.now()), True)
             daemon.stop()
 
         elif 'restart' == sys.argv[1]:
             print "Restaring ..."
-            try:
-                alarm_event.push_event('SlsNetWatchd', 'Daemon', 'restart', 'up', [], str(datetime.now()))
-                daemon.restart()
-            except:
-                pass
+            alarm_event.push_event('SlsNetWatchd', 'PROC', 'restart', 'up', [], str(datetime.now()), False)
+            daemon.restart()
 
         elif 'status' == sys.argv[1]:
             try:
-                pf = file(PIDFILE,'r')
+                pf = file(CONF.get_pid_file(), 'r')
                 pid = int(pf.read().strip())
                 pf.close()
             except IOError:
@@ -163,9 +156,9 @@ if __name__ == "__main__":
                 pid = None
 
             if pid:
-                print 'YourDaemon is running as pid %s' % pid
+                print 'SlsNetWatchd is running as pid %s' % pid
             else:
-                print 'YourDaemon is not running.'
+                print 'SlsNetWatchd is not running.'
 
         else:
             print "Unknown command"

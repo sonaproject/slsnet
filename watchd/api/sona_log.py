@@ -16,13 +16,13 @@ import traceback
 from logging.handlers import TimedRotatingFileHandler
 from config import CONF
 
-DEFAULT_LOG_PATH = os.getcwd() + "/log/"
+DEFAULT_LOG_PATH = 'log/'
 DEFAULT_LOGGER_NAME = 'sona_logger'
 
 class _Log:
     logger = logging.getLogger(DEFAULT_LOGGER_NAME)
 
-    def __init__(self, file_name):
+    def init(self, file_name):
         if not os.path.exists(DEFAULT_LOG_PATH):
             os.makedirs(DEFAULT_LOG_PATH)
         log_file_name = DEFAULT_LOG_PATH + file_name
@@ -54,7 +54,8 @@ class _Log:
         method = '[m:' + traceback.extract_stack(None, 2)[0][2] + ']'
         cls.error("Exception Error %s\n%s", method, ''.join('   | ' + line for line in lines))
 
-LOG = _Log(CONF.base()['log_file_name'])
+LOG = _Log()
+
 
 class USER_LOG():
     LOG = None
@@ -79,7 +80,11 @@ class USER_LOG():
         self.LOG.setLevel(logging.DEBUG)
 
     def write_log(self, log, *args):
+        if self.LOG == None:
+            return
         try:
             self.LOG.debug(log % args)
         except:
             LOG.exception()
+
+

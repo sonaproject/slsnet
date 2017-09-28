@@ -7,13 +7,43 @@ from slackclient import SlackClient
 from config import CONF
 from sona_log import LOG
 
-def send_alarm(subject, reason, time):
+
+# pending alarm info
+alarm_count = 0
+alarm_subject = ''
+alarm_body = ''
+
+
+def queue_alarm(subject, reason, time):
+    global alarm_count, alarm_subject, alarm_body
+
+    alarm_count += 1
+
+    if alarm_count == 1:
+       alarm_subject = subject;  # use first subject only
+
+    alarm_body += '[' + time[0:19] + '] ' + subject + '\n'
+    if len(reason) > 0:
+        alarm_body += reason + '\n'
+
+
+def flush_pending_alarm():
+    global alarm_count, alarm_subject, alarm_body
+
+    if alarm_count <= 0:
+        return;  # no alarm pending
+
     conf = CONF.alarm()
 
-    time = time[0:19] 
-    body = '[' + time + '] ' + subject
-    if len(reason) > 0:
-        body = body + '\n' + reason
+    # copy to local variables and clear global variables
+    count = alarm_count
+    subject = '[%s] %s' % (conf['site_name'], alarm_subject)
+    if (count > 1):
+        subject += ' (+ %d events)' % (count - 1)
+    body = alarm_body
+    alarm_count = 0
+    alarm_subject = ''
+    alarm_body = ''
 
     if conf['mail_alarm']:
         mail_from = conf['mail_user'] + '@' + conf['mail_server'].split(':')[0]
@@ -46,4 +76,5 @@ def send_alarm(subject, reason, time):
             sc.api_call("chat.postMessage", channel=ch, text=body)
         except:
             LOG.exception()
+
 

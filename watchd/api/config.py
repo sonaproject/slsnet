@@ -11,7 +11,8 @@ DEFAULT_CONF_FILE = os.getenv('SLSNET_WATCHD_CFG', 'config.ini')
 class ConfReader:
     conf_map = dict()
 
-    def __init__(self):
+
+    def init(self):
         if not os.access(DEFAULT_CONF_FILE, os.R_OK):
             print("cannot open config file for read: %s" % (DEFAULT_CONF_FILE));
             sys.exit(1)
@@ -93,6 +94,7 @@ class ConfReader:
     def alarm(self):
         value = dict()
         try:
+            value['site_name'] = self.conf_map['ALARM']['site_name']
             value['mail_alarm'] = self.conf_map['ALARM']['mail_alarm'] in ['true','yes']
             value['mail_server'] = self.conf_map['ALARM']['mail_server']
             value['mail_tls'] = self.conf_map['ALARM']['mail_tls'] in ['true','yes']
@@ -121,5 +123,4 @@ class ConfReader:
             return dict({'fail': KE})
 
 CONF = ConfReader()
-
 

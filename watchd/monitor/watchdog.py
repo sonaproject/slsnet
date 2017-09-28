@@ -111,8 +111,10 @@ def periodic(conn, pre_stat, db_log):
                          (node_name, ping, onos_cluster, onos_device, onos_link, onos_app, onos_rest))
 
         if old_nok_count > 0 and new_nok_count == 0:
-            onos_rest = alarm_event.process_event(conn, db_log, 'All', 'SITE', 'Monitoring Items',
-                                                  'none', 'ok', []) 
+            onos_rest = alarm_event.process_event(conn, db_log, 'ALL', 'SITE', 'STATUS', 'none', 'ok', []) 
+
+        # send all alarm messages pending
+        alarm_event.flush_event_alarm();
 
     except:
         LOG.exception()

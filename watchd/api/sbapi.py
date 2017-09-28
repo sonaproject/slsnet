@@ -9,12 +9,14 @@ from config import CONF
 from sona_log import LOG
 
 class SshCommand:
-    ssh_options = '-o StrictHostKeyChecking=no ' \
-              '-o ConnectTimeout=' + str(CONF.ssh_conn()['ssh_req_timeout'])
+    @classmethod
+    def ssh_options(cls):
+        return '-o StrictHostKeyChecking=no ' \
+               '-o ConnectTimeout=' + str(CONF.ssh_conn()['ssh_req_timeout'])
 
     @classmethod
     def ssh_exec(cls, username, node, command):
-        cmd = 'ssh %s %s@%s %s' % (cls.ssh_options, username, node, command)
+        cmd = 'ssh %s %s@%s %s' % (cls.ssh_options(), username, node, command)
 
         try:
             result = Popen(cmd, stdout=PIPE, stderr=PIPE, shell=True)
@@ -31,7 +33,7 @@ class SshCommand:
 
     @classmethod
     def onos_ssh_exec(cls, node_ip, command):
-        local_ssh_options = cls.ssh_options + " -p 8101"
+        local_ssh_options = cls.ssh_options() + " -p 8101"
 
         cmd = 'ssh %s %s %s' % (local_ssh_options, node_ip, command)
 
@@ -50,7 +52,7 @@ class SshCommand:
 
     @classmethod
     def ssh_pexpect(cls, username, node, onos_ip, command):
-        cmd = 'ssh %s %s@%s' % (cls.ssh_options, username, node)
+        cmd = 'ssh %s %s@%s' % (cls.ssh_options(), username, node)
 
         try:
             LOG.info('ssh_pexpect cmd = ' + cmd)
