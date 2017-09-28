@@ -217,13 +217,13 @@ def onos_conn_check(conn, db_log, node_name, node_ip):
                         device['monitor_item'] = True
                         if device['available'] != 'true':
                            device_status = 'nok'
-                           device_fail_reason.append('Device ' + id + ' is DOWN')
+                           device_fail_reason.append('Device ' + id + ' DOWN')
                         device_tbl.pop(id)
                     else:
                         device = { 'id':id, 'available':"false", 'channelId':'-',
                                    'name':'-', 'role':'-', 'monitor_item':True }
                         device_status = 'nok'
-                        device_fail_reason.append('Device ' + id + ' is DOWN')
+                        device_fail_reason.append('Device ' + id + ' DOWN')
                     device_list.append(device)
 
                 for device in device_tbl.values():
@@ -273,7 +273,7 @@ def onos_conn_check(conn, db_log, node_name, node_ip):
                         link['monitor_item'] = True
                         if link['state'] != 'ACTIVE':
                             link_status = 'nok'
-                            link_fail_reason.append('Link ' + id + ' is DOWN')
+                            link_fail_reason.append('Link ' + id + ' DOWN')
                         link_list.append(link)
                         link_tbl.pop(id);
                     else:
@@ -281,7 +281,7 @@ def onos_conn_check(conn, db_log, node_name, node_ip):
                                 'expected':'false', 'state':'-', 'type':"-",
                                 'monitor_item':True }
                         link_status = 'nok'
-                        link_fail_reason.append('Link ' + id + ' is DOWN')
+                        link_fail_reason.append('Link ' + id + ' DOWN')
                         link_list.append(link)
 
                     rev_id = id.split('-')[1] + '-' + id.split('-')[0]
@@ -290,7 +290,7 @@ def onos_conn_check(conn, db_log, node_name, node_ip):
                         link['monitor_item'] = True
                         if link['state'] != 'ACTIVE':
                             link_status = 'nok'
-                            link_fail_reason.append('Link' + rev_id + ' is DOWN')
+                            link_fail_reason.append('Link' + rev_id + ' DOWN')
                         link_list.append(link)
                         link_tbl.pop(rev_id)
                     else:
@@ -298,7 +298,7 @@ def onos_conn_check(conn, db_log, node_name, node_ip):
                                 'expected':'false', 'state':'-', 'type':"-",
                                 'monitor_item':True }
                         link_status = 'nok'
-                        link_fail_reason.append('Link ' + rev_id + ' is DOWN')
+                        link_fail_reason.append('Link ' + rev_id + ' DOWN')
                         link_list.append(link)
 
                 for link in link_tbl.values():
