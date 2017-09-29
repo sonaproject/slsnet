@@ -33,7 +33,6 @@ api_user_passwd = onos:rocks
 api_timeout_sec = 3
 account = root:null
 app_list = slsnet,drivers,openflow-base,optical-model,hostprovider,lldpprovider
-rest_list = onos-rest,onos-gui,onos-app-slsnet
 device_list = of:0000000000000011, of:0000000000000012, of:0000000000000021, of:0000000000000022
 link_list = of:0000000000000011/53-of:0000000000000021/31, of:0000000000000011/54-of:0000000000000022/32, of:0000000000000012/53-of:0000000000000022/31, of:0000000000000012/54-of:0000000000000021/32
 

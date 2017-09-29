@@ -5,7 +5,7 @@ import logging.handlers
 import traceback
 from config import CONFIG
 
-DEFAULT_LOG_PATH = os.getcwd() + "/log/"
+DEFAULT_LOG_PATH = os.path.dirname(os.path.realpath(sys.argv[0])) + "/log/"
 
 class LOG():
     cli_log_flag = False

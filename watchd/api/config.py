@@ -80,7 +80,6 @@ class ConfReader:
             value['api_timeout_sec'] = int(self.conf_map['ONOS']['api_timeout_sec'])
             value['account'] = str(self.conf_map['ONOS']['account'])
             value['app_list'] = self.__list_opt(self.conf_map['ONOS']['app_list'])
-            value['rest_list'] = self.__list_opt(self.conf_map['ONOS']['rest_list'])
             value['device_list'] = self.__list_opt(self.conf_map['ONOS']['device_list'])
             value['link_list'] = self.__list_opt(self.conf_map['ONOS']['link_list'])
 

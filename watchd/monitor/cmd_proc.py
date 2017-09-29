@@ -138,30 +138,7 @@ def proc_dis_system(node, dummy):
         return {'Result': 'FAIL'}
 
 
-def proc_dis_onos(node, param):
-    try:
-        if param == 'app':
-            nodes_info = get_node_list(node, 'nodename, applist', DB.ONOS_TBL)
-        elif param == 'rest':
-            nodes_info = get_node_list(node, 'nodename, weblist', DB.ONOS_TBL)
-
-        if len(nodes_info) == 0:
-            return {'fail': 'dis-onos: This is not a command on the target system.'}
-
-        res_result = dict()
-        for nodename, app_rest_list in nodes_info:
-            if app_rest_list == 'fail' or app_rest_list == 'none':
-                res_result[nodename] = 'FAIL'
-            else:
-                res_result[nodename] = eval(app_rest_list)
-
-        return res_result
-    except:
-        LOG.exception()
-        return {'Result': 'FAIL'}
-
-
-def proc_dis_conn(node, param):
+def proc_onos(node, param):
     try:
         if param == 'cluster':
             nodes_info = get_node_list(node, 'nodename, cluster', DB.ONOS_TBL)
@@ -169,6 +146,8 @@ def proc_dis_conn(node, param):
             nodes_info = get_node_list(node, 'nodename, device', DB.ONOS_TBL)
         elif param == 'link':
             nodes_info = get_node_list(node, 'nodename, link', DB.ONOS_TBL)
+        elif param == 'app':
+            nodes_info = get_node_list(node, 'nodename, app', DB.ONOS_TBL)
 
         if len(nodes_info) == 0:
             return {'fail': 'dis-conn: This is not a command on the target system.'}
@@ -186,7 +165,7 @@ def proc_dis_conn(node, param):
         return {'Result': 'FAIL'}
 
 
-def proc_dis_log(node, param):
+def proc_onos_log(node, param):
     cmd = 'ld'
 
     try:
@@ -295,9 +274,8 @@ def proc_shell_cmd(node, cmd):
         LOG.exception()
 
 
-COMMAND_MAP = {'onos-svc':proc_dis_onos,
-               'onos-conn':proc_dis_conn,
-               'onos-log':proc_dis_log,
+COMMAND_MAP = {'onos':proc_onos,
+               'onos-log':proc_onos_log,
                #internal command
                'system-status':proc_dis_system,
                'onos-shell':proc_onos_cmd,

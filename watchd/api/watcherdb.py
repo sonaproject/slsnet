@@ -19,7 +19,7 @@ class DB(object):
     ONOS_TBL = 't_onos'
 
     common_event_list = ['PING']
-    onos_event_list = ['ONOS_CLUSTER', 'ONOS_DEVICE', 'ONOS_LINK', 'ONOS_APP', 'ONOS_REST']
+    onos_event_list = ['ONOS_CLUSTER', 'ONOS_DEVICE', 'ONOS_LINK', 'ONOS_APP']
     item_list = ", ".join(common_event_list + onos_event_list)
 
     @staticmethod
@@ -63,7 +63,7 @@ class DB(object):
                         'CREATE TABLE ' + cls.STATUS_TBL + '(nodename text primary key, ' + cls.item_list + ', time)',
                         'CREATE TABLE ' + cls.REGI_SYS_TBL + '(url text primary key, auth)',
                         'CREATE TABLE ' + cls.EVENT_TBL + '(nodename, item, grade, pre_grade, reason, time, PRIMARY KEY (nodename, item))',
-                        'CREATE TABLE ' + cls.ONOS_TBL + '(nodename text primary key, applist, weblist, cluster, device, link)']
+                        'CREATE TABLE ' + cls.ONOS_TBL + '(nodename text primary key, cluster, device, link, app)']
 
             for sql in init_sql:
                 sql_rt = cls.sql_execute(sql)
@@ -96,7 +96,7 @@ class DB(object):
 
                 # set status tbl
                 sql = 'INSERT INTO ' + cls.STATUS_TBL + \
-                      ' VALUES (\'' + name + '\', \'node\', \'none\', \'none\', \'none\', \'none\', \'none\', \'none\')'
+                      ' VALUES (\'' + name + '\', \'none\', \'none\', \'none\', \'none\', \'none\', \'none\')'
                 sql_rt = cls.sql_execute(sql)
                 if sql_rt != 'SUCCESS':
                     db_log.write_log(" [STATUS TABLE] Status data insert fail \n%s", sql_rt)
@@ -115,7 +115,7 @@ class DB(object):
 
                 if type.upper() == 'ONOS':
                     # set app tbl
-                    sql = 'INSERT INTO ' + cls.ONOS_TBL + ' VALUES (\'' + name + '\', \'none\', \'none\', \'none\', \'none\', \'none\')'
+                    sql = 'INSERT INTO ' + cls.ONOS_TBL + ' VALUES (\'' + name + '\', \'none\', \'none\', \'none\', \'none\')'
                     sql_rt = cls.sql_execute(sql)
                     if sql_rt != 'SUCCESS':
                         db_log.write_log(" [ONOS TABLE] Onos data insert fail \n%s", sql_rt)

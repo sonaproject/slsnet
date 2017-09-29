@@ -123,32 +123,7 @@ class CLI():
             sorted_list = sorted(dict(result).keys())
 
             try:
-                if command == 'onos-svc':
-                    print('')
-                    for sys in sorted_list:
-                        print '[' + sys + ']'
-
-                        sys_ret = result[sys]
-                        if str(sys_ret).upper().endswith('FAIL'):
-                            sys_ret = 'fail'
-                            print sys_ret
-                        else:
-                            header = []
-                            header.append({'title':'Name', 'size':'30'})
-                            header.append({'title':'Status', 'size':'8'})
-                            header.append({'title':'MonItem', 'size':'8'})
-                            data = []
-                            for row in sys_ret:
-                                line = []
-                                line.append(row['name'])
-                                line.append(row['status'].upper())
-                                line.append(str(row['monitor_item']))
-                                data.append(line)
-                            cls.draw_grid(header, data)
-
-                        print ''
-
-                elif command == 'onos-conn':
+                if command == 'onos':
 
                     if param == 'cluster':
                         print('')
@@ -169,7 +144,7 @@ class CLI():
                                 for row in sys_ret:
                                     line = []
                                     line.append(row['id'])
-                                    line.append(row['address'])
+                                    line.append(row['ip'])
                                     line.append(row['status'].upper())
                                     line.append(str(row['monitor_item']))
                                     data.append(line)
@@ -197,10 +172,10 @@ class CLI():
                                 for row in sys_ret:
                                     line = []
                                     line.append(row['id'])
-                                    line.append(row['channelId'])
-                                    line.append(row['name'])
-                                    if row['available'] == 'true': line.append('OK')
-                                    else:                          line.append('NOK')
+                                    line.append(row['annotations']['channelId'])
+                                    line.append(row['annotations']['name'])
+                                    if row['available']: line.append('OK')
+                                    else:                line.append('NOK')
                                     line.append(str(row['monitor_item']))
                                     data.append(line)
                                 cls.draw_grid(header, data)
@@ -231,6 +206,31 @@ class CLI():
                                     line.append(row['type'])
                                     if row['state'] == 'ACTIVE': line.append('OK')
                                     else:                        line.append('NOK')
+                                    line.append(str(row['monitor_item']))
+                                    data.append(line)
+                                cls.draw_grid(header, data)
+
+                            print ''
+        
+                    elif param == 'app':
+                        print('')
+                        for sys in sorted_list:
+                            print '[' + sys + ']'
+
+                            sys_ret = result[sys]
+                            if str(sys_ret).upper().endswith('FAIL'):
+                                sys_ret = 'fail'
+                                print sys_ret
+                            else:
+                                header = []
+                                header.append({'title':'Name', 'size':'30'})
+                                header.append({'title':'Status', 'size':'8'})
+                                header.append({'title':'MonItem', 'size':'8'})
+                                data = []
+                                for row in sys_ret:
+                                    line = []
+                                    line.append(row['name'])
+                                    line.append(row['status'].upper())
                                     line.append(str(row['monitor_item']))
                                     data.append(line)
                                 cls.draw_grid(header, data)

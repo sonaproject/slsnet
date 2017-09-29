@@ -9,7 +9,6 @@ from api.sbapi import SshCommand
 
 
 # /onos/v1/applications
-# N/A for rest apis /onos/v1/web:list
 # /onos/v1/clusters
 # /onos/v1/devices
 # /onos/v1/links
@@ -41,203 +40,63 @@ def onos_api_req(node_ip, url_path):
         return -2, None
 
 
-def onos_app_check(conn, db_log, node_name, node_ip):
-    try:
-        status = 'ok'
-        app_active_list = list()
-
-        app_list = []
-        fail_reason = []
-
-        ret, rsp = onos_api_req(node_ip, 'onos/v1/applications')
-        if rsp is not None:
-            for app_rsp in rsp['applications']:
-                if app_rsp['state'] == 'ACTIVE':
-                    app_active_list.append(app_rsp['name'].replace('org.onosproject.', ''))
-
-            for app in CONF.onos()['app_list']:
-                if app in app_active_list:
-                    app_json = {'name': app, 'status': 'ok', 'monitor_item': True}
-                    app_active_list.remove(app)
-                else:
-                    status = 'nok'
-                    app_json = {'name': app, 'status': 'nok', 'monitor_item': True}
-                    fail_reason.append(app_json)
-                app_list.append(app_json)
-
-            for app in app_active_list:
-                app_json = {'name': app, 'status': 'ok', 'monitor_item': False}
-                app_list.append(app_json)
-        else:
-            LOG.error("\'%s\' ONOS Application Check Error", node_ip)
-            status = 'fail'
-            app_list = 'fail'
-
-        try:
-            sql = 'UPDATE ' + DB.ONOS_TBL + \
-                  ' SET applist = \"' + str(app_list) + '\"' +\
-                  ' WHERE nodename = \'' + node_name + '\''
-            db_log.write_log('----- UPDATE ONOS APP INFO -----\n' + sql)
-
-            if DB.sql_execute(sql, conn) != 'SUCCESS':
-                db_log.write_log('[FAIL] ONOS APP DB Update Fail.')
-        except:
-            LOG.exception()
-    except:
-        LOG.exception()
-        status = 'fail'
-
-    return status, fail_reason
 
 
-def onos_rest_check(conn, db_log, node_name, node_ip):
-    try:
-        web_status = 'ok'
-
-        web_list = []
-        fail_reason = []
-
-        web_rt = SshCommand.onos_ssh_exec(node_ip, 'web:list')
-
-        if web_rt is not None:
-            for web in CONF.onos()['rest_list']:
-                for line in web_rt.splitlines():
-                    if line.startswith('ID') or line.startswith('--'):
-                        continue
-
-                    if ' ' + web + ' ' in line:
-                        if not ('Active' in line and 'Deployed' in line):
-                            rest_json = {'name': web, 'status': 'nok', 'monitor_item': True}
-                            fail_reason.append(rest_json)
-                            web_status = 'nok'
-                        else:
-                            rest_json = {'name': web, 'status': 'ok', 'monitor_item': True}
-
-                        web_list.append(rest_json)
-
-            for line in web_rt.splitlines():
-                if line.startswith('ID') or line.startswith('--'):
-                    continue
-
-                name = " ".join(line.split()).split(' ')[10]
-
-                if not name in CONF.onos()['rest_list']:
-                    if not ('Active' in line and 'Deployed' in line):
-                        rest_json = {'name': name, 'status': 'nok', 'monitor_item': False}
-                    else:
-                        rest_json = {'name': name, 'status': 'ok', 'monitor_item': False}
-
-                    web_list.append(rest_json)
-        else:
-            LOG.error("\'%s\' ONOS Rest Check Error", node_ip)
-            web_status = 'fail'
-            web_list = 'fail'
-
-        try:
-            sql = 'UPDATE ' + DB.ONOS_TBL + \
-                  ' SET weblist = \"' + str(web_list) + '\"' +\
-                  ' WHERE nodename = \'' + node_name + '\''
-            db_log.write_log('----- UPDATE ONOS REST INFO -----\n' + sql)
-
-            if DB.sql_execute(sql, conn) != 'SUCCESS':
-                db_log.write_log('[FAIL] ONOS REST DB Update Fail.')
-        except:
-            LOG.exception()
-
-    except:
-        LOG.exception()
-        web_status = 'fail'
-
-    return web_status, fail_reason
-
-
-def onos_conn_check(conn, db_log, node_name, node_ip):
+def onos_check(conn, db_log, node_name, node_ip):
     # called on each ONOS node in NODE_INFO_TBL
     try:
-
         # check cluster nodes
-        # TODO: need to be optimized
-        node_rt = SshCommand.onos_ssh_exec(node_ip, 'nodes')
-        cluster_ip_list = []
-        cluster_list = []
-        cluster_fail_reason = []
-        cluster_status = 'ok'
-        if node_rt is not None:
+        node_list = []
+        node_status = 'ok'
+        node_fail_reason = []
+        ret, rsp = onos_api_req(node_ip, 'onos/v1/cluster')
+        if rsp is not None:
             try:
-                sql = 'SELECT ip_addr FROM ' + DB.NODE_INFO_TBL + ' WHERE type = \'ONOS\''
-                nodes_info = conn.cursor().execute(sql).fetchall()
+                node_tbl = dict()
+                for node in rsp['nodes']:
+                    node_tbl[node['ip']] = node
 
-                for onos_ip in nodes_info:
-                    find_flag = False
-                    summary_rt = SshCommand.onos_ssh_exec(onos_ip[0], 'summary')
-                    if summary_rt is not None:
-                        data_ip = str(summary_rt).split(',')[0].split('=')[1]
-
-                        for line in node_rt.splitlines():
-                            id = line.split(',')[0].split('=')[1]
-                            address = line.split(',')[1].split('=')[1]
-                            state = line.split(',')[2].split('=')[1].split(' ')[0]
-
-                            if data_ip == address.split(':')[0]:
-                                find_flag = True
-                                cluster_ip_list.append(address)
-
-                                rest_json = {'id': id, 'address': address, 'status': 'ok',
-                                             'monitor_item': True}
-                                cluster_list.append(rest_json)
-
-                                if not state == 'READY':
-                                    cluster_status = 'nok'
-                                    cluster_fail_reason.append(rest_json)
-
-                        if not find_flag:
-                            rest_json = {'id': data_ip, 'address': '-', 'status': 'nok',
-                                         'monitor_item': True}
-                            cluster_list.append(rest_json)
-                            cluster_status = 'nok'
-                            cluster_fail_reason.append(rest_json)
+                for onos_node in CONF.onos()['list']:
+                    if len(onos_node.split(':')) != 2:
+                        continue;
+                    id = onos_node.split(':')[0]
+                    ip = onos_node.split(':')[1]
+                    if id is '' or ip is '':
+                        continue;
+                    if ip in node_tbl:
+                        node = node_tbl[ip];
+                        node['id'] = id
+                        node['monitor_item'] = True
+                        if node['status'] != 'READY':
+                           node_status = 'nok'
+                           node_fail_reason.append('Node ' + id + ' DOWN')
+                        node_tbl.pop(ip)
                     else:
-                        rest_json = {'id': onos_ip[0], 'address': '-', 'status': 'nok',
-                                     'monitor_item': True}
-                        cluster_list.append(rest_json)
+                        node = {'id': id, 'ip': ip, 'status': 'nok',
+                                'monitor_item': True}
+                        node_status = 'nok'
+                        node_fail_reason.append('Node ' + id + ' DOWN')
+                    node_list.append(node)
 
-                if summary_rt is not None:
-                    for line in nodesrt.splitlines():
-                        id = line.split(',')[0].split('=')[1]
-                        address = line.split(',')[1].split('=')[1]
-                        state = line.split(',')[2].split('=')[1].split(' ')[0]
-
-                        if not state == 'READY':
-                            status = 'nok'
-                        else:
-                            status = 'ok'
-
-                        if not address in cluster_ip_list:
-                            rest_json = {'id': id, 'address': address, 'status': status,
-                                         'monitor_item': True}
-                            cluster_list.append(rest_json)
+                for node in node_tbl.values():
+                    node['monitor_item'] = False;
+                    node_list.append(node)
+ 
             except:
-                pass
-        else:
-            LOG.error("\'%s\' Connection Check Error(nodes)", node_ip)
-            cluster_status = 'fail'
+                LOG.exception()
+                LOG.error("\'%s\' ONOS Check Error(nodes)", node_ip)
+                node_status = 'fail'
 
         # check devices
         device_list = []
         device_status = 'ok'
         device_fail_reason = []
-        device_rt = SshCommand.onos_ssh_exec(node_ip, 'devices')
-        device_tbl = dict()
-        if device_rt is not None:
+        ret, rsp = onos_api_req(node_ip, 'onos/v1/devices')
+        if rsp is not None:
             try:
-                for line in device_rt.splitlines():
-                    if not line.startswith('id=of'):
-                        continue
-                    device = dict()
-                    for f in line.split(','):
-                        s = f.split('=')
-                        if (len(s) >= 2):
-                            device[s[0].strip()] = s[1].strip()
+                device_tbl = dict()
+                for device in rsp['devices']:
+                    device['id'] = 'of:' + device['chassisId'].rjust(16, '0')
                     device_tbl[device['id']] = device
  
                 for id in CONF.onos()['device_list']:
@@ -246,12 +105,12 @@ def onos_conn_check(conn, db_log, node_name, node_ip):
                     if id in device_tbl:
                         device = device_tbl[id];
                         device['monitor_item'] = True
-                        if device['available'] != 'true':
+                        if not device['available']:
                            device_status = 'nok'
                            device_fail_reason.append('Device ' + id + ' DOWN')
                         device_tbl.pop(id)
                     else:
-                        device = { 'id':id, 'available':"false", 'channelId':'-',
+                        device = { 'id':id, 'available':False, 'channelId':'-',
                                    'name':'-', 'role':'-', 'monitor_item':True }
                         device_status = 'nok'
                         device_fail_reason.append('Device ' + id + ' DOWN')
@@ -263,28 +122,23 @@ def onos_conn_check(conn, db_log, node_name, node_ip):
  
             except:
                 LOG.exception()
-                LOG.error("\'%s\' Connection Check Error(devices)", node_ip)
+                LOG.error("\'%s\' ONOS Check Error(devices)", node_ip)
                 device_status = 'fail'
         else:
-            LOG.error("\'%s\' Connection Check Error(devices)", node_ip)
+            LOG.error("\'%s\' ONOS Check Error(devices)", node_ip)
             device_status = 'fail'
 
         # check links
         link_list = []
         link_status = 'ok'
         link_fail_reason = []
-        link_rt = SshCommand.onos_ssh_exec(node_ip, 'links')
-        link_tbl = dict()
-        if link_rt is not None:
+        ret, rsp = onos_api_req(node_ip, 'onos/v1/links')
+        if rsp is not None:
             try:
-                for line in link_rt.splitlines():
-                    if not line.startswith('src=of'):
-                        continue
-                    link = dict()
-                    for f in line.split(','):
-                        s = f.split('=')
-                        if (len(s) >= 2):
-                            link[s[0].strip()] = s[1].strip()
+                link_tbl = dict()
+                for link in rsp['links']:
+                    link['src'] = link['src']['device'] + '/' + link['src']['port']
+                    link['dst'] = link['dst']['device'] + '/' + link['dst']['port']
                     link_tbl[link['src'] + '-' + link['dst']] = link
 
                 for id in CONF.onos()['link_list']:
@@ -338,18 +192,52 @@ def onos_conn_check(conn, db_log, node_name, node_ip):
  
             except:
                 LOG.exception()
-                LOG.error("\'%s\' Connection Check Error(links)", node_ip)
+                LOG.error("\'%s\' ONOS Check Error(links)", node_ip)
                 link_status = 'fail'
+
+        # check apps
+        app_list = []
+        app_status = 'ok'
+        app_fail_reason = []
+        ret, rsp = onos_api_req(node_ip, 'onos/v1/applications')
+        if rsp is not None:
+            try:
+                active_app_list = []
+                for app_rsp in rsp['applications']:
+                    if app_rsp['state'] == 'ACTIVE':
+                        active_app_list.append(app_rsp['name'].replace('org.onosproject.', ''))
+
+                for app in CONF.onos()['app_list']:
+                    if app in active_app_list:
+                        app_json = {'name': app, 'status': 'ok', 'monitor_item': True}
+                        active_app_list.remove(app)
+                    else:
+                        app_json = {'name': app, 'status': 'nok', 'monitor_item': True}
+                        app_status = 'nok'
+                        app_fail_reason.append(app_json)
+                    app_list.append(app_json)
+
+                for app in active_app_list:
+                    app_json = {'name': app, 'status': 'ok', 'monitor_item': False}
+                    app_list.append(app_json)
+
+            except:
+               LOG.exception()
+               LOG.error("\'%s\' ONOS Check Error(apps)", node_ip)
+               app_status = 'fail'
+
         else:
-            LOG.error("\'%s\' Connection Check Error(links)", node_ip)
+            LOG.error("\'%s\' ONOS Check Error(apps)", node_ip)
             link_status = 'fail'
 
+        # store to db
         try:
             sql = 'UPDATE ' + DB.ONOS_TBL + \
                   ' SET ' + \
-                  ' cluster = \"' + str(cluster_list) + '\",' \
+                  ' cluster = \"' + str(node_list) + '\",' \
                   ' device = \"' + str(device_list) + '\",' \
-                  ' link = \"' + str(link_list) + '\"' \
+                  ' link = \"' + str(link_list) + '\",' \
+                  ' app = \"' + str(app_list) + '\"' \
                   ' WHERE nodename = \'' + node_name + '\''
             db_log.write_log('----- UPDATE ONOS CONNECTION INFO -----\n' + sql)
 
@@ -363,7 +251,8 @@ def onos_conn_check(conn, db_log, node_name, node_ip):
         cluster_status = 'fail'
         device_status = 'fail'
         link_status = 'fail'
+        app_status = 'fail'
 
-    return cluster_status, device_status, link_status, cluster_fail_reason, device_fail_reason, link_fail_reason
+    return node_status, device_status, link_status, app_status, node_fail_reason, device_fail_reason, link_fail_reason, app_fail_reason
 
 
