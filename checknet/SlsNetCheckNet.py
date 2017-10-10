@@ -277,7 +277,7 @@ def main(prog_name, argv):
     conf = ConfReader(CONFIG_FILE)    
     try:
         if conf.base['default_passwd'] == '':
-            conf.set_default_passwd(getpass.getpass('default password for %s@<hosts> ?: ' \
+            conf.set_default_passwd(getpass.getpass('Password for %s@<hosts> ?: ' \
                                                     % conf.base['default_id']))
     except:
         print ""  # close prompt line

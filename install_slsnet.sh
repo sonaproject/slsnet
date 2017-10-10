@@ -1,6 +1,6 @@
 #!/bin/sh
 # install_slsnet.sh - to rebuild and reinstall slsnet app 
-# USAGE: install_slsnet.sh [network-cfg.json]
+# USAGE: install_slsnet.sh [--no-build] [network-cfg.json]
 # PREPARE: run "onos-buck-publish-local" in ONOS source directory
 # ASSUME: onos source is at ../onos
 
@@ -8,8 +8,28 @@ TARGET=/opt/onos
 
 SLSNET_VERSION=1.11.0
 
-# build, reinistall and reactivate slsnet app
-( cd onos-app-slsnet/; mvn clean compile install || exit 1 )
+BUILD=yes
+if [ "$1" = "--no-build" ]
+then
+    shift
+    BUILD=no 
+fi
+
+NETCFG_FILE=${1:-${SLSNET_NETCFG:-network-cfg.json}}
+if [ ! -r "$NETCFG_FILE" ]
+then
+    echo "cannot open network config file for read: $NETCFG_FILE"
+    exit 1
+fi
+
+
+# build slsnet app
+if [ "$BUILD" = yes ]
+then
+    ( cd onos-app-slsnet/; mvn clean compile install || exit 1 )
+fi
+
+# reinistall and reactivate slsnet app
 onos-app localhost uninstall org.onosproject.slsnet
 onos-app localhost install onos-app-slsnet/target/onos-app-slsnet-${SLSNET_VERSION}.oar
 onos-app localhost activate org.onosproject.openflow-base
@@ -21,7 +41,6 @@ onos-app localhost activate org.onosproject.slsnet
 # if argument exists, use it as config file
 # else if env SLSNET_NETCFG is defined use it
 # else use network-cfg.json file
-NETCFG_FILE=${1:-${SLSNET_NETCFG:-network-cfg.json}}
 echo "install network config file: $NETCFG_FILE" 
 onos-netcfg localhost delete
 onos-netcfg localhost $NETCFG_FILE
