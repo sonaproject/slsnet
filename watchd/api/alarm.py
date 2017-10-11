@@ -47,23 +47,24 @@ def flush_pending_alarm():
 
     if conf['mail_alarm']:
         mail_from = conf['mail_user'] + '@' + conf['mail_server'].split(':')[0]
-        mail_to = ','.join(conf['mail_list'])
 
-        msg = MIMEText(body)
-        msg['Subject'] = subject
-        msg['From'] = mail_from
-        msg['To'] = mail_to
+        # send to each mail_list entry for gmail smtp seems not handling mutiple To: addresses
+        for mail_to in conf['mail_list']:
+            msg = MIMEText(body)
+            msg['Subject'] = subject
+            msg['From'] = mail_from
+            msg['To'] = mail_to
 
-        LOG.info('Send Email Alarm: subject=%s to=%s body=%s', subject, mail_to, body)
-        ms = smtplib.SMTP('mail.tstream.co.kr')
-        if conf['mail_tls']:
-            ms.starttls()
-        ms.login('slsnetmailer','_slsnetmailer')
-        try:
-            ms.sendmail(mail_from, mail_to, msg.as_string())
-        except:
-            LOG.exception()
-        ms.quit()
+            LOG.info('Send Email Alarm: subject=%s to=%s body=%s', subject, mail_to, body)
+            ms = smtplib.SMTP('mail.tstream.co.kr')
+            if conf['mail_tls']:
+                ms.starttls()
+            ms.login('slsnetmailer','_slsnetmailer')
+            try:
+                ms.sendmail(mail_from, mail_to, msg.as_string())
+            except:
+                LOG.exception()
+            ms.quit()
 
     if conf['slack_alarm']:
         ch = conf['slack_channel'].strip()
