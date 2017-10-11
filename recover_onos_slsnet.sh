@@ -23,18 +23,18 @@ cd `dirname $0`
 
 echo "Re-installing ONOS instances..."
 psh ./install_onos.sh /home/sdn/onos/onos-1.11.0.root.tar.gz
-echo "(waiting 20 seconds for onos instances initialized...)"
-sleep 20 
+echo "(waiting 15 seconds for onos instances initialized...)"
+sleep 15
 
 echo "Forming ONOS Cluster..."
-onos-form-cluster 192.168.1.5 192.168.0.3 192.168.1.2
+onos-form-cluster 192.168.101.5 192.168.100.3 192.168.101.2
 echo "(waiting 30 seconds for onos instances restart...)"
 sleep 30
 
 echo "Install and Activate SLSNET Application..."
 ./install_slsnet.sh --no-build
-echo "(waiting 20 seconds for slsnet application starts...)"
-sleep 20 
+echo "(waiting 15 seconds for slsnet application starts...)"
+sleep 15
 
 echo "Reinstall ONOS Authentication Keys for SLSNET Watchd..."
 watchd/ssh_key_setup.py

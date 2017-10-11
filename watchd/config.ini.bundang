@@ -27,7 +27,7 @@ user_password = admin:admin
 
 [ONOS]
 #list = ONOS1:10.20.0.91,ONOS2:10.20.0.92,ONOS3:10.20.0.93
-list = ONOS1:192.168.1.5,ONOS2:192.168.0.3,ONOS3:192.168.1.2
+list = ONOS1:192.168.101.5,ONOS2:192.168.100.3,ONOS3:192.168.101.2
 api_port = 8181
 api_user_passwd = onos:rocks
 api_timeout_sec = 3
