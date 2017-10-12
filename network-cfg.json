@@ -4,18 +4,15 @@
     "of:0000000000000001":{ "basic":{ "name":"SS1", "latitude":40, "longitude":-100 } },
     "of:0000000000000002":{ "basic":{ "name":"SS2", "latitude":40, "longitude":-90  } },
     "of:000000000000000a":{ "basic":{ "name":"LS1", "latitude":35, "longitude":-100 } },
-    "of:0000000000000014":{ "basic":{ "name":"LS2", "latitude":35, "longitude":-90  } },
-    "of:0000000000111111":{ "basic":{ "name":"LEAF", "latitude":37.5, "longitude":-80 } }
+    "of:0000000000000014":{ "basic":{ "name":"LS2", "latitude":35, "longitude":-90  } }
   },
 
   "ports" : {
     "of:0000000000000001/1" : { "interfaces" : [ { "name" : "SS1_LS1" } ] },
     "of:0000000000000001/2" : { "interfaces" : [ { "name" : "SS1_LS2" } ] },
-    "of:0000000000000001/3" : { "interfaces" : [ { "name" : "SS1_h31" } ] },
 
     "of:0000000000000002/1" : { "interfaces" : [ { "name" : "SS2_LS1" } ] },
     "of:0000000000000002/2" : { "interfaces" : [ { "name" : "SS2_LS2" } ] },
-    "of:0000000000000002/3" : { "interfaces" : [ { "name" : "SS2_h32" } ] },
 
     "of:000000000000000a/1" : { "interfaces" : [ { "name" : "h11" } ] },
     "of:000000000000000a/2" : { "interfaces" : [ { "name" : "h12" } ] },
@@ -33,12 +30,7 @@
     "of:0000000000000014/5" : { "interfaces" : [ { "name" : "d21" } ] },
     "of:0000000000000014/6" : { "interfaces" : [ { "name" : "d22" } ] },
     "of:0000000000000014/7" : { "interfaces" : [ { "name" : "LS2_SS1" } ] },
-    "of:0000000000000014/8" : { "interfaces" : [ { "name" : "LS2_SS2" } ] },
-
-    "of:0000000000111111/1" : { "interfaces" : [ { "name" : "s1p1" } ] },
-    "of:0000000000111111/2" : { "interfaces" : [ { "name" : "s1p2" } ] },
-    "of:0000000000111111/3" : { "interfaces" : [ { "name" : "s1p3" } ] },
-    "of:0000000000111111/4" : { "interfaces" : [ { "name" : "s1p4" } ] }
+    "of:0000000000000014/8" : { "interfaces" : [ { "name" : "LS2_SS2" } ] }
   },
 
   "apps" : {
@@ -46,18 +38,14 @@
       "slsnet" : {
         "l2Networks" : [
           { "name" : "LEAF1", "interfaces" : ["h11", "h12", "h13", "h14", "d11", "d12" ], "l2Forward" : true },
-          { "name" : "LEAF2", "interfaces" : ["h21", "h22", "h23", "h24", "d21", "d22" ], "l2Forward" : true },
-          { "name" : "BORDER", "interfaces" : ["SS1_h31", "SS2_h32"], "l2Forward" : false },
-          { "name" : "CISCO", "interfaces" : ["s1p1", "s1p2", "s1p3", "s1p4" ], "l2Forward" : true }
+          { "name" : "LEAF2", "interfaces" : ["h21", "h22", "h23", "h24", "d21", "d22" ], "l2Forward" : true }
         ],
         "ipSubnets" : [
            { "ipPrefix" : "10.0.1.0/24", "gatewayIp" : "10.0.1.1", "l2NetworkName" : "LEAF1" },
-           { "ipPrefix" : "10.0.2.0/24", "gatewayIp" : "10.0.2.1", "l2NetworkName" : "LEAF2" },
-           { "ipPrefix" : "10.0.0.0/24", "gatewayIp" : "10.0.0.1", "l2NetworkName" : "BORDER" },
-           { "ipPrefix" : "10.0.3.0/24", "gatewayIp" : "10.0.3.1", "l2NetworkName" : "CISCO" }
+           { "ipPrefix" : "10.0.2.0/24", "gatewayIp" : "10.0.2.1", "l2NetworkName" : "LEAF2" }
         ],
         "borderRoutes" : [
-           { "ipPrefix" : "0.0.0.0/0", "gatewayIp" : "10.0.0.31" }
+           { "ipPrefix" : "0.0.0.0/0", "gatewayIp" : "10.0.1.2" }
         ],
         "virtualGatewayMacAddress" : "00:00:00:00:00:01"
       }

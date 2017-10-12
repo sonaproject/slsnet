@@ -57,10 +57,10 @@ net.addLink(ss2, s10)
 net.addLink(ss2, s20)
 
 # Add External Router
-h31 = net.addHost('h31', mac='00:00:10:00:00:31', ip='10.0.0.31/24', defaultRoute='via 10.0.0.1')
-h32 = net.addHost('h32', mac='00:00:10:00:00:32', ip='10.0.0.32/24', defaultRoute='via 10.0.0.1')
-net.addLink(ss1, h31);
-net.addLink(ss2, h32);
+#h31 = net.addHost('h31', mac='00:00:10:00:00:31', ip='10.0.0.31/24', defaultRoute='via 10.0.0.1')
+#h32 = net.addHost('h32', mac='00:00:10:00:00:32', ip='10.0.0.32/24', defaultRoute='via 10.0.0.1')
+#net.addLink(ss1, h31);
+#net.addLink(ss2, h32);
 
 # Add ONOS/RemoteController
 net.addController(RemoteController('c1', ip='1.235.191.83'))
