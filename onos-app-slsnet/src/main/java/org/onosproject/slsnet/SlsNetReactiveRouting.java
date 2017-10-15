@@ -737,9 +737,9 @@ public class SlsNetReactiveRouting {
 
         if (!(slsnet.findL2Network(srcCp, VlanId.NONE) != null ||
              (slsnet.REACTIVE_ALLOW_LINK_CP && !linkService.getIngressLinks(srcCp).isEmpty()))) {
-           log.warn("NO REGI for srcCp not in L2Network; srcCp={} srcPrefix={} dstPrefix={} nextHopIp={}",
-                     srcCp, srcPrefix, dstPrefix, nextHopIp);
-                return false;
+            log.warn("NO REGI for srcCp not in L2Network; srcCp={} srcPrefix={} dstPrefix={} nextHopIp={}",
+                      srcCp, srcPrefix, dstPrefix, nextHopIp);
+            return false;
         }
 
         MacAddress nextHopMac = null;

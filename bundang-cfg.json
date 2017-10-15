@@ -14,26 +14,12 @@
     "of:0000000000000022/31" : { "interfaces" : [ { "name" : "SS2_LS1" } ] },
     "of:0000000000000022/32" : { "interfaces" : [ { "name" : "SS2_LS2" } ] },
 
-    "of:0000000000000011/1" : { "interfaces" : [ { "name" : "mst-001" } ] },
-    "of:0000000000000011/2" : { "interfaces" : [ { "name" : "ant-001" } ] },
-    "of:0000000000000011/3" : { "interfaces" : [ { "name" : "ant-002" } ] },
-    "of:0000000000000011/4" : { "interfaces" : [ { "name" : "dgx-1" } ] },
-    "of:0000000000000011/5" : { "interfaces" : [ { "name" : "mst-002" } ] },
-    "of:0000000000000011/51" : { "interfaces" : [ { "name" : "ssd-1-1" } ] },
-    "of:0000000000000011/52" : { "interfaces" : [ { "name" : "ssd-1-2" } ] },
-
+    "of:0000000000000011/25" : { "interfaces" : [ { "name" : "h11" } ] },
+    "of:0000000000000011/26" : { "interfaces" : [ { "name" : "h12" } ] },
     "of:0000000000000011/53" : { "interfaces" : [ { "name" : "LS1_SS1" } ] },
     "of:0000000000000011/54" : { "interfaces" : [ { "name" : "LS1_SS2" } ] },
 
-    "of:0000000000000012/1" : { "interfaces" : [ { "name" : "ant-003" } ] },
-    "of:0000000000000012/2" : { "interfaces" : [ { "name" : "ant-004" } ] },
-    "of:0000000000000012/3" : { "interfaces" : [ { "name" : "ant-005" } ] },
-    "of:0000000000000012/4" : { "interfaces" : [ { "name" : "ant-006" } ] },
-    "of:0000000000000012/1001" : { "interfaces" : [ { "name" : "ant-007" } ] },
-    "of:0000000000000012/1002" : { "interfaces" : [ { "name" : "ant-008" } ] },
-    "of:0000000000000012/51" : { "interfaces" : [ { "name" : "ssd-1-3" } ] },
-    "of:0000000000000012/52" : { "interfaces" : [ { "name" : "ssd-1-4" } ] },
-
+    "of:0000000000000012/25" : { "interfaces" : [ { "name" : "h21" } ] },
     "of:0000000000000012/53" : { "interfaces" : [ { "name" : "LS2_SS1" } ] },
     "of:0000000000000012/54" : { "interfaces" : [ { "name" : "LS2_SS2" } ] }
   },
@@ -42,12 +28,12 @@
     "org.onosproject.slsnet" : {
       "slsnet" : {
         "l2Networks" : [
-          { "name" : "LEAF1", "interfaces" : ["mst-001", "ant-001", "ant-002", "dgx-1", "mst-002", "ssd-1-1", "ssd-1-2"], "l2Forward" : true },
-          { "name" : "LEAF2", "interfaces" : ["ant-003", "ant-004", "ant-005", "ant-006", "ant-007", "ant-008", "ssd-1-3", "ssd-1-4"], "l2Forward" : true }
+          { "name" : "LEAF1", "interfaces" : ["h11", "h12"], "l2Forward" : true },
+          { "name" : "LEAF2", "interfaces" : ["h21"], "l2Forward" : true }
         ],
         "ipSubnets" : [
-           { "ipPrefix" : "192.168.0.0/24", "gatewayIp" : "192.168.0.1", "l2NetworkName" : "LEAF1" },
-           { "ipPrefix" : "192.168.1.0/24", "gatewayIp" : "192.168.1.1", "l2NetworkName" : "LEAF2" }
+           { "ipPrefix" : "192.168.100.0/24", "gatewayIp" : "192.168.100.1", "l2NetworkName" : "LEAF1" },
+           { "ipPrefix" : "192.168.101.0/24", "gatewayIp" : "192.168.101.1", "l2NetworkName" : "LEAF2" }
         ],
         "virtualGatewayMacAddress" : "00:00:00:00:00:01"
       }
