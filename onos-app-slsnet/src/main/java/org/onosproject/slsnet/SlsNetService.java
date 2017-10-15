@@ -59,7 +59,7 @@ public interface SlsNetService
     static final boolean ALLOW_ETH_ADDRESS_SELECTOR = true;
     static final boolean VIRTUAL_GATEWAY_ETH_ADDRESS_SELECTOR = false;
     static final boolean REACTIVE_SINGLE_TO_SINGLE = true;
-    static final boolean REACTIVE_ALLOW_LINK_CP = true;
+    static final boolean REACTIVE_ALLOW_LINK_CP = false;
     static final boolean REACTIVE_HASHED_PATH_SELECTION = false;
 
     /**
