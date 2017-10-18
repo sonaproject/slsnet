@@ -219,25 +219,20 @@ public class SlsNetReactiveRouting {
      * Refresh device flow rules for reative intercepts on local ipSubnets.
      */
     private void refreshIntercepts() {
-        if (slsnet.getVMac() == null) {
-            log.warn("slsnet reactive routing refresh intercepts skipped "
-                     + "for virtual gateway mac address unknown");
-        }
-
         Set<FlowRule> newInterceptFlowRules = new HashSet<>();
         for (Device device : deviceService.getAvailableDevices()) {
             for (IpSubnet subnet : slsnet.getIpSubnets()) {
-                newInterceptFlowRules.add(generateInterceptFlowRule(device.id(), subnet.ipPrefix()));
+                newInterceptFlowRules.add(generateInterceptFlowRule(true, device.id(), subnet.ipPrefix()));
                 // check if this devices has the ipSubnet, then add ip broadcast flue rule
                 L2Network l2Network = slsnet.findL2Network(subnet.l2NetworkName());
                 if (l2Network != null && l2Network.contains(device.id())) {
-                    newInterceptFlowRules.add(generateIpBctFlowRule(device.id(), subnet.ipPrefix()));
+                    newInterceptFlowRules.add(generateLocalSubnetIpBctFlowRule(device.id(), subnet.ipPrefix()));
                 }
                 // JUST FOR FLOW RULE TEST ONLY
                 //newInterceptFlowRules.add(generateTestFlowRule(device.id(), subnet.ipPrefix()));
             }
             for (Route route : slsnet.getBorderRoutes()) {
-                newInterceptFlowRules.add(generateInterceptFlowRule(device.id(), route.prefix()));
+                newInterceptFlowRules.add(generateInterceptFlowRule(false, device.id(), route.prefix()));
             }
         }
 
@@ -261,11 +256,8 @@ public class SlsNetReactiveRouting {
         }
     }
 
-    private FlowRule generateInterceptFlowRule(DeviceId deviceId, IpPrefix prefix) {
+    private FlowRule generateInterceptFlowRule(boolean isLocalSubnet, DeviceId deviceId, IpPrefix prefix) {
         TrafficSelector.Builder selector = DefaultTrafficSelector.builder();
-        if (SlsNetService.VIRTUAL_GATEWAY_ETH_ADDRESS_SELECTOR) {
-            selector.matchEthDst(slsnet.getVMac());
-        }
         if (prefix.isIp4()) {
             selector.matchEthType(Ethernet.TYPE_IPV4);
             if (prefix.prefixLength() > 0) {
@@ -279,7 +271,7 @@ public class SlsNetReactiveRouting {
         }
         FlowRule rule = DefaultFlowRule.builder()
                 .forDevice(deviceId)
-                .withPriority(reactivePriority(prefix.prefixLength(), slsnet.PRI_REACTIVE_INTERCEPT))
+                .withPriority(reactivePriority(false, isLocalSubnet, prefix.prefixLength()))
                 .withSelector(selector.build())
                 .withTreatment(DefaultTrafficTreatment.builder().punt().build())
                 .fromApp(reactiveAppId)
@@ -288,7 +280,7 @@ public class SlsNetReactiveRouting {
         return rule;
     }
 
-    private FlowRule generateIpBctFlowRule(DeviceId deviceId, IpPrefix prefix) {
+    private FlowRule generateLocalSubnetIpBctFlowRule(DeviceId deviceId, IpPrefix prefix) {
         TrafficSelector.Builder selector = DefaultTrafficSelector.builder();
         IpPrefix bctPrefix;
         if (prefix.isIp4()) {
@@ -314,7 +306,7 @@ public class SlsNetReactiveRouting {
         }
         FlowRule rule = DefaultFlowRule.builder()
                 .forDevice(deviceId)
-                .withPriority(reactivePriority(bctPrefix.prefixLength(), slsnet.PRI_REACTIVE_ROUTE))
+                .withPriority(reactivePriority(true, true, bctPrefix.prefixLength()))
                 .withSelector(selector.build())
                 .withTreatment(treatment.build())
                 .fromApp(reactiveAppId)
@@ -520,24 +512,30 @@ public class SlsNetReactiveRouting {
             ConnectPoint srcCp = pkt.receivedFrom();
             IpAddress srcIp;
             IpAddress dstIp;
+            byte ipProto = 0;  /* 0 or tcp, udp */
 
             switch (EthType.EtherType.lookup(ethPkt.getEtherType())) {
             case IPV4:
                 IPv4 ipv4Packet = (IPv4) ethPkt.getPayload();
                 srcIp = IpAddress.valueOf(ipv4Packet.getSourceAddress());
                 dstIp = IpAddress.valueOf(ipv4Packet.getDestinationAddress());
+                ipProto = ipv4Packet.getProtocol();
                 break;
             case IPV6:
                 IPv6 ipv6Packet = (IPv6) ethPkt.getPayload();
                 srcIp = IpAddress.valueOf(IpAddress.Version.INET6, ipv6Packet.getSourceAddress());
                 dstIp = IpAddress.valueOf(IpAddress.Version.INET6, ipv6Packet.getDestinationAddress());
+                ipProto = ipv6Packet.getNextHeader();
                 break;
             default:
                 return;  // ignore unknow ether type packets
             }
+            if (ipProto != 6 && ipProto != 17) {
+                ipProto = 0;  /* handle special for TCP and UDP only */
+            }
 
             if (!checkVirtualGatewayIpPacket(pkt, srcIp, dstIp)) {
-                ipPacketReactiveProcessor(context, ethPkt, srcCp, srcIp, dstIp);
+                ipPacketReactiveProcessor(context, ethPkt, srcCp, srcIp, dstIp, ipProto);
                 // TODO: add ReactiveRouting for dstIp to srcIp with discovered egressCp as srcCp
             }
         }
@@ -550,11 +548,10 @@ public class SlsNetReactiveRouting {
     private boolean checkVirtualGatewayIpPacket(InboundPacket pkt, IpAddress srcIp, IpAddress dstIp) {
         Ethernet ethPkt = pkt.parsed();  // assume valid
 
-        if (!ethPkt.getDestinationMAC().equals(slsnet.getVMac())
-            || !slsnet.isVirtualGatewayIpAddress(dstIp)) {
+        MacAddress mac = slsnet.getVMacForIp(dstIp);
+        if (mac == null || !ethPkt.getDestinationMAC().equals(mac)) {
             return false;
-
-         } else if (dstIp.isIp4()) {
+        } else if (dstIp.isIp4()) {
             IPv4 ipv4Packet = (IPv4) ethPkt.getPayload();
             if (ipv4Packet.getProtocol() == IPv4.PROTOCOL_ICMP) {
                 ICMP icmpPacket = (ICMP) ipv4Packet.getPayload();
@@ -575,7 +572,7 @@ public class SlsNetReactiveRouting {
                      + "srcIp={} dstIp={} proto={}", srcIp, dstIp, ipv4Packet.getProtocol());
             return true;
 
-         } else if (dstIp.isIp6()) {
+        } else if (dstIp.isIp6()) {
             // TODO: not tested yet (2017-07-20)
             IPv6 ipv6Packet = (IPv6) ethPkt.getPayload();
             if (ipv6Packet.getNextHeader() == IPv6.PROTOCOL_ICMP6) {
@@ -604,10 +601,11 @@ public class SlsNetReactiveRouting {
     /**
      * Routes packet reactively.
      */
-    private void ipPacketReactiveProcessor(PacketContext context, Ethernet ethPkt,
-                                           ConnectPoint srcCp, IpAddress srcIp, IpAddress dstIp) {
+    private void ipPacketReactiveProcessor(PacketContext context, Ethernet ethPkt, ConnectPoint srcCp,
+                                           IpAddress srcIp, IpAddress dstIp, byte ipProto) {
         /* check reactive handling and forward packet */
-        log.trace("ip packet: srcCp={} srcIp={} dstIp={} srcCp={}", srcCp, srcIp, dstIp);
+        log.trace("ip packet: srcCp={} srcIp={} dstIp={} ipProto={}",
+                  srcCp, srcIp, dstIp, ipProto);
 
         EncapsulationType encap = EncapsulationType.NONE;
 
@@ -616,6 +614,10 @@ public class SlsNetReactiveRouting {
         IpPrefix dstPrefix = dstIp.toIpPrefix();
         IpAddress srcNextHop = srcIp;
         IpAddress dstNextHop = dstIp;
+        MacAddress treatmentSrcMac = ethPkt.getDestinationMAC();
+        int borderRoutePrefixLength = 0;
+        boolean isLocalSubnet = true;
+        boolean updateMac = slsnet.isVMac(ethPkt.getDestinationMAC());
 
         // check subnet local or route
         IpSubnet srcSubnet = slsnet.findIpSubnet(srcIp);
@@ -627,6 +629,8 @@ public class SlsNetReactiveRouting {
             }
             srcPrefix = route.prefix();
             srcNextHop = route.nextHop();
+            borderRoutePrefixLength = route.prefix().prefixLength();
+            isLocalSubnet = false;
         }
         IpSubnet dstSubnet = slsnet.findIpSubnet(dstIp);
         if (dstSubnet == null) {
@@ -637,28 +641,27 @@ public class SlsNetReactiveRouting {
             }
             dstPrefix = route.prefix();
             dstNextHop = route.nextHop();
+            borderRoutePrefixLength = route.prefix().prefixLength();
+            isLocalSubnet = false;
         }
 
-        boolean updateMac = true;
         if (dstSubnet != null) {
             // destination is local subnet ip
             if (SlsNetService.ALLOW_ETH_ADDRESS_SELECTOR && dstSubnet.equals(srcSubnet)) {
                 // NOTE: if ALLOW_ETH_ADDRESS_SELECTOR=false; l2Forward is always false
                 L2Network l2Network = slsnet.findL2Network(dstSubnet.l2NetworkName());
-
+                treatmentSrcMac = ethPkt.getSourceMAC();
                 if (l2Network != null && l2Network.l2Forward()) {
                     // NOTE: no reactive route action but do forward packet for L2Forward do not handle packet
                     // update mac only if dstMac is virtualGatewayMac, else assume valid mac already for the l2 network
-                    updateMac = ethPkt.getDestinationMAC().equals(slsnet.getVMac());
                     log.info("LOCAL FORWARD ONLY: "
-                             + "srcCp={} srcIp={} dstIp={} srcMac={} dstMac={} vlanId={} updateMac={}",
+                             + "srcCp={} srcIp={} dstIp={} srcMac={} dstMac={} vlanId={} ipProto={} updateMac={}",
                              context.inPacket().receivedFrom(),
                              srcIp, dstIp, ethPkt.getSourceMAC(), ethPkt.getDestinationMAC(),
-                             ethPkt.getVlanID(), updateMac);
-                    forwardPacketToDstIp(context, dstIp, updateMac);
+                             ethPkt.getVlanID(), ipProto, updateMac);
+                    forwardPacketToDstIp(context, dstIp, treatmentSrcMac, updateMac);
                     return;
                 }
-                // may use ethPkt's ethSrc mac as srcMac BUT NEED to resolve conflict with inter-subnet case */
             }
             encap = dstSubnet.encapsulation();
             if (encap == EncapsulationType.NONE && srcSubnet != null) {
@@ -667,26 +670,32 @@ public class SlsNetReactiveRouting {
         } else {
             // destination is external network
             if (srcSubnet == null) {
-                log.warn("srcIp and dstIp are both NON-LOCAL; ignore: srcIp={} dstIp={}",
-                         srcIp, dstIp);
+                // both are externel network
+                log.warn("INVALID PACKET: srcIp and dstIp are both NON-LOCAL: "
+                         + "srcCP={} srcIp={} dstIp={} srcMac={} dstMac={} vlanId={} ipProto={} updateMac={}",
+                         context.inPacket().receivedFrom(),
+                         srcIp, dstIp, ethPkt.getSourceMAC(), ethPkt.getDestinationMAC(),
+                         ethPkt.getVlanID(), ipProto, updateMac);
                 return;
             }
             encap = srcSubnet.encapsulation();
         }
 
         log.info("REGI AND FORWARD: "
-                 + "srcCP={} srcIp={} dstIp={} srcMac={} dstMac={} vlanId={} updateMac={}",
+                 + "srcCP={} srcIp={} dstIp={} srcMac={} dstMac={} vlanId={} ipProto={} updateMac={}",
                  context.inPacket().receivedFrom(),
                  srcIp, dstIp, ethPkt.getSourceMAC(), ethPkt.getDestinationMAC(),
-                 ethPkt.getVlanID(), updateMac);
-        setUpConnectivity(srcCp, srcPrefix, dstPrefix, dstNextHop, slsnet.getVMac(), encap, updateMac);
-        forwardPacketToDstIp(context, dstNextHop, updateMac);
+                 ethPkt.getVlanID(), ipProto, updateMac);
+        setUpConnectivity(srcCp, ipProto, srcPrefix, dstPrefix, dstNextHop, treatmentSrcMac, encap, updateMac,
+                          isLocalSubnet, borderRoutePrefixLength);
+        forwardPacketToDstIp(context, dstNextHop, treatmentSrcMac, updateMac);
     }
 
     /**
      * Emits the specified packet onto the network.
      */
-    private void forwardPacketToDstIp(PacketContext context, IpAddress nextHopIp, boolean updateMac) {
+    private void forwardPacketToDstIp(PacketContext context, IpAddress nextHopIp,
+                                      MacAddress srcMac, boolean updateMac) {
         Set<Host> hosts = hostService.getHostsByIp(nextHopIp);
         Host dstHost;
         if (!hosts.isEmpty()) {
@@ -706,8 +715,8 @@ public class SlsNetReactiveRouting {
             // NOTE: eth address update by treatment is NOT applied, so update mac myself
             outPacket = new DefaultOutboundPacket(dstHost.location().deviceId(), treatment,
                                 ByteBuffer.wrap(context.inPacket().parsed()
-                                       .setSourceMACAddress(slsnet.getVMac())
-                                       .setDestinationMACAddress(dstHost.mac()).serialize()));
+                                          .setSourceMACAddress(srcMac)
+                                          .setDestinationMACAddress(dstHost.mac()).serialize()));
         } else {
             outPacket = new DefaultOutboundPacket(dstHost.location().deviceId(), treatment,
                                 context.inPacket().unparsed());
@@ -725,14 +734,19 @@ public class SlsNetReactiveRouting {
      * ToInternet: dstPrefix = route.prefix(), nextHopIp = route.nextHopIp
      * returns intent submited or not
      */
-    private boolean setUpConnectivity(ConnectPoint srcCp, IpPrefix srcPrefix, IpPrefix dstPrefix,
+    private boolean setUpConnectivity(ConnectPoint srcCp, byte ipProto, IpPrefix srcPrefix, IpPrefix dstPrefix,
                                       IpAddress nextHopIp, MacAddress treatmentSrcMac,
-                                      EncapsulationType encap, boolean updateMac) {
+                                      EncapsulationType encap, boolean updateMac,
+                                      boolean isLocalSubnet, int borderRoutePrefixLength) {
         Key key;
+        String keyProtoTag = "";
+        if (slsnet.REACTIVE_MATCH_IP_PROTO) {
+            keyProtoTag = "-p" + ipProto;
+        }
         if (slsnet.REACTIVE_SINGLE_TO_SINGLE) {
-            key = Key.of(srcPrefix.toString() + "-to-" + dstPrefix.toString(), reactiveAppId);
+            key = Key.of(srcPrefix.toString() + "-to-" + dstPrefix.toString() + keyProtoTag, reactiveAppId);
         } else {
-            key = Key.of(dstPrefix.toString(), reactiveAppId);
+            key = Key.of(dstPrefix.toString() + keyProtoTag, reactiveAppId);
         }
 
         if (!(slsnet.findL2Network(srcCp, VlanId.NONE) != null ||
@@ -766,9 +780,6 @@ public class SlsNetReactiveRouting {
         }
 
         TrafficSelector.Builder selector = DefaultTrafficSelector.builder();
-        if (SlsNetService.VIRTUAL_GATEWAY_ETH_ADDRESS_SELECTOR) {
-            selector.matchEthDst(slsnet.getVMac());
-        }
         if (dstPrefix.isIp4()) {
             selector.matchEthType(Ethernet.TYPE_IPV4);
             if (slsnet.REACTIVE_SINGLE_TO_SINGLE && srcPrefix.prefixLength() > 0) {
@@ -777,6 +788,9 @@ public class SlsNetReactiveRouting {
             if (dstPrefix.prefixLength() > 0) {
                 selector.matchIPDst(dstPrefix);
             }
+            if (ipProto != 0 && slsnet.REACTIVE_MATCH_IP_PROTO) {
+                selector.matchIPProtocol(ipProto);
+            }
         } else {
             selector.matchEthType(Ethernet.TYPE_IPV6);
             if (slsnet.REACTIVE_SINGLE_TO_SINGLE && srcPrefix.prefixLength() > 0) {
@@ -784,6 +798,9 @@ public class SlsNetReactiveRouting {
             }
             if (dstPrefix.prefixLength() > 0) {
                 selector.matchIPv6Dst(dstPrefix);
+            }
+            if (ipProto != 0 && slsnet.REACTIVE_MATCH_IP_PROTO) {
+                selector.matchIPProtocol(ipProto);
             }
         }
 
@@ -807,6 +824,9 @@ public class SlsNetReactiveRouting {
             ingressPoints.add(srcCp);
         }
 
+        // priority for forwarding case
+        int priority = reactivePriority(true, isLocalSubnet, borderRoutePrefixLength);
+
         MultiPointToSinglePointIntent newIntent = MultiPointToSinglePointIntent.builder()
             .key(key)
             .appId(reactiveAppId)
@@ -814,18 +834,18 @@ public class SlsNetReactiveRouting {
             .treatment(treatment)
             .ingressPoints(ingressPoints)
             .egressPoint(egressPoint)
-            .priority(reactivePriority(dstPrefix.prefixLength(), slsnet.PRI_REACTIVE_ROUTE))
+            .priority(priority)
             .constraints(buildConstraints(reactiveConstraints, encap))
             .build();
         log.info("submmit mp2p intent: srcPrefix={} dstPrefix={} srcCp={} "
-                 + "newIntent={} nextHopIp={} nextHopMac={}",
-                 srcPrefix, dstPrefix, ingressPoints, newIntent, nextHopIp, nextHopMac);
+                 + "newIntent={} nextHopIp={} nextHopMac={} priority={}",
+                 srcPrefix, dstPrefix, ingressPoints, newIntent, nextHopIp, nextHopMac, priority);
         toBePurgedIntentKeys.remove(newIntent.key());
         intentService.submit(newIntent);
         return true;
     }
 
-    // generate treatement to target
+    // generate treatment to target
     private TrafficTreatment generateSetMacTreatment(MacAddress dstMac, MacAddress srcMac) {
         return DefaultTrafficTreatment.builder()
                    // NOTE: Cisco Switch requires both src and dst mac set
@@ -843,8 +863,22 @@ public class SlsNetReactiveRouting {
     }
 
     // priority calculator
-    private int reactivePriority(int prefixLength, int useCaseOffset) {
-        return slsnet.PRI_REACTIVE_BASE + prefixLength * slsnet.PRI_REACTIVE_STEP + useCaseOffset;
+    private int reactivePriority(boolean isForward, boolean isLocalSubnet, int borderRoutePrefixLength) {
+        if (isLocalSubnet) {  // localSubnet <-> localSubnet
+            if (isForward) {
+                return slsnet.PRI_REACTIVE_LOCAL_FORWARD;
+            } else {  // isInterncept
+                return slsnet.PRI_REACTIVE_LOCAL_INTERCEPT;
+            }
+        } else {  // isBorder: localSubnet <-> boarderRouteGateway
+            int offset;
+            if (isForward) {
+                offset = slsnet.PRI_REACTIVE_BORDER_FORWARD;
+            } else {  // isIntercept
+                offset = slsnet.PRI_REACTIVE_BORDER_INTERCEPT;
+            }
+           return slsnet.PRI_REACTIVE_BORDER_BASE + borderRoutePrefixLength * slsnet.PRI_REACTIVE_BORDER_STEP + offset;
+        }
     }
 
     // constraints generator

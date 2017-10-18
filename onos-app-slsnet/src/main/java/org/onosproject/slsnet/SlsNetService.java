@@ -41,15 +41,20 @@ public interface SlsNetService
     static final String REACTIVE_APP_ID = "org.onosproject.slsnet.reactive";
 
     // priority for l2NetworkRouting: L2NETWORK_UNICAST or L2NETWORK_BROADCAST
-    static final int PRI_L2NETWORK_UNICAST   = 401;
-    static final int PRI_L2NETWORK_BROADCAST = 400;
+    static final int PRI_L2NETWORK_UNICAST   = 601;
+    static final int PRI_L2NETWORK_BROADCAST = 600;
 
-    // priority for reactiveRouting: REACTIVE_BASE + ipPrefix * REACTIVE_STEP
-    //                               + REACTIVE_ROUTE or REACTIVE_INTERCEPT
-    static final int PRI_REACTIVE_BASE = 100;
-    static final int PRI_REACTIVE_STEP = 2;
-    static final int PRI_REACTIVE_ROUTE = 1;
-    static final int PRI_REACTIVE_INTERCEPT = 0;
+    // Reactive Routing within Local Subnets
+    // ASSUME: local subnets NEVER overlaps each other
+    static final int PRI_REACTIVE_LOCAL_FORWARD = 501;
+    static final int PRI_REACTIVE_LOCAL_INTERCEPT = 500;
+    // Reactive Routing for Border Routes with local subnet
+    // priority: REACTIVE_BROUTE_BASE + routeIpPrefix * REACTIVE_BROUTE_STEP
+    //           + REACTIVE_BROUTE_FORWARD or REACTIVE_BROUTE_INTERCEPT
+    static final int PRI_REACTIVE_BORDER_BASE = 100;
+    static final int PRI_REACTIVE_BORDER_STEP = 2;
+    static final int PRI_REACTIVE_BORDER_FORWARD = 1;
+    static final int PRI_REACTIVE_BORDER_INTERCEPT = 0;
 
     // slsnet event related timers
     static final long IDLE_INTERVAL_MSEC = 5000;
@@ -57,10 +62,10 @@ public interface SlsNetService
     // feature control parameters
     static final boolean ALLOW_IPV6 = false;
     static final boolean ALLOW_ETH_ADDRESS_SELECTOR = true;
-    static final boolean VIRTUAL_GATEWAY_ETH_ADDRESS_SELECTOR = false;
     static final boolean REACTIVE_SINGLE_TO_SINGLE = true;
-    static final boolean REACTIVE_ALLOW_LINK_CP = false;
+    static final boolean REACTIVE_ALLOW_LINK_CP = false;  // MUST BE false (yjlee, 2017-10-18)
     static final boolean REACTIVE_HASHED_PATH_SELECTION = false;
+    static final boolean REACTIVE_MATCH_IP_PROTO = false;
 
     /**
      * Gets appId.
@@ -92,18 +97,20 @@ public interface SlsNetService
     Set<Route> getBorderRoutes();
 
     /**
-     * Get Virtual Gateway Mac Address for Local Subnet Virtual Gateway.
+     * Get Virtual Gateway Mac Address for Local Subnet Virtual Gateway Ip.
      *
+     * @param ip the ip to check for Virtual Gateway Ip
      * @return mac address of virtual gateway
      */
-    MacAddress getVMac();
+    MacAddress getVMacForIp(IpAddress ip);
 
     /**
-     * Get Virtual Gateway Ip Addresses for Local Subnet Virtual Gateway.
+     * Evaluate whether a mac is of Virtual Gateway Mac Addresses.
      *
-     * @return ip addresses of virtual gateway from ipSubnets
+     * @param mac the MacAddress to evaluate
+     * @return true if the mac is of any Vitrual Gateway Mac Address of ipSubnets
      */
-    Set<IpAddress> getVIps();
+    boolean isVMac(MacAddress mac);
 
     /**
      * Evaluates whether an Interface belongs to l2Networks.
@@ -154,14 +161,6 @@ public interface SlsNetService
      * @return the interface related to the host
      */
     Interface getHostInterface(Host host);
-
-    /**
-     * Evaluates whether an IP address is a virtual gateway IP address.
-     *
-     * @param ipAddress the IP address to evaluate
-     * @return true if the IP address is a virtual gateway address, otherwise false
-     */
-    boolean isVirtualGatewayIpAddress(IpAddress ipAddress);
 
     /**
      * Evaluates whether an IP address belongs to local SDN network.

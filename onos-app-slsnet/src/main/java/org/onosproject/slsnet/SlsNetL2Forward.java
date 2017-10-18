@@ -148,8 +148,7 @@ public class SlsNetL2Forward {
             for (SinglePointToMultiPointIntent intent : buildBrcIntents(l2Network)) {
                 newBctIntentsMap.put(intent.key(), intent);
             }
-            for (MultiPointToSinglePointIntent intent : buildUniIntents(l2Network,
-                                                            hostsFromL2Network(l2Network))) {
+            for (MultiPointToSinglePointIntent intent : buildUniIntents(l2Network, hostsFromL2Network(l2Network))) {
                 newUniIntentsMap.put(intent.key(), intent);
             }
             if (l2Network.dirty()) {
