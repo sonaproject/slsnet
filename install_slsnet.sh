@@ -1,6 +1,6 @@
 #!/bin/sh
 # install_slsnet.sh - to rebuild and reinstall slsnet app 
-# USAGE: install_slsnet.sh [--no-build] [network-cfg.json]
+# USAGE: install_slsnet.sh [--no-build|--build-only] [network-cfg.json]
 # PREPARE: run "onos-buck-publish-local" in ONOS source directory
 # ASSUME: onos source is at ../onos
 
@@ -9,17 +9,22 @@ TARGET=/opt/onos
 SLSNET_VERSION=1.11.0
 
 BUILD=yes
-if [ "$1" = "--no-build" ]
-then
-    shift
-    BUILD=no 
-fi
+INSTALL=yes
 
-NETCFG_FILE=${1:-${SLSNET_NETCFG:-network-cfg.json}}
-if [ ! -r "$NETCFG_FILE" ]
+case "$1" in
+  (--no-build)   BUILD=no;   shift; break;;
+  (--build-only) INSTALL=no; shift; break;;
+esac
+
+
+if [ -n "$INSTALL" ]
 then
-    echo "cannot open network config file for read: $NETCFG_FILE"
-    exit 1
+    NETCFG_FILE=${1:-${SLSNET_NETCFG:-network-cfg.json}}
+    if [ ! -r "$NETCFG_FILE" ]
+    then
+        echo "cannot open network config file for read: $NETCFG_FILE"
+        exit 1
+    fi
 fi
 
 
@@ -27,6 +32,11 @@ fi
 if [ "$BUILD" = yes ]
 then
     ( cd onos-app-slsnet/; mvn clean compile install || exit 1 )
+fi
+
+if [ "$INSTALL" = no ]
+then
+    exit 0
 fi
 
 # reinistall and reactivate slsnet app

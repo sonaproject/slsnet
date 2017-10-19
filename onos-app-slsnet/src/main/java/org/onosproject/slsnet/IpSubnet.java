@@ -18,6 +18,7 @@ package org.onosproject.slsnet;
 import com.google.common.base.MoreObjects;
 import org.onlab.packet.IpAddress;
 import org.onlab.packet.IpPrefix;
+import org.onlab.packet.MacAddress;
 import org.onosproject.net.EncapsulationType;
 
 import java.util.Objects;
@@ -28,6 +29,7 @@ import java.util.Objects;
 public class IpSubnet {
     private final IpPrefix ipPrefix;
     private final IpAddress gatewayIp;
+    private final MacAddress gatewayMac;
     private EncapsulationType encapsulation;
     private final String l2NetworkName;
 
@@ -35,13 +37,16 @@ public class IpSubnet {
      * Creates a new ip subnet entry.
      *
      * @param ipPrefix  an ip subnet
-     * @param gatewayIp IP of the gateway
+     * @param gatewayIp IP of the virtual gateway
+     * @param gatewayMac MacAddress of the virtual gateway
      * @param encapsulation EnacaptulatioType for routes related to this subnet
      * @param l2NetworkName Name of L2 Network this subnet is bound
      */
-    public IpSubnet(IpPrefix ipPrefix, IpAddress gatewayIp, EncapsulationType encapsulation, String l2NetworkName) {
+    public IpSubnet(IpPrefix ipPrefix, IpAddress gatewayIp, MacAddress gatewayMac,
+                    EncapsulationType encapsulation, String l2NetworkName) {
         this.ipPrefix = ipPrefix;
         this.gatewayIp = gatewayIp;
+        this.gatewayMac = gatewayMac;
         this.encapsulation = EncapsulationType.NONE;
         this.l2NetworkName = l2NetworkName;
     }
@@ -56,12 +61,21 @@ public class IpSubnet {
     }
 
     /**
-     * Gets the gateway IP address of the ip subnet entry.
+     * Gets the virtual gateway IP address of the ip subnet entry.
      *
-     * @return the gateway IP address
+     * @return the virtual gateway IP address
      */
     public IpAddress gatewayIp() {
         return gatewayIp;
+    }
+
+    /**
+     * Gets the virtual gateway Mac address of the ip subnet entry.
+     *
+     * @return the virtuai gateway Mac address
+     */
+    public MacAddress gatewayMac() {
+        return gatewayMac;
     }
 
     /**
@@ -116,6 +130,7 @@ public class IpSubnet {
         IpSubnet that = (IpSubnet) obj;
         return Objects.equals(this.ipPrefix, that.ipPrefix)
                && Objects.equals(this.gatewayIp, that.gatewayIp)
+               && Objects.equals(this.gatewayMac, that.gatewayMac)
                && Objects.equals(this.encapsulation, that.encapsulation)
                && Objects.equals(this.l2NetworkName, that.l2NetworkName);
     }
@@ -125,6 +140,7 @@ public class IpSubnet {
         return MoreObjects.toStringHelper(getClass())
                 .add("ipPrefix", ipPrefix)
                 .add("gatewayIp", gatewayIp)
+                .add("gatewayMac", gatewayMac)
                 .add("encapsulation", encapsulation)
                 .add("l2NetworkName", l2NetworkName)
                 .toString();

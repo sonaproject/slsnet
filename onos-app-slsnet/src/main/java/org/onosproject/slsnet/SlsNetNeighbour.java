@@ -130,13 +130,14 @@ public class SlsNetNeighbour {
      * @param context the message context
      */
     protected void handleRequest(NeighbourMessageContext context) {
-        if (slsnet.isVirtualGatewayIpAddress(context.target())) {
-            // TODO: may need to check if from valid l2Network or border gateway
-            log.trace("slsnet neightbour request on virtualGatewayAddress {}; response to {} {}",
-                      context.target(), context.inPort(), context.vlan());
-            context.reply(slsnet.getVMac());
+        MacAddress mac = slsnet.getVMacForIp(context.target());
+        if (mac != null) {
+            log.trace("slsnet neightbour request on virtualGatewayAddress {}; response to {} {} mac={}",
+                      context.target(), context.inPort(), context.vlan(), mac);
+            context.reply(mac);
             return;
         }
+        // else forward to corresponding host
 
         L2Network l2Network = slsnet.findL2Network(context.inPort(), context.vlan());
         if (l2Network != null) {
@@ -180,16 +181,16 @@ public class SlsNetNeighbour {
         L2Network l2Network = slsnet.findL2Network(context.inPort(), context.vlan());
         if (l2Network != null) {
             // TODO: need to check and update slsnet.L2Network
-            MacAddress dstMac = context.dstMac();
-            if (dstMac.equals(slsnet.getVMac())) {
-                log.trace("slsnet neightbour response message to virtual gateway; drop: {} {}",
-                          context.inPort(), context.vlan());
+            MacAddress mac = slsnet.getVMacForIp(context.target());
+            if (mac != null) {
+                log.trace("slsnet neightbour response message to virtual gateway; drop: {} {} target={}",
+                          context.inPort(), context.vlan(), context.target());
                 context.drop();
             } else {
-                // reply to the hosts of the dstMac
-                Set<Host> hosts = hostService.getHostsByMac(dstMac);
-                log.trace("slsnet neightbour response message forward: {} {} --> {}",
-                          context.inPort(), context.vlan(), hosts);
+                // forward reply to the hosts of the dstMac
+                Set<Host> hosts = hostService.getHostsByMac(context.dstMac());
+                log.trace("slsnet neightbour response message forward: {} {} target={} -> {}",
+                          context.inPort(), context.vlan(), context.target(), hosts);
                 hosts.stream()
                         .map(host -> slsnet.getHostInterface(host))
                         .filter(Objects::nonNull)

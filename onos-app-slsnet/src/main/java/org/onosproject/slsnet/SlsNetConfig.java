@@ -45,6 +45,7 @@ public class SlsNetConfig extends Config<ApplicationId> {
     private static final String BORDERROUTES = "borderRoutes";
     private static final String IPPREFIX = "ipPrefix";
     private static final String GATEWAYIP = "gatewayIp";
+    private static final String GATEWAYMAC = "gatewayMac";
     private static final String L2NETWORKNAME = "l2NetworkName";
     private static final String VIRTUALGATEWAYMACADDRESS =
                                "virtualGatewayMacAddress";
@@ -112,6 +113,7 @@ public class SlsNetConfig extends Config<ApplicationId> {
                 subnets.add(new IpSubnet(
                         IpPrefix.valueOf(jsonNode.get(IPPREFIX).asText()),
                         IpAddress.valueOf(jsonNode.get(GATEWAYIP).asText()),
+                        MacAddress.valueOf(jsonNode.get(GATEWAYMAC).asText()),
                         EncapsulationType.enumFromString(encapsulation),
                         jsonNode.get(L2NETWORKNAME).asText()));
             } catch (Exception e) {

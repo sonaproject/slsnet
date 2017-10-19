@@ -47,7 +47,6 @@
         "borderRoutes" : [
            { "ipPrefix" : "0.0.0.0/0", "gatewayIp" : "10.0.1.2" }
         ],
-        "virtualGatewayMacAddress" : "00:00:00:00:00:01"
       }
     }
   }

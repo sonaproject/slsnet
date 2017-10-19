@@ -17,6 +17,7 @@
 package org.onosproject.slsnet;
 
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Maps;
 import com.googlecode.concurrenttrees.radix.node.concrete.DefaultByteArrayNodeFactory;
 import com.googlecode.concurrenttrees.radixinverted.ConcurrentInvertedRadixTree;
 import com.googlecode.concurrenttrees.radixinverted.InvertedRadixTree;
@@ -74,6 +75,7 @@ import java.util.Iterator;
 import java.util.HashSet;
 import java.util.Collection;
 import java.util.Set;
+import java.util.Map;
 
 import static org.onosproject.slsnet.RouteTools.createBinaryString;
 
@@ -138,8 +140,7 @@ public class SlsNetManager extends ListenerRegistry<SlsNetEvent, SlsNetListener>
                  new ConcurrentInvertedRadixTree<>(new DefaultByteArrayNodeFactory());
 
     // VirtialGateway
-    private MacAddress virtualGatewayMacAddress;
-    private Set<IpAddress> virtualGatewayIpAddresses = new HashSet<>();
+    private Map<IpAddress, MacAddress> virtualGatewayIpMacMap = Maps.newConcurrentMap();
 
     // Refresh monitor thread
     private Object refreshMonitor = new Object();
@@ -273,14 +274,14 @@ public class SlsNetManager extends ListenerRegistry<SlsNetEvent, SlsNetListener>
                  new ConcurrentInvertedRadixTree<>(new DefaultByteArrayNodeFactory());
         InvertedRadixTree<IpSubnet> newIp6SubnetTable =
                  new ConcurrentInvertedRadixTree<>(new DefaultByteArrayNodeFactory());
-        Set<IpAddress> newVirtualGatewayIpAddresses = new HashSet<>();
+        Map<IpAddress, MacAddress> newVirtualGatewayIpMacMap = Maps.newConcurrentMap();
         for (IpSubnet subnet : newIpSubnets) {
             if (subnet.ipPrefix().isIp4()) {
                 newIp4SubnetTable.put(createBinaryString(subnet.ipPrefix()), subnet);
             } else {
                 newIp6SubnetTable.put(createBinaryString(subnet.ipPrefix()), subnet);
             }
-            newVirtualGatewayIpAddresses.add(subnet.gatewayIp());
+            newVirtualGatewayIpMacMap.put(subnet.gatewayIp(), subnet.gatewayMac());
         }
         if (!ipSubnets.equals(newIpSubnets)) {
             ipSubnets = newIpSubnets;
@@ -288,8 +289,8 @@ public class SlsNetManager extends ListenerRegistry<SlsNetEvent, SlsNetListener>
             ip6SubnetTable = newIp6SubnetTable;
             dirty = true;
         }
-        if (!virtualGatewayIpAddresses.equals(newVirtualGatewayIpAddresses)) {
-            virtualGatewayIpAddresses = newVirtualGatewayIpAddresses;
+        if (!virtualGatewayIpMacMap.equals(newVirtualGatewayIpMacMap)) {
+            virtualGatewayIpMacMap = newVirtualGatewayIpMacMap;
             dirty = true;
         }
 
@@ -310,14 +311,6 @@ public class SlsNetManager extends ListenerRegistry<SlsNetEvent, SlsNetListener>
             borderRoutes = newBorderRoutes;
             ip4BorderRouteTable = newIp4BorderRouteTable;
             ip6BorderRouteTable = newIp6BorderRouteTable;
-            dirty = true;
-        }
-
-        // virtual gateway MAC
-        MacAddress newVirtualGatewayMacAddress = config.virtualGatewayMacAddress();
-        if (virtualGatewayMacAddress == null
-            || !virtualGatewayMacAddress.equals(newVirtualGatewayMacAddress)) {
-            virtualGatewayMacAddress = newVirtualGatewayMacAddress;
             dirty = true;
         }
 
@@ -364,13 +357,13 @@ public class SlsNetManager extends ListenerRegistry<SlsNetEvent, SlsNetListener>
     }
 
     @Override
-    public MacAddress getVMac() {
-        return virtualGatewayMacAddress;
+    public MacAddress getVMacForIp(IpAddress ip) {
+        return virtualGatewayIpMacMap.get(ip);
     }
 
     @Override
-    public Set<IpAddress> getVIps() {
-        return ImmutableSet.copyOf(virtualGatewayIpAddresses);
+    public boolean isVMac(MacAddress mac) {
+        return virtualGatewayIpMacMap.containsValue(mac);
     }
 
     @Override
@@ -468,16 +461,7 @@ public class SlsNetManager extends ListenerRegistry<SlsNetEvent, SlsNetListener>
     }
 
     @Override
-    public boolean isVirtualGatewayIpAddress(IpAddress ipAddress) {
-        return virtualGatewayIpAddresses.contains(ipAddress);
-    }
-
-    @Override
     public boolean requestMac(IpAddress ip) {
-        if (virtualGatewayMacAddress == null) {
-            log.warn("slsnet request mac failed for unknown virtualGatewayMacAddress: {}", ip);
-            return false;
-        }
         IpSubnet ipSubnet = findIpSubnet(ip);
         if (ipSubnet == null) {
             log.warn("slsnet request mac failed for unknown IpSubnet: {}", ip);
@@ -493,7 +477,7 @@ public class SlsNetManager extends ListenerRegistry<SlsNetEvent, SlsNetListener>
         for (Interface iface : l2Network.interfaces()) {
             Ethernet neighbourReq;
             if (ip.isIp4()) {
-                neighbourReq = ARP.buildArpRequest(virtualGatewayMacAddress.toBytes(),
+                neighbourReq = ARP.buildArpRequest(ipSubnet.gatewayMac().toBytes(),
                                                    ipSubnet.gatewayIp().toOctets(),
                                                    ip.toOctets(),
                                                    iface.vlan().toShort());
@@ -503,7 +487,7 @@ public class SlsNetManager extends ListenerRegistry<SlsNetEvent, SlsNetListener>
                                                    ip.toOctets(),
                                                    ipSubnet.gatewayIp().toOctets(),
                                                    soliciteIp,
-                                                   virtualGatewayMacAddress.toBytes(),
+                                                   ipSubnet.gatewayMac().toBytes(),
                                                    IPv6.getMCastMacAddress(soliciteIp),
                                                    iface.vlan());
             }
@@ -529,14 +513,14 @@ public class SlsNetManager extends ListenerRegistry<SlsNetEvent, SlsNetListener>
             out.println("Static Configuration Flag:");
             out.println("    ALLOW_ETH_ADDRESS_SELECTOR="
                         + SlsNetService.ALLOW_ETH_ADDRESS_SELECTOR);
-            out.println("    VIRTUAL_GATEWAY_ETH_ADDRESS_SELECTOR="
-                        + SlsNetService.VIRTUAL_GATEWAY_ETH_ADDRESS_SELECTOR);
             out.println("    REACTIVE_SINGLE_TO_SINGLE="
                         + SlsNetService.REACTIVE_SINGLE_TO_SINGLE);
             out.println("    REACTIVE_ALLOW_LINK_CP="
                         + SlsNetService.REACTIVE_ALLOW_LINK_CP);
             out.println("    REACTIVE_HASHED_PATH_SELECTION="
                         + SlsNetService.REACTIVE_HASHED_PATH_SELECTION);
+            out.println("    REACTIVE_MATCH_IP_PROTO="
+                        + SlsNetService.REACTIVE_MATCH_IP_PROTO);
             out.println("");
             out.println("SlsNetAppId:");
             out.println("    " + getAppId());
@@ -555,13 +539,6 @@ public class SlsNetManager extends ListenerRegistry<SlsNetEvent, SlsNetListener>
             for (Route route : getBorderRoutes()) {
                 out.println("    " + route);
             }
-            out.println("");
-            out.println("virtualGatewayMacAddress:");
-            out.println("    " + getVMac());
-            out.println("");
-            out.println("virtualGatewayIpAddressed:");
-            out.println("    " + getVIps());
-            out.println("");
         }
     }
 
