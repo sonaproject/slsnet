@@ -614,13 +614,16 @@ public class SlsNetReactiveRouting {
         IpPrefix dstPrefix = dstIp.toIpPrefix();
         IpAddress srcNextHop = srcIp;
         IpAddress dstNextHop = dstIp;
-        MacAddress treatmentSrcMac = ethPkt.getDestinationMAC();
+        MacAddress treatmentSrcMac;
         int borderRoutePrefixLength = 0;
         boolean isLocalSubnet = true;
         boolean updateMac = slsnet.isVMac(ethPkt.getDestinationMAC());
 
-        if (slsnet.REACTIVE_USE_SOURCE_HOST_MAC && slsnet.REACTIVE_SINGLE_TO_SINGLE) {
-            treatmentSrcMac = ethPkt.getSourceMAC();
+        if (!slsnet.isVMac(ethPkt.getDestinationMAC())) {
+            log.warn("DROP for destinationMac is not virtual gateway mac: "
+                     + "srcCp={} srcIp={} dstIp={} srcMac={} dstMac={} vlanId={}",
+                     srcCp, srcIp, dstIp, ethPkt.getSourceMAC(), ethPkt.getDestinationMAC(), ethPkt.getVlanID());
+            return;
         }
 
         // check subnet local or route
@@ -649,6 +652,14 @@ public class SlsNetReactiveRouting {
             isLocalSubnet = false;
         }
 
+        if (slsnet.REACTIVE_USE_SOURCE_HOST_MAC && slsnet.REACTIVE_SINGLE_TO_SINGLE) {
+            treatmentSrcMac = ethPkt.getSourceMAC();
+        } else if (srcSubnet != null) {
+            treatmentSrcMac = srcSubnet.gatewayMac();
+        } else {  // anyway one of slsnet virtual gateway mac used by source host
+            treatmentSrcMac = ethPkt.getDestinationMAC();
+        }
+
         if (dstSubnet != null) {
             // destination is local subnet ip
             if (SlsNetService.ALLOW_ETH_ADDRESS_SELECTOR && dstSubnet.equals(srcSubnet)) {
@@ -659,8 +670,7 @@ public class SlsNetReactiveRouting {
                     // update mac only if dstMac is virtualGatewayMac, else assume valid mac already for the l2 network
                     log.info("LOCAL FORWARD ONLY: "
                              + "srcCp={} srcIp={} dstIp={} srcMac={} dstMac={} vlanId={} ipProto={} updateMac={}",
-                             context.inPacket().receivedFrom(),
-                             srcIp, dstIp, ethPkt.getSourceMAC(), ethPkt.getDestinationMAC(),
+                             srcCp, srcIp, dstIp, ethPkt.getSourceMAC(), ethPkt.getDestinationMAC(),
                              ethPkt.getVlanID(), ipProto, updateMac);
                     forwardPacketToDstIp(context, dstIp, treatmentSrcMac, updateMac);
                     return;
@@ -676,8 +686,7 @@ public class SlsNetReactiveRouting {
                 // both are externel network
                 log.warn("INVALID PACKET: srcIp and dstIp are both NON-LOCAL: "
                          + "srcCP={} srcIp={} dstIp={} srcMac={} dstMac={} vlanId={} ipProto={} updateMac={}",
-                         context.inPacket().receivedFrom(),
-                         srcIp, dstIp, ethPkt.getSourceMAC(), ethPkt.getDestinationMAC(),
+                         srcCp, srcIp, dstIp, ethPkt.getSourceMAC(), ethPkt.getDestinationMAC(),
                          ethPkt.getVlanID(), ipProto, updateMac);
                 return;
             }
