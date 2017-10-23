@@ -62,7 +62,7 @@ public interface SlsNetService
     // feature control parameters
     static final boolean ALLOW_IPV6 = false;
     static final boolean ALLOW_ETH_ADDRESS_SELECTOR = true;
-    static final boolean REACTIVE_SINGLE_TO_SINGLE = true;
+    static final boolean REACTIVE_SINGLE_TO_SINGLE = false;
     static final boolean REACTIVE_ALLOW_LINK_CP = false;  // MUST BE false (yjlee, 2017-10-18)
     static final boolean REACTIVE_HASHED_PATH_SELECTION = false;
     static final boolean REACTIVE_MATCH_IP_PROTO = false;

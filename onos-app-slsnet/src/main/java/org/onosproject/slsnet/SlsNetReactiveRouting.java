@@ -733,25 +733,12 @@ public class SlsNetReactiveRouting {
     /**
      * Update intents for connectivity.
      *
-     * ToHost: dstPrefix = dstHostIp.toIpPrefix(), nextHopIp = destHostIp
-     * ToInternet: dstPrefix = route.prefix(), nextHopIp = route.nextHopIp
      * returns intent submited or not
      */
     private boolean setUpConnectivity(ConnectPoint srcCp, byte ipProto, IpPrefix srcPrefix, IpPrefix dstPrefix,
                                       IpAddress nextHopIp, MacAddress treatmentSrcMac,
                                       EncapsulationType encap, boolean updateMac,
                                       boolean isLocalSubnet, int borderRoutePrefixLength) {
-        Key key;
-        String keyProtoTag = "";
-        if (slsnet.REACTIVE_MATCH_IP_PROTO) {
-            keyProtoTag = "-p" + ipProto;
-        }
-        if (slsnet.REACTIVE_SINGLE_TO_SINGLE) {
-            key = Key.of(srcPrefix.toString() + "-to-" + dstPrefix.toString() + keyProtoTag, reactiveAppId);
-        } else {
-            key = Key.of(dstPrefix.toString() + keyProtoTag, reactiveAppId);
-        }
-
         if (!(slsnet.findL2Network(srcCp, VlanId.NONE) != null ||
              (slsnet.REACTIVE_ALLOW_LINK_CP && !linkService.getIngressLinks(srcCp).isEmpty()))) {
             log.warn("NO REGI for srcCp not in L2Network; srcCp={} srcPrefix={} dstPrefix={} nextHopIp={}",
@@ -805,6 +792,19 @@ public class SlsNetReactiveRouting {
             if (ipProto != 0 && slsnet.REACTIVE_MATCH_IP_PROTO) {
                 selector.matchIPProtocol(ipProto);
             }
+        }
+
+        Key key;
+        String keyProtoTag = "";
+        if (slsnet.REACTIVE_MATCH_IP_PROTO) {
+            keyProtoTag = "-p" + ipProto;
+        }
+        if (slsnet.REACTIVE_SINGLE_TO_SINGLE) {
+            // allocate intent per (srcPrefix, dstPrefix)
+            key = Key.of(srcPrefix.toString() + "-to-" + dstPrefix.toString() + keyProtoTag, reactiveAppId);
+        } else {
+            // allocate intent per (srcDeviceId, dstPrefix)
+            key = Key.of(srcCp.deviceId().toString() + "-to-" +  dstPrefix.toString() + keyProtoTag, reactiveAppId);
         }
 
         // check and merge already existing ingress points
