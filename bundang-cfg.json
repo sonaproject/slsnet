@@ -34,7 +34,7 @@
         "l2Networks" : [
           { "name" : "LEAF1", "interfaces" : ["h11", "h12"], "l2Forward" : true },
           { "name" : "LEAF2", "interfaces" : ["h21", "h23"], "l2Forward" : true },
-          { "name" : "LEAF3", "interfaces" : ["h22"], "l2Forward" : true }
+          { "name" : "LEAF3", "interfaces" : ["h22"], "l2Forward" : true        }
         ],
         "ipSubnets" : [
            { "ipPrefix" : "192.168.100.0/24", "gatewayIp" : "192.168.100.1", "gatewayMac" : "00:00:00:00:64:01", "l2NetworkName" : "LEAF1" },
