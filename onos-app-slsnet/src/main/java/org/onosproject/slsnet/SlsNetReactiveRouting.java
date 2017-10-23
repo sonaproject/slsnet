@@ -619,12 +619,15 @@ public class SlsNetReactiveRouting {
         boolean isLocalSubnet = true;
         boolean updateMac = slsnet.isVMac(ethPkt.getDestinationMAC());
 
+        // MAY CHECK DestinationMAC; allow anyway
+        /*
         if (!slsnet.isVMac(ethPkt.getDestinationMAC())) {
             log.warn("DROP for destinationMac is not virtual gateway mac: "
                      + "srcCp={} srcIp={} dstIp={} srcMac={} dstMac={} vlanId={}",
                      srcCp, srcIp, dstIp, ethPkt.getSourceMAC(), ethPkt.getDestinationMAC(), ethPkt.getVlanID());
             return;
         }
+        */
 
         // check subnet local or route
         IpSubnet srcSubnet = slsnet.findIpSubnet(srcIp);
