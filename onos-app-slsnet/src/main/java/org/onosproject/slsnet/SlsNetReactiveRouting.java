@@ -619,6 +619,10 @@ public class SlsNetReactiveRouting {
         boolean isLocalSubnet = true;
         boolean updateMac = slsnet.isVMac(ethPkt.getDestinationMAC());
 
+        if (slsnet.REACTIVE_USE_SOURCE_HOST_MAC && slsnet.REACTIVE_SINGLE_TO_SINGLE) {
+            treatmentSrcMac = ethPkt.getSourceMAC();
+        }
+
         // check subnet local or route
         IpSubnet srcSubnet = slsnet.findIpSubnet(srcIp);
         if (srcSubnet == null) {
@@ -650,7 +654,6 @@ public class SlsNetReactiveRouting {
             if (SlsNetService.ALLOW_ETH_ADDRESS_SELECTOR && dstSubnet.equals(srcSubnet)) {
                 // NOTE: if ALLOW_ETH_ADDRESS_SELECTOR=false; l2Forward is always false
                 L2Network l2Network = slsnet.findL2Network(dstSubnet.l2NetworkName());
-                treatmentSrcMac = ethPkt.getSourceMAC();
                 if (l2Network != null && l2Network.l2Forward()) {
                     // NOTE: no reactive route action but do forward packet for L2Forward do not handle packet
                     // update mac only if dstMac is virtualGatewayMac, else assume valid mac already for the l2 network
