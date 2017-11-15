@@ -46,6 +46,7 @@ public class SlsNetConfig extends Config<ApplicationId> {
     private static final String IPPREFIX = "ipPrefix";
     private static final String GATEWAYIP = "gatewayIp";
     private static final String GATEWAYMAC = "gatewayMac";
+    private static final String NEXTHOP = "nextHop";
     private static final String L2NETWORKNAME = "l2NetworkName";
     private static final String VIRTUALGATEWAYMACADDRESS =
                                "virtualGatewayMacAddress";
@@ -143,7 +144,7 @@ public class SlsNetConfig extends Config<ApplicationId> {
                 routes.add(new Route(
                       Route.Source.STATIC,
                       IpPrefix.valueOf(jsonNode.path(IPPREFIX).asText()),
-                      IpAddress.valueOf(jsonNode.path(GATEWAYIP).asText())));
+                      IpAddress.valueOf(jsonNode.path(NEXTHOP).asText())));
             } catch (IllegalArgumentException e) {
                 log.warn("slsnet network config parse error; skip: {}", jsonNode);
             }
