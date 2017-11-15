@@ -15,7 +15,7 @@ net = Mininet()
 
 # Add leaf switch and hosts in rack 1
 # subnet: 10.0.1.0/24
-s10 = net.addSwitch('s10', id='of:0000000000000011')  #ip='10.0.1.1'
+s10 = net.addSwitch('s10', dpid='0000000000000011')
 h11 = net.addHost('h11', mac='00:00:10:00:01:11', ip='10.0.1.11/24', defaultRoute='via 10.0.1.1')
 h12 = net.addHost('h12', mac='00:00:10:00:01:12', ip='10.0.1.12/24', defaultRoute='via 10.0.1.1')
 h13 = net.addHost('h13', mac='00:00:10:00:01:13', ip='10.0.1.13/24', defaultRoute='via 10.0.1.1')
@@ -31,7 +31,7 @@ net.addLink(s10, d12)
 
 # Add leaf switch and hosts in rack 2
 # subnet: 10.0.2.0/24
-s20 = net.addSwitch('s20', id='of:0000000000000012') #ip='10.0.2.1'
+s20 = net.addSwitch('s20', dpid='0000000000000012')
 h21 = net.addHost('h21', mac='00:00:10:00:02:21', ip='10.0.2.21/24', defaultRoute='via 10.0.2.1')
 h22 = net.addHost('h22', mac='00:00:10:00:02:22', ip='10.0.2.22/24', defaultRoute='via 10.0.2.1')
 h23 = net.addHost('h23', mac='00:00:10:00:02:23', ip='10.0.2.23/24', defaultRoute='via 10.0.2.1')
@@ -47,8 +47,8 @@ net.addLink(s20, d22)
 
 # Add spine switches and nat
 # subnet: 10.0.0.0/16
-ss1 = net.addSwitch('ss1', id='of:0000000000000021')  #ip='10.0.0.1'
-ss2 = net.addSwitch('ss2', id='of:0000000000000022')  #ip='10.0.0.1'
+ss1 = net.addSwitch('ss1', dpid='0000000000000021')
+ss2 = net.addSwitch('ss2', dpid='0000000000000022')
 net.addLink(ss1, s10)
 net.addLink(ss1, s20)
 net.addLink(ss2, s10)
