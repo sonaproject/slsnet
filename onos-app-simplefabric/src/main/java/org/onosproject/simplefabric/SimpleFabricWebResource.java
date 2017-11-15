@@ -67,6 +67,19 @@ public class SimpleFabricWebResource extends AbstractWebResource {
     }
 
     /**
+     * SIMPLE_FABRIC Reactive Intents Infos.
+     *
+     * @return 200 OK
+     */
+    @GET
+    @Path("reactive-intents")
+    public Response queryReactiveIntents() {
+        ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+        get(SimpleFabricService.class).dumpToStream("reactive-intents", outputStream);
+        return Response.ok(outputStream.toString()).build();
+    }
+
+    /**
      * Trigger SimpleFabric Service Refresh.
      *
      * @return 200 OK
@@ -76,6 +89,18 @@ public class SimpleFabricWebResource extends AbstractWebResource {
     public Response triggerRefresh() {
         get(SimpleFabricService.class).triggerRefresh();
         return Response.ok("simple fabric refresh triggered").build();
+    }
+
+    /**
+     * Trigger SimpleFabric Service Flush Reactive Intents.
+     *
+     * @return 200 OK
+     */
+    @GET
+    @Path("flush")
+    public Response triggerFlush() {
+        get(SimpleFabricService.class).triggerFlush();
+        return Response.ok("simple fabric flush triggered").build();
     }
 
 }

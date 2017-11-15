@@ -61,7 +61,7 @@ net.addLink(ss2, s20)
 #net.addLink(ss2, h32);
 
 # Add ONOS/RemoteController; running in the same physical host
-net.addController(RemoteController('c1', ip='127.0.0.1'))
+net.addController(RemoteController('c1', ip='10.10.108.140'))
 
 # Main
 setLogLevel('info')
