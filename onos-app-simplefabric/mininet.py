@@ -11,8 +11,6 @@ from mininet.cli import CLI
 
 "Create custom topo."
 
-# NOTE: ONOS SDN-IP App Assumes Host's MAC is static
-
 net = Mininet()
 
 # Add leaf switch and hosts in rack 1
@@ -62,8 +60,8 @@ net.addLink(ss2, s20)
 #net.addLink(ss1, h31);
 #net.addLink(ss2, h32);
 
-# Add ONOS/RemoteController
-net.addController(RemoteController('c1', ip='1.235.191.83'))
+# Add ONOS/RemoteController; running in the same physical host
+net.addController(RemoteController('c1', ip='127.0.0.1'))
 
 # Main
 setLogLevel('info')
