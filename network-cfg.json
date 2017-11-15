@@ -45,7 +45,7 @@
            { "ipPrefix" : "10.0.2.0/24", "gatewayIp" : "10.0.2.1", "gatewayMac" : "00:00:10:00:02:01", "l2NetworkName" : "LEAF2" }
         ],
         "borderRoutes" : [
-           { "ipPrefix" : "0.0.0.0/0", "gatewayIp" : "10.0.1.2" }
+           { "ipPrefix" : "0.0.0.0/0", "nextHop" : "10.0.1.2" }
         ]
       }
     }

@@ -39,7 +39,6 @@
            { "ipPrefix" : "192.168.101.0/24", "gatewayIp" : "192.168.101.1", "gatewayMac" : "00:00:00:00:65:01", "l2NetworkName" : "LEAF2" },
            { "ipPrefix" : "192.168.102.0/24", "gatewayIp" : "192.168.102.1", "gatewayMac" : "00:00:00:00:66:01", "l2NetworkName" : "LEAF3" }
         ],
-        "virtualGatewayMacAddress" : "00:00:00:00:00:01"
       }
     }
   }
