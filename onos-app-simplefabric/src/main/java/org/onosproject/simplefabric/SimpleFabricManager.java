@@ -219,7 +219,8 @@ public class SimpleFabricManager extends ListenerRegistry<SimpleFabricEvent, Sim
         log.debug("simple fabric refresh");
         boolean dirty = false;
 
-        SimpleFabricConfig config = configService.getConfig(coreService.registerApplication(APP_ID), SimpleFabricConfig.class);
+        SimpleFabricConfig config = configService.getConfig(coreService.registerApplication(APP_ID),
+                                                            SimpleFabricConfig.class);
         if (config == null) {
             log.debug("No reactive routing config available!");
             return false;

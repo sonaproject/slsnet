@@ -877,7 +877,8 @@ public class SimpleFabricReactiveRouting {
             } else {  // isIntercept
                 offset = simpleFabric.PRI_REACTIVE_BORDER_INTERCEPT;
             }
-           return simpleFabric.PRI_REACTIVE_BORDER_BASE + borderRoutePrefixLength * simpleFabric.PRI_REACTIVE_BORDER_STEP + offset;
+           return simpleFabric.PRI_REACTIVE_BORDER_BASE
+                  + borderRoutePrefixLength * simpleFabric.PRI_REACTIVE_BORDER_STEP + offset;
         }
     }
 
