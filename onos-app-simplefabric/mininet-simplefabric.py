@@ -60,7 +60,7 @@ net.addLink(ss2, s20)
 #net.addLink(ss1, h31);
 #net.addLink(ss2, h32);
 
-# Add ONOS/RemoteController; running in the same physical host
+# Add ONOS/RemoteController; set your ONOS node ip address
 net.addController(RemoteController('c1', ip='10.10.108.140'))
 
 # Main
