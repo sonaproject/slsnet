@@ -8,22 +8,24 @@
   },
 
   "ports" : {
-    "of:0000000000000021/31" : { "interfaces" : [ { "name" : "SS1_LS1" } ] },
-    "of:0000000000000021/32" : { "interfaces" : [ { "name" : "SS1_LS2" } ] },
-
-    "of:0000000000000022/31" : { "interfaces" : [ { "name" : "SS2_LS1" } ] },
-    "of:0000000000000022/32" : { "interfaces" : [ { "name" : "SS2_LS2" } ] },
-
     "of:0000000000000011/25" : { "interfaces" : [ { "name" : "h11" } ] },
     "of:0000000000000011/26" : { "interfaces" : [ { "name" : "h12" } ] },
+    "of:0000000000000011/48" : { "interfaces" : [ { "name" : "LS1_LS2" } ] },
     "of:0000000000000011/53" : { "interfaces" : [ { "name" : "LS1_SS1" } ] },
     "of:0000000000000011/54" : { "interfaces" : [ { "name" : "LS1_SS2" } ] },
 
     "of:0000000000000012/25" : { "interfaces" : [ { "name" : "h21" } ] },
     "of:0000000000000012/26" : { "interfaces" : [ { "name" : "h22" } ] },
     "of:0000000000000012/27" : { "interfaces" : [ { "name" : "h23" } ] },
+    "of:0000000000000012/48" : { "interfaces" : [ { "name" : "LS2_LS1" } ] },
     "of:0000000000000012/53" : { "interfaces" : [ { "name" : "LS2_SS1" } ] },
-    "of:0000000000000012/54" : { "interfaces" : [ { "name" : "LS2_SS2" } ] }
+    "of:0000000000000012/54" : { "interfaces" : [ { "name" : "LS2_SS2" } ] },
+
+    "of:0000000000000021/31" : { "interfaces" : [ { "name" : "SS1_LS1" } ] },
+    "of:0000000000000021/32" : { "interfaces" : [ { "name" : "SS1_LS2" } ] },
+
+    "of:0000000000000022/31" : { "interfaces" : [ { "name" : "SS2_LS1" } ] },
+    "of:0000000000000022/32" : { "interfaces" : [ { "name" : "SS2_LS2" } ] }
   },
 
   "apps" : {
@@ -32,13 +34,13 @@
         "l2Networks" : [
           { "name" : "LEAF1", "interfaces" : ["h11", "h12"], "l2Forward" : true },
           { "name" : "LEAF2", "interfaces" : ["h21", "h23"], "l2Forward" : true },
-          { "name" : "LEAF3", "interfaces" : ["h22"], "l2Forward" : true }
+          { "name" : "LEAF3", "interfaces" : ["h22"], "l2Forward" : true        }
         ],
         "ipSubnets" : [
            { "ipPrefix" : "192.168.100.0/24", "gatewayIp" : "192.168.100.1", "gatewayMac" : "00:00:00:00:64:01", "l2NetworkName" : "LEAF1" },
            { "ipPrefix" : "192.168.101.0/24", "gatewayIp" : "192.168.101.1", "gatewayMac" : "00:00:00:00:65:01", "l2NetworkName" : "LEAF2" },
            { "ipPrefix" : "192.168.102.0/24", "gatewayIp" : "192.168.102.1", "gatewayMac" : "00:00:00:00:66:01", "l2NetworkName" : "LEAF3" }
-        ],
+        ]
       }
     }
   }

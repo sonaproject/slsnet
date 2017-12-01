@@ -521,6 +521,8 @@ public class SlsNetManager extends ListenerRegistry<SlsNetEvent, SlsNetListener>
                         + SlsNetService.REACTIVE_HASHED_PATH_SELECTION);
             out.println("    REACTIVE_MATCH_IP_PROTO="
                         + SlsNetService.REACTIVE_MATCH_IP_PROTO);
+            out.println("    REACTIVE_USE_SOURCE_HOST_MAC="
+                        + SlsNetService.REACTIVE_USE_SOURCE_HOST_MAC);
             out.println("");
             out.println("SlsNetAppId:");
             out.println("    " + getAppId());

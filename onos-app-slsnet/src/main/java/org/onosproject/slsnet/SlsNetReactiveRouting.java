@@ -614,10 +614,20 @@ public class SlsNetReactiveRouting {
         IpPrefix dstPrefix = dstIp.toIpPrefix();
         IpAddress srcNextHop = srcIp;
         IpAddress dstNextHop = dstIp;
-        MacAddress treatmentSrcMac = ethPkt.getDestinationMAC();
+        MacAddress treatmentSrcMac;
         int borderRoutePrefixLength = 0;
         boolean isLocalSubnet = true;
         boolean updateMac = slsnet.isVMac(ethPkt.getDestinationMAC());
+
+        // MAY CHECK DestinationMAC; allow anyway
+        /*
+        if (!slsnet.isVMac(ethPkt.getDestinationMAC())) {
+            log.warn("DROP for destinationMac is not virtual gateway mac: "
+                     + "srcCp={} srcIp={} dstIp={} srcMac={} dstMac={} vlanId={}",
+                     srcCp, srcIp, dstIp, ethPkt.getSourceMAC(), ethPkt.getDestinationMAC(), ethPkt.getVlanID());
+            return;
+        }
+        */
 
         // check subnet local or route
         IpSubnet srcSubnet = slsnet.findIpSubnet(srcIp);
@@ -645,19 +655,25 @@ public class SlsNetReactiveRouting {
             isLocalSubnet = false;
         }
 
+        if (slsnet.REACTIVE_USE_SOURCE_HOST_MAC && slsnet.REACTIVE_SINGLE_TO_SINGLE) {
+            treatmentSrcMac = ethPkt.getSourceMAC();
+        } else if (srcSubnet != null) {
+            treatmentSrcMac = srcSubnet.gatewayMac();
+        } else {  // anyway one of slsnet virtual gateway mac used by source host
+            treatmentSrcMac = ethPkt.getDestinationMAC();
+        }
+
         if (dstSubnet != null) {
             // destination is local subnet ip
             if (SlsNetService.ALLOW_ETH_ADDRESS_SELECTOR && dstSubnet.equals(srcSubnet)) {
                 // NOTE: if ALLOW_ETH_ADDRESS_SELECTOR=false; l2Forward is always false
                 L2Network l2Network = slsnet.findL2Network(dstSubnet.l2NetworkName());
-                treatmentSrcMac = ethPkt.getSourceMAC();
                 if (l2Network != null && l2Network.l2Forward()) {
                     // NOTE: no reactive route action but do forward packet for L2Forward do not handle packet
                     // update mac only if dstMac is virtualGatewayMac, else assume valid mac already for the l2 network
                     log.info("LOCAL FORWARD ONLY: "
                              + "srcCp={} srcIp={} dstIp={} srcMac={} dstMac={} vlanId={} ipProto={} updateMac={}",
-                             context.inPacket().receivedFrom(),
-                             srcIp, dstIp, ethPkt.getSourceMAC(), ethPkt.getDestinationMAC(),
+                             srcCp, srcIp, dstIp, ethPkt.getSourceMAC(), ethPkt.getDestinationMAC(),
                              ethPkt.getVlanID(), ipProto, updateMac);
                     forwardPacketToDstIp(context, dstIp, treatmentSrcMac, updateMac);
                     return;
@@ -673,8 +689,7 @@ public class SlsNetReactiveRouting {
                 // both are externel network
                 log.warn("INVALID PACKET: srcIp and dstIp are both NON-LOCAL: "
                          + "srcCP={} srcIp={} dstIp={} srcMac={} dstMac={} vlanId={} ipProto={} updateMac={}",
-                         context.inPacket().receivedFrom(),
-                         srcIp, dstIp, ethPkt.getSourceMAC(), ethPkt.getDestinationMAC(),
+                         srcCp, srcIp, dstIp, ethPkt.getSourceMAC(), ethPkt.getDestinationMAC(),
                          ethPkt.getVlanID(), ipProto, updateMac);
                 return;
             }
@@ -730,25 +745,12 @@ public class SlsNetReactiveRouting {
     /**
      * Update intents for connectivity.
      *
-     * ToHost: dstPrefix = dstHostIp.toIpPrefix(), nextHopIp = destHostIp
-     * ToInternet: dstPrefix = route.prefix(), nextHopIp = route.nextHopIp
      * returns intent submited or not
      */
     private boolean setUpConnectivity(ConnectPoint srcCp, byte ipProto, IpPrefix srcPrefix, IpPrefix dstPrefix,
                                       IpAddress nextHopIp, MacAddress treatmentSrcMac,
                                       EncapsulationType encap, boolean updateMac,
                                       boolean isLocalSubnet, int borderRoutePrefixLength) {
-        Key key;
-        String keyProtoTag = "";
-        if (slsnet.REACTIVE_MATCH_IP_PROTO) {
-            keyProtoTag = "-p" + ipProto;
-        }
-        if (slsnet.REACTIVE_SINGLE_TO_SINGLE) {
-            key = Key.of(srcPrefix.toString() + "-to-" + dstPrefix.toString() + keyProtoTag, reactiveAppId);
-        } else {
-            key = Key.of(dstPrefix.toString() + keyProtoTag, reactiveAppId);
-        }
-
         if (!(slsnet.findL2Network(srcCp, VlanId.NONE) != null ||
              (slsnet.REACTIVE_ALLOW_LINK_CP && !linkService.getIngressLinks(srcCp).isEmpty()))) {
             log.warn("NO REGI for srcCp not in L2Network; srcCp={} srcPrefix={} dstPrefix={} nextHopIp={}",
@@ -802,6 +804,19 @@ public class SlsNetReactiveRouting {
             if (ipProto != 0 && slsnet.REACTIVE_MATCH_IP_PROTO) {
                 selector.matchIPProtocol(ipProto);
             }
+        }
+
+        Key key;
+        String keyProtoTag = "";
+        if (slsnet.REACTIVE_MATCH_IP_PROTO) {
+            keyProtoTag = "-p" + ipProto;
+        }
+        if (slsnet.REACTIVE_SINGLE_TO_SINGLE) {
+            // allocate intent per (srcPrefix, dstPrefix)
+            key = Key.of(srcPrefix.toString() + "-to-" + dstPrefix.toString() + keyProtoTag, reactiveAppId);
+        } else {
+            // allocate intent per (srcDeviceId, dstPrefix)
+            key = Key.of(srcCp.deviceId().toString() + "-to-" +  dstPrefix.toString() + keyProtoTag, reactiveAppId);
         }
 
         // check and merge already existing ingress points
