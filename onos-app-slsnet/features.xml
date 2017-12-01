@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <!--
-  ~ Copyright 2017-present Open Networking Laboratory
+  ~ Copyright 2016-present Open Networking Laboratory
   ~
   ~ Licensed under the Apache License, Version 2.0 (the "License");
   ~ you may not use this file except in compliance with the License.
@@ -15,9 +15,9 @@
   ~ limitations under the License.
   -->
 <features xmlns="http://karaf.apache.org/xmlns/features/v1.2.0" name="${project.artifactId}-${project.version}">
-    <feature name="onos-app-simplefabric" version="${project.version}"
+    <feature name="onos-app-slsnet" version="${project.version}"
              description="${project.description}">
         <feature>onos-api</feature>
-        <bundle>mvn:${project.groupId}/onos-app-simplefabric/${project.version}</bundle>
+        <bundle>mvn:${project.groupId}/onos-app-slsnet/${project.version}</bundle>
     </feature>
 </features>

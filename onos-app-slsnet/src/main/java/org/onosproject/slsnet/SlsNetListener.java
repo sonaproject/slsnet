@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-present Open Networking Foundation
+ * Copyright 2015-present Open Networking Foundation
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,8 +13,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.onosproject.slsnet;
+
+import org.onosproject.event.EventListener;
 
 /**
- * Simple Leaf-Spine Network application.
+ * Entity capable of receiving alarm related events.
  */
-package org.onosproject.simplefabric;
+public interface SlsNetListener extends EventListener<SlsNetEvent> {
+}
+

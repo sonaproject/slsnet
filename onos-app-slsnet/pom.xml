@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
-  ~ Copyright 2017-present Open Networking Laboratory
+  ~ Copyright 2014-present Open Networking Laboratory
   ~
   ~ Licensed under the Apache License, Version 2.0 (the "License");
   ~ you may not use this file except in compliance with the License.
@@ -21,27 +21,28 @@
 
     <parent>
         <groupId>org.onosproject</groupId>
-        <artifactId>onos-apps</artifactId>
-        <version>1.12.0-SNAPSHOT</version>
+        <artifactId>onos</artifactId>
+        <version>1.13.0-SNAPSHOT</version>
         <relativePath>../../onos</relativePath>
     </parent>
 
-    <artifactId>onos-app-simplefabric</artifactId>
+    <artifactId>onos-app-slsnet</artifactId>
+    <version>1.13.0-SNAPSHOT</version>
     <packaging>bundle</packaging>
 
-    <description>Simple Fabric Application for Leaf-Spine L2/L3 Network</description>
+    <description>Simple Leaf-Spine Network Application</description>
 
     <properties>
-        <onos.app.name>org.onosproject.simplefabric</onos.app.name>
+        <onos.app.name>org.onosproject.slsnet</onos.app.name>
         <onos.app.category>Traffic Steering</onos.app.category>
-        <onos.app.title>Simple Fabric App</onos.app.title>
+        <onos.app.title>Simple Leaf-Spine Network App</onos.app.title>
         <onos.app.url>http://onosproject.org</onos.app.url>
 
-        <web.context>/onos/v1/simplefabric</web.context>
+        <web.context>/onos/v1/slsnet</web.context>
         <api.version>1.0.0</api.version>
-        <api.title>Simple Fabric Application REST API</api.title>
-        <api.description>APIs for interacting with the Simple Fabric application.</api.description>
-        <api.package>org.onosproject.simplefabric</api.package>
+        <api.title>SLSNET Application REST API</api.title>
+        <api.description>APIs for interacting with the SLSNET application.</api.description>
+        <api.package>org.onosproject.slsnet</api.package>
     </properties>
 
     <dependencies>

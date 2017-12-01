@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.onosproject.simplefabric;
+package org.onosproject.slsnet;
 
 import com.google.common.base.MoreObjects;
 import com.google.common.collect.ImmutableSet;
@@ -31,7 +31,6 @@ import java.util.Collection;
 import java.util.Objects;
 import java.util.Set;
 
-
 /**
  * Class stores a L2Network information.
  */
@@ -41,8 +40,6 @@ public final class L2Network {
     private Set<String> interfaceNames;   // also for network configuration
     private EncapsulationType encapsulation;  // also for network configuration
     private boolean l2Forward;            // do l2Forward (default:true) or not
-
-    /* status variables */
     private Set<Interface> interfaces;    // available interfaces from interfaceNames
     private Set<HostId> hostIds;          // available hosts from interfaces
     private boolean dirty;
@@ -58,9 +55,9 @@ public final class L2Network {
     L2Network(String name, Collection<String> ifaceNames, EncapsulationType encapsulation, boolean l2Forward) {
         this.name = name;
         this.interfaceNames = Sets.newHashSet();
-        this.interfaceNames.addAll(ifaceNames);
+        this.addInterfaceNames(ifaceNames);
         this.encapsulation = encapsulation;
-        this.l2Forward = (SimpleFabricService.ALLOW_ETH_ADDRESS_SELECTOR) ? l2Forward : false;
+        this.l2Forward = (SlsNetService.ALLOW_ETH_ADDRESS_SELECTOR) ? l2Forward : false;
         this.interfaces = Sets.newHashSet();
         this.hostIds = Sets.newHashSet();
         this.dirty = false;
@@ -70,13 +67,13 @@ public final class L2Network {
      * Constructs a L2Network data by given name and encapsulation type.
      *
      * @param name the given name
-     * @param encapsulation the encapsulation type
+     * @param encapType the encapsulation type
      */
-    private L2Network(String name, EncapsulationType encapsulation) {
+    private L2Network(String name, EncapsulationType encaptulation) {
         this.name = name;
         this.interfaceNames = Sets.newHashSet();
         this.encapsulation = encapsulation;
-        this.l2Forward = (SimpleFabricService.ALLOW_ETH_ADDRESS_SELECTOR) ? true : false;
+        this.l2Forward = (SlsNetService.ALLOW_ETH_ADDRESS_SELECTOR) ? true : false;
         this.interfaces = Sets.newHashSet();
         this.hostIds = Sets.newHashSet();
         this.dirty = false;
@@ -103,96 +100,40 @@ public final class L2Network {
     public static L2Network of(L2Network l2Network) {
         Objects.requireNonNull(l2Network);
         L2Network l2NetworkCopy = new L2Network(l2Network.name(), l2Network.encapsulation());
-        l2NetworkCopy.interfaceNames.addAll(l2Network.interfaceNames());
-        l2NetworkCopy.l2Forward = (SimpleFabricService.ALLOW_ETH_ADDRESS_SELECTOR) ? l2Network.l2Forward() : false;
-        l2NetworkCopy.interfaces.addAll(l2Network.interfaces());
-        l2NetworkCopy.hostIds.addAll(l2Network.hostIds());
+        l2NetworkCopy.addInterfaceNames(l2Network.interfaceNames());
+        l2NetworkCopy.setEncapsulation(l2Network.encapsulation());
+        l2NetworkCopy.setL2Forward((SlsNetService.ALLOW_ETH_ADDRESS_SELECTOR) ? l2Network.l2Forward() : false);
+        l2NetworkCopy.addInterfaces(l2Network.interfaces());
         l2NetworkCopy.setDirty(l2Network.dirty());
         return l2NetworkCopy;
     }
 
     // field queries
 
-    /**
-     * Gets L2Network name.
-     *
-     * @return the name of L2Network
-     */
     public String name() {
         return name;
     }
 
-    /**
-     * Gets L2Network interfaceNames.
-     *
-     * @return the interfaceNames of L2Network
-     */
     public Set<String> interfaceNames() {
         return ImmutableSet.copyOf(interfaceNames);
     }
 
-    /**
-     * Gets L2Network encapsulation type.
-     *
-     * @return the encapsulation type of L2Network
-     */
     public EncapsulationType encapsulation() {
         return encapsulation;
     }
 
-    /**
-     * Gets L2Network l2Forward flag.
-     *
-     * @return the l2Forward flag of L2Network
-     */
     public boolean l2Forward() {
         return l2Forward;
     }
 
-    /**
-     * Gets L2Network interfaces.
-     *
-     * @return the interfaces of L2Network
-     */
     public Set<Interface> interfaces() {
         return ImmutableSet.copyOf(interfaces);
     }
 
-    /**
-     * Gets L2Network hosts.
-     *
-     * @return the hosts of L2Network
-     */
-    public Set<HostId> hostIds() {
-        return ImmutableSet.copyOf(hostIds);
-    }
-
-    /**
-     * Gets L2Network dirty flag.
-     *
-     * @return the dirty flag of L2Network
-     */
-    public boolean dirty() {
-        return dirty;
-    }
-
-    /**
-     * Checks if the interface is of L2Network.
-     *
-     * @param iface the interface to be checked
-     * @return true if L2Network contains the interface
-     */
     public boolean contains(Interface iface) {
         return interfaces.contains(iface);
     }
 
-    /**
-     * Checks if the ConnectPoint and Vlan is of L2Network.
-     *
-     * @param port the ConnectPoint to be checked
-     * @param vlanId the VlanId of the ConnectPoint to be checked
-     * @return true if L2Network contains the interface of the ConnnectPoint and VlanId
-     */
     public boolean contains(ConnectPoint port, VlanId vlanId) {
         for (Interface iface : interfaces) {
             if (iface.connectPoint().equals(port) && iface.vlan().equals(vlanId)) {
@@ -202,12 +143,6 @@ public final class L2Network {
         return false;
     }
 
-    /**
-     * Checks if the DeviceId is of L2Network.
-     *
-     * @param deviceId the DeviceId to be checked
-     * @return true if L2Network contains any interface of the DeviceId
-     */
     public boolean contains(DeviceId deviceId) {
         for (Interface iface : interfaces) {
             if (iface.connectPoint().deviceId().equals(deviceId)) {
@@ -217,35 +152,98 @@ public final class L2Network {
         return false;
     }
 
-    /**
-     * Adds interface to L2Network.
-     *
-     * @param iface the Interface to be added
-     */
+    public Set<HostId> hostIds() {
+        return ImmutableSet.copyOf(hostIds);
+    }
+
+    public boolean hostIdsContains(Host host) {
+        return hostIds.contains(host.id());
+    }
+    public boolean dirty() {
+        return dirty;
+    }
+
+    // field updates
+
+    public void setEncapsulation(EncapsulationType encapsulation) {
+        if (!encapsulation.equals(this.encapsulation)) {
+            this.encapsulation = encapsulation;
+            setDirty(true);
+        }
+    }
+
+    // add only for interfaceName configuration values
+    public void addInterfaceNames(Collection<String> ifaceNames) {
+        Objects.requireNonNull(ifaceNames);
+        if (interfaceNames.addAll(ifaceNames)) {
+            setDirty(true);
+        }
+    }
+    public void addInterfaceName(String ifaceName) {
+        Objects.requireNonNull(ifaceName);
+        if (interfaceNames.add(ifaceName)) {
+            setDirty(true);
+        }
+    }
+
+    // set l2Forward flag
+    public void setL2Forward(boolean l2Forward) {
+        this.l2Forward = (SlsNetService.ALLOW_ETH_ADDRESS_SELECTOR) ? l2Forward : false;
+    }
+
+    // add and remove interfaces from port configuration for each interfaceName */
+    public void addInterfaces(Collection<Interface> ifaces) {
+        Objects.requireNonNull(ifaces);
+        if (interfaces.addAll(ifaces)) {
+            setDirty(true);
+        }
+    }
     public void addInterface(Interface iface) {
         Objects.requireNonNull(iface);
         if (interfaces.add(iface)) {
             setDirty(true);
         }
     }
+    public void removeInterfaces(Collection<Interface> ifaces) {
+        Objects.requireNonNull(ifaces);
+        if (interfaces.removeAll(ifaces)) {
+            setDirty(true);
+        }
+    }
+    public void removeInterface(Interface iface) {
+        Objects.requireNonNull(iface);
+        if (interfaces.remove(iface)) {
+            setDirty(true);
+        }
+    }
 
-    /**
-     * Adds host to L2Network.
-     *
-     * @param host the Host to be added
-     */
+    // add and remove hostNames for HostName->Interface lookup relation
+    public void addHosts(Collection<Host> hosts) {
+        Objects.requireNonNull(hosts);
+        for (Host host : hosts) {
+            addHost(host);
+        }
+    }
     public void addHost(Host host) {
         Objects.requireNonNull(host);
         if (hostIds.add(host.id())) {
             setDirty(true);
         }
     }
+    public void removeHosts(Collection<Host> hosts) {
+        Objects.requireNonNull(hosts);
+        for (Host host : hosts) {
+            removeHost(host);
+        }
+    }
+    public void removeHost(Host host) {
+        Objects.requireNonNull(host);
+        if (hostIds.remove(host.id())) {
+            setDirty(true);
+        }
+    }
 
-    /**
-     * Sets L2Network dirty flag.
-     *
-     * @param newDirty the dirty flag to be set
-     */
+    // set L2NetworkEntry Dirty Mark
     public void setDirty(boolean newDirty) {
         dirty = newDirty;
     }

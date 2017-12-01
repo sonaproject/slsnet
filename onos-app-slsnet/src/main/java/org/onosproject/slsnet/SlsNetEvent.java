@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-present Open Networking Foundation
+ * Copyright 2015-present Open Networking Foundation
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.onosproject.simplefabric;
+package org.onosproject.slsnet;
 
 import org.onosproject.event.AbstractEvent;
 
@@ -24,16 +24,17 @@ import java.io.PrintStream;
 /**
  * Describes an interface event.
  */
-public class SimpleFabricEvent extends AbstractEvent<SimpleFabricEvent.Type, String> {
+public class SlsNetEvent extends AbstractEvent<SlsNetEvent.Type, String> {
 
     public enum Type {
-        SIMPLE_FABRIC_UPDATED,  /* Indicates topology info has been updated. */
-        SIMPLE_FABRIC_FLUSH,    /* Indicates flush triggered. */
-        SIMPLE_FABRIC_IDLE,     /* Indicates idle check. */
-        SIMPLE_FABRIC_DUMP      /* Indicates to dump info on the subject to output stream. */
+        SLSNET_UPDATED,  // Indicates an slsnet has been updated. called for refresh
+        SLSNET_FLUSH,    // Indicates an slsnet has been flush triggered.
+        SLSNET_IDLE,     // Indicates an slsnet idle loop
+        SLSNET_DUMP      // request to dump internal info on the subject
+                         // to SlsNetEvent.out() as output stream
     }
 
-    private PrintStream printStream;  // output stream for SIMPLE_FABRIC_DUMP
+    private PrintStream printStream;  // for SLSNET_DUMP only
 
     /**
      * Creates an interface event with type and subject.
@@ -41,7 +42,7 @@ public class SimpleFabricEvent extends AbstractEvent<SimpleFabricEvent.Type, Str
      * @param type event type
      * @param subject subject for dump event or dummy
      */
-    public SimpleFabricEvent(Type type, String subject) {
+    public SlsNetEvent(Type type, String subject) {
         super(type, subject);   /* subject is dummy */
     }
 
@@ -52,7 +53,7 @@ public class SimpleFabricEvent extends AbstractEvent<SimpleFabricEvent.Type, Str
      * @param subject subject for dump event
      * @param out output stream to dump out
      */
-    public SimpleFabricEvent(Type type, String subject, OutputStream out) {
+    public SlsNetEvent(Type type, String subject, OutputStream out) {
         super(type, subject);   /* subject is dummy */
         printStream = new PrintStream(out, true);
     }

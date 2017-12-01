@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.onosproject.simplefabric;
+package org.onosproject.slsnet;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
@@ -66,7 +66,7 @@ import java.util.stream.Collectors;
  * application.
  */
 @Component(immediate = true, enabled = false)
-public class SimpleFabricL2Forward {
+public class SlsNetL2Forward {
 
     public static final String BROADCAST = "BCAST";
     public static final String UNICAST = "UNI";
@@ -84,7 +84,7 @@ public class SimpleFabricL2Forward {
     protected HostService hostService;
 
     @Reference(cardinality = ReferenceCardinality.MANDATORY_UNARY)
-    protected SimpleFabricService simpleFabric;
+    protected SlsNetService slsnet;
 
     public static final ImmutableList<Constraint> L2NETWORK_CONSTRAINTS =
             ImmutableList.of(new PartialFailureConstraint());
@@ -93,26 +93,26 @@ public class SimpleFabricL2Forward {
     private Map<Key, MultiPointToSinglePointIntent> uniIntentsMap = Maps.newConcurrentMap();
     private Set<Key> toBePurgedIntentKeys = new HashSet<>();
 
-    private final InternalSimpleFabricListener simpleFabricListener = new InternalSimpleFabricListener();
+    private final InternalSlsNetListener slsnetListener = new InternalSlsNetListener();
 
     @Activate
     public void activate() {
-        l2ForwardAppId = coreService.registerApplication(simpleFabric.L2FORWARD_APP_ID);
-        log.info("simple fabric l2 forwaring starting with l2net app id {}", l2ForwardAppId.toString());
+        l2ForwardAppId = coreService.registerApplication(slsnet.L2FORWARD_APP_ID);
+        log.info("slsnet l2 forwaring starting with l2net app id {}", l2ForwardAppId.toString());
 
-        simpleFabric.addListener(simpleFabricListener);
+        slsnet.addListener(slsnetListener);
 
         refresh();
         checkIntentsPurge();
 
-        log.info("simple fabric l2forward started");
+        log.info("slsnet l2forward started");
     }
 
     @Deactivate
     public void deactivate() {
-        log.info("simple fabric l2forward stopping");
+        log.info("slsnet l2forward stopping");
 
-        simpleFabric.removeListener(simpleFabricListener);
+        slsnet.removeListener(slsnetListener);
 
         for (Intent intent : bctIntentsMap.values()) {
             intentService.withdraw(intent);
@@ -133,16 +133,16 @@ public class SimpleFabricL2Forward {
         //bctIntentsMap.clear();
         //uniIntentsMap.clear();
 
-        log.info("simple fabric l2forward stopped");
+        log.info("slsnet l2forward stopped");
     }
 
-    private void refresh() {
-        log.debug("simple fabric l2forward refresh");
+    public void refresh() {
+        log.debug("slsnet l2forward refresh");
 
         Map<Key, SinglePointToMultiPointIntent> newBctIntentsMap = Maps.newConcurrentMap();
         Map<Key, MultiPointToSinglePointIntent> newUniIntentsMap = Maps.newConcurrentMap();
 
-        for (L2Network l2Network : simpleFabric.getL2Networks()) {
+        for (L2Network l2Network : slsnet.getL2Networks()) {
             // scans all l2network regardless of dirty flag
             // if l2Network.l2Forward == false or number of interfaces() < 2, no Intents generated
             for (SinglePointToMultiPointIntent intent : buildBrcIntents(l2Network)) {
@@ -160,7 +160,7 @@ public class SimpleFabricL2Forward {
         for (SinglePointToMultiPointIntent intent : bctIntentsMap.values()) {
             SinglePointToMultiPointIntent newIntent = newBctIntentsMap.get(intent.key());
             if (newIntent == null) {
-                log.info("simple fabric l2forward withdraw broadcast intent: {}", intent.key().toString());
+                log.info("slsnet l2forward withdraw broadcast intent: {}", intent.key().toString());
                 toBePurgedIntentKeys.add(intent.key());
                 intentService.withdraw(intent);
                 bctUpdated = true;
@@ -174,7 +174,7 @@ public class SimpleFabricL2Forward {
                     !oldIntent.selector().equals(intent.selector()) ||
                     !oldIntent.treatment().equals(intent.treatment()) ||
                     !oldIntent.constraints().equals(intent.constraints())) {
-                log.info("simple fabric l2forward submit broadcast intent: {}", intent.key().toString());
+                log.info("slsnet l2forward submit broadcast intent: {}", intent.key().toString());
                 toBePurgedIntentKeys.remove(intent.key());
                 intentService.submit(intent);
                 bctUpdated = true;
@@ -185,7 +185,7 @@ public class SimpleFabricL2Forward {
         for (MultiPointToSinglePointIntent intent : uniIntentsMap.values()) {
             MultiPointToSinglePointIntent newIntent = newUniIntentsMap.get(intent.key());
             if (newIntent == null) {
-                log.info("simple fabric l2forward withdraw unicast intent: {}", intent.key().toString());
+                log.info("slsnet l2forward withdraw unicast intent: {}", intent.key().toString());
                 toBePurgedIntentKeys.add(intent.key());
                 intentService.withdraw(intent);
                 uniUpdated = true;
@@ -199,7 +199,7 @@ public class SimpleFabricL2Forward {
                     !oldIntent.selector().equals(intent.selector()) ||
                     !oldIntent.treatment().equals(intent.treatment()) ||
                     !oldIntent.constraints().equals(intent.constraints())) {
-                log.info("simple fabric l2forward submit unicast intent: {}", intent.key().toString());
+                log.info("slsnet l2forward submit unicast intent: {}", intent.key().toString());
                 toBePurgedIntentKeys.remove(intent.key());
                 intentService.submit(intent);
                 uniUpdated = true;
@@ -214,20 +214,20 @@ public class SimpleFabricL2Forward {
         }
     }
 
-    private void checkIntentsPurge() {
+    public void checkIntentsPurge() {
         // check intents to be purge
         if (!toBePurgedIntentKeys.isEmpty()) {
             Set<Key> purgedKeys = new HashSet<>();
             for (Key key : toBePurgedIntentKeys) {
                 Intent intentToPurge = intentService.getIntent(key);
                 if (intentToPurge == null) {
-                    log.info("simple fabric l2forward purged intent: key={}", key.toString());
+                    log.info("slsnet l2forward purged intent: key={}", key.toString());
                     purgedKeys.add(key);
                 } else {
                     switch (intentService.getIntentState(key)) {
                     case FAILED:
                     case WITHDRAWN:
-                        log.info("simple fabric l2forward try to purge intent: key={}", key.toString());
+                        log.info("slsnet l2forward try to purge intent: key={}", key.toString());
                         intentService.purge(intentToPurge);
                         break;
                     case INSTALL_REQ:
@@ -235,7 +235,7 @@ public class SimpleFabricL2Forward {
                     case INSTALLING:
                     case RECOMPILING:
                     case COMPILING:
-                        log.warn("simple fabric l2forward withdraw intent to purge: key={}", key);
+                        log.warn("slsnet l2forward withdraw intent to purge: key={}", key);
                         intentService.withdraw(intentToPurge);
                         break;
                     case WITHDRAW_REQ:
@@ -290,7 +290,7 @@ public class SimpleFabricL2Forward {
                     .filteredIngressPoint(srcFcp)
                     .filteredEgressPoints(dstFcps)
                     .constraints(buildConstraints(L2NETWORK_CONSTRAINTS, l2Network.encapsulation()))
-                    .priority(SimpleFabricService.PRI_L2NETWORK_BROADCAST)
+                    .priority(SlsNetService.PRI_L2NETWORK_BROADCAST)
                     .resourceGroup(resourceGroup);
             brcIntents.add(intentBuilder.build());
         });
@@ -321,7 +321,7 @@ public class SimpleFabricL2Forward {
                     .filteredIngressPoints(srcFcps)
                     .filteredEgressPoint(hostFcp)
                     .constraints(buildConstraints(L2NETWORK_CONSTRAINTS, l2Network.encapsulation()))
-                    .priority(SimpleFabricService.PRI_L2NETWORK_UNICAST)
+                    .priority(SlsNetService.PRI_L2NETWORK_UNICAST)
                     .resourceGroup(resourceGroup);
             uniIntents.add(intentBuilder.build());
         });
@@ -412,23 +412,23 @@ public class SimpleFabricL2Forward {
     }
 
     // Listener
-    private class InternalSimpleFabricListener implements SimpleFabricListener {
+    private class InternalSlsNetListener implements SlsNetListener {
         @Override
-        public void event(SimpleFabricEvent event) {
+        public void event(SlsNetEvent event) {
             switch (event.type()) {
-            case SIMPLE_FABRIC_UPDATED:
+            case SLSNET_UPDATED:
                 refresh();
                 checkIntentsPurge();
                 break;
-            case SIMPLE_FABRIC_IDLE:
+            case SLSNET_IDLE:
                 refresh();
                 checkIntentsPurge();
                 break;
-            case SIMPLE_FABRIC_DUMP:
+            case SLSNET_DUMP:
                 dump(event.subject(), event.out());
                 break;
             default:
-                // NOTE: nothing to do on SIMPLE_FABRIC_FLUSH
+                // NOTE: nothing to do on SLSNET_FLUSH
                 break;
             }
         }

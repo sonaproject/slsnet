@@ -298,6 +298,50 @@ If onos is updated, apply update for external app maven build, at onos/ source d
 
 ### 분당 TB 에서의 증상 (Cisco 스위치 적용시의 증상)
 
+- Cisco Switch 에서 40G InPort 관련 매칭 문제
+  - 40G 포트에 대해서 IN_PORT 매칭 조건이 정상 동작하지 않음
+  - IN_PORT matching 을 포함하지 않도록 패치를 적용 (2017-12-01)
+
+```
+diff --git a/core/net/src/main/java/org/onosproject/net/intent/impl/compiler/LinkCollectionCompiler.java b/core/net/src/main/java/org/onosproject/net/intent
+index 75b3eba..8b411cb 100644
+--- a/core/net/src/main/java/org/onosproject/net/intent/impl/compiler/LinkCollectionCompiler.java
++++ b/core/net/src/main/java/org/onosproject/net/intent/impl/compiler/LinkCollectionCompiler.java
+@@ -706,8 +706,7 @@ public abstract class LinkCollectionCompiler<T> {
+         TrafficTreatment.Builder treatmentBuilder = DefaultTrafficTreatment
+                 .builder();
+         TrafficSelector.Builder selectorBuilder = DefaultTrafficSelector
+-                .builder(intent.selector())
+-                .matchInPort(inPort);
++                .builder(intent.selector());
+ 
+         if (!intent.applyTreatmentOnEgress()) {
+             manageMpIntent(selectorBuilder,
+```
+
+  - IngressPorts 에 대해서는 매칭을 적용하고 싶을 때, 다음과 같은 패치를 적용
+
+```
+diff --git a/core/net/src/main/java/org/onosproject/net/intent/impl/compiler/LinkCollectionCompiler.java b/core/net/src/main/java/org/onosproject/net/intent
+index 75b3eba..be0e70e 100644
+--- a/core/net/src/main/java/org/onosproject/net/intent/impl/compiler/LinkCollectionCompiler.java
++++ b/core/net/src/main/java/org/onosproject/net/intent/impl/compiler/LinkCollectionCompiler.java
+@@ -706,8 +706,12 @@ public abstract class LinkCollectionCompiler<T> {
+         TrafficTreatment.Builder treatmentBuilder = DefaultTrafficTreatment
+                 .builder();
+         TrafficSelector.Builder selectorBuilder = DefaultTrafficSelector
+-                .builder(intent.selector())
+-                .matchInPort(inPort);
++                .builder(intent.selector());
++
++        /* To add inPort selector for ingressPoints only */
++        if (intent.ingressPoints().contains(new ConnectPoint(deviceId, inPort))) {
++            selectorBuilder.matchInPort(inPort);
++        }
+ 
+         if (!intent.applyTreatmentOnEgress()) {
+             manageMpIntent(selectorBuilder,
+```
 
 - Switch의 BGP 설정과의 간섭 문제 (Cleared)
   - 기존 BGP 설정에서 처리하고 있던 IP 를 Openflow 로 처리하고자 설정 하면 의도치 않은 패킷 흐름이 발생

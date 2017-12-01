@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.onosproject.simplefabric;
+package org.onosproject.slsnet;
 
 import org.onlab.packet.IpAddress;
 import org.onlab.packet.IpPrefix;
@@ -32,16 +32,16 @@ import java.util.Collection;
 /**
  * Provides information about the routing configuration.
  */
-public interface SimpleFabricService
-        extends ListenerService<SimpleFabricEvent, SimpleFabricListener> {
+public interface SlsNetService
+        extends ListenerService<SlsNetEvent, SlsNetListener> {
 
     // App symbols
-    static final String APP_ID = "org.onosproject.simplefabric";
-    static final String L2FORWARD_APP_ID = "org.onosproject.simplefabric.l2forward";
-    static final String REACTIVE_APP_ID = "org.onosproject.simplefabric.reactive";
+    static final String APP_ID = "org.onosproject.slsnet";
+    static final String L2FORWARD_APP_ID = "org.onosproject.slsnet.l2forward";
+    static final String REACTIVE_APP_ID = "org.onosproject.slsnet.reactive";
 
-    // Priority for l2NetworkRouting: L2NETWORK_UNICAST or L2NETWORK_BROADCAST
-    static final int PRI_L2NETWORK_UNICAST = 601;
+    // priority for l2NetworkRouting: L2NETWORK_UNICAST or L2NETWORK_BROADCAST
+    static final int PRI_L2NETWORK_UNICAST   = 601;
     static final int PRI_L2NETWORK_BROADCAST = 600;
 
     // Reactive Routing within Local Subnets
@@ -49,17 +49,17 @@ public interface SimpleFabricService
     static final int PRI_REACTIVE_LOCAL_FORWARD = 501;
     static final int PRI_REACTIVE_LOCAL_INTERCEPT = 500;
     // Reactive Routing for Border Routes with local subnet
-    // Priority: REACTIVE_BROUTE_BASE + routeIpPrefix * REACTIVE_BROUTE_STEP
+    // priority: REACTIVE_BROUTE_BASE + routeIpPrefix * REACTIVE_BROUTE_STEP
     //           + REACTIVE_BROUTE_FORWARD or REACTIVE_BROUTE_INTERCEPT
     static final int PRI_REACTIVE_BORDER_BASE = 100;
     static final int PRI_REACTIVE_BORDER_STEP = 2;
     static final int PRI_REACTIVE_BORDER_FORWARD = 1;
     static final int PRI_REACTIVE_BORDER_INTERCEPT = 0;
 
-    // Simple fabric event related timers
+    // slsnet event related timers
     static final long IDLE_INTERVAL_MSEC = 5000;
 
-    // Feature control parameters
+    // feature control parameters
     static final boolean ALLOW_IPV6 = false;
     static final boolean ALLOW_ETH_ADDRESS_SELECTOR = true;
     static final boolean REACTIVE_SINGLE_TO_SINGLE = false;
@@ -70,12 +70,12 @@ public interface SimpleFabricService
     /**
      * Gets appId.
      *
-     * @return appId of simple fabric app
+     * @return appId of slsnet app
      */
     ApplicationId getAppId();
 
     /**
-     * Gets all the l2Networks.
+     * Gets all the  l2Networks.
      *
      * @return all the l2Networks
      */
@@ -89,14 +89,15 @@ public interface SimpleFabricService
     Set<IpSubnet> getIpSubnets();
 
     /**
-     * Retrieves the entire set of static routes to outer networks.
+     * Retrieves the entire set of Interface names connected to BGP peers in the
+     * network.
      *
-     * @return the set of static routes to outer networks.
+     * @return the set of connect points connected to BGP peers
      */
     Set<Route> getBorderRoutes();
 
     /**
-     * Gets Virtual Gateway Mac Address for Local Subnet Virtual Gateway Ip.
+     * Get Virtual Gateway Mac Address for Local Subnet Virtual Gateway Ip.
      *
      * @param ip the ip to check for Virtual Gateway Ip
      * @return mac address of virtual gateway
@@ -104,7 +105,7 @@ public interface SimpleFabricService
     MacAddress getVMacForIp(IpAddress ip);
 
     /**
-     * Evaluates whether a mac is of Virtual Gateway Mac Addresses.
+     * Evaluate whether a mac is of Virtual Gateway Mac Addresses.
      *
      * @param mac the MacAddress to evaluate
      * @return true if the mac is of any Vitrual Gateway Mac Address of ipSubnets
@@ -178,7 +179,7 @@ public interface SimpleFabricService
     boolean isIpPrefixLocal(IpPrefix ipPrefix);
 
     /**
-     * Sends Neighbour Query (ARP or NDP) to Find Host Location.
+     * Send Neighbour Query (ARP or NDP) to Find Host Location.
      *
      * @param ip the ip address to resolve
      * @return true if request mac packets are emitted. otherwise false
@@ -186,7 +187,7 @@ public interface SimpleFabricService
     boolean requestMac(IpAddress ip);
 
     /**
-     * Sends Dump Event to all SimpleFabricListeners to Dump Info on the Subject.
+     * Send Dump Event to all SlsNetListeners to Dump Info on the Subject.
      *
      * @param subject the subject to dump
      * @param out the output stream to dump
@@ -194,12 +195,12 @@ public interface SimpleFabricService
     void dumpToStream(String subject, OutputStream out);
 
     /**
-     * Triggers to send Refresh Notification to all sub modules.
+     * trigger to send Refresh Notification to all sub modules.
      */
     void triggerRefresh();
 
     /**
-     * Triggers to send Flush Notification to all sub modules.
+     * trigger to send Flush Notification to all sub modules.
      */
     void triggerFlush();
 

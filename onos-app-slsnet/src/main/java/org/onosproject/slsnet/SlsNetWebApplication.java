@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-present Open Networking Foundation
+ * Copyright 2015-present Open Networking Foundation
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,7 +14,19 @@
  * limitations under the License.
  */
 
+package org.onosproject.slsnet;
+
+import org.onlab.rest.AbstractWebApplication;
+
+import java.util.Set;
+
 /**
- * Simple Leaf-Spine Network application.
+ * SLSNET REST API web application.
  */
-package org.onosproject.simplefabric;
+public class SlsNetWebApplication extends AbstractWebApplication {
+    @Override
+    public Set<Class<?>> getClasses() {
+        return getClasses(SlsNetWebResource.class);
+    }
+}
+

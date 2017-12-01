@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.onosproject.simplefabric;
+package org.onosproject.slsnet;
 
 import com.google.common.base.MoreObjects;
 import org.onlab.packet.IpAddress;
@@ -79,7 +79,7 @@ public class IpSubnet {
     }
 
     /**
-     * Gets the encapsulation type of ip subnet entry.
+     * Gets the encaptulation type of ip subnet entry.
      *
      * @return the encapsulation type
      */
@@ -116,7 +116,7 @@ public class IpSubnet {
 
     @Override
     public int hashCode() {
-        return Objects.hash(ipPrefix, gatewayIp, gatewayMac, encapsulation, l2NetworkName);
+        return Objects.hash(ipPrefix);
     }
 
     @Override

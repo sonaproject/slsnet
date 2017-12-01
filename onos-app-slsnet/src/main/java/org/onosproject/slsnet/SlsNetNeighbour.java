@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-present Open Networking Foundation
+ * Copyright 2016-present Open Networking Foundation
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.onosproject.simplefabric;
+package org.onosproject.slsnet;
 
 import org.apache.felix.scr.annotations.Activate;
 import org.apache.felix.scr.annotations.Component;
@@ -43,7 +43,7 @@ import java.util.Set;
  * will be changed automatically by interface or network configuration events.
  */
 @Component(immediate = true, enabled = false)
-public class SimpleFabricNeighbour {
+public class SlsNetNeighbour {
 
     private final Logger log = LoggerFactory.getLogger(getClass());
     protected ApplicationId appId;
@@ -61,10 +61,10 @@ public class SimpleFabricNeighbour {
     protected NeighbourResolutionService neighbourService;
 
     @Reference(cardinality = ReferenceCardinality.MANDATORY_UNARY)
-    protected SimpleFabricService simpleFabric;
+    protected SlsNetService slsnet;
 
-    private final InternalSimpleFabricListener simpleFabricListener =
-            new InternalSimpleFabricListener();
+    private final InternalSlsNetListener slsnetListener =
+            new InternalSlsNetListener();
 
     private L2NetworkNeighbourMessageHandler neighbourHandler =
             new L2NetworkNeighbourMessageHandler();
@@ -73,18 +73,18 @@ public class SimpleFabricNeighbour {
 
     @Activate
     public void activate() {
-        appId = simpleFabric.getAppId();
-        simpleFabric.addListener(simpleFabricListener);
+        appId = slsnet.getAppId();
+        slsnet.addListener(slsnetListener);
         refresh();
-        log.info("simple fabric neighbour started");
+        log.info("slsnet neighbour started");
     }
 
     @Deactivate
     public void deactivate() {
-        simpleFabric.removeListener(simpleFabricListener);
+        slsnet.removeListener(slsnetListener);
         unregister();
         monitoredInterfaces.clear();
-        log.info("simple fabric neighbour stoped");
+        log.info("slsnet neighbour stoped");
     }
 
     /**
@@ -94,19 +94,19 @@ public class SimpleFabricNeighbour {
         Set<Interface> interfaces = interfaceService.getInterfaces();
         // check for new interfaces
         for (Interface intf : interfaces) {
-            if (!monitoredInterfaces.contains(intf) && simpleFabric.isL2NetworkInterface(intf)) {
-               log.info("simple fabric neighbour register handler: {}", intf);
+            if (!monitoredInterfaces.contains(intf) && slsnet.isL2NetworkInterface(intf)) {
+               log.info("slsnet neighbour register handler: {}", intf);
                neighbourService.registerNeighbourHandler(intf, neighbourHandler, appId);
                monitoredInterfaces.add(intf);
             } else {
-               log.debug("simple fabric neighobur unknown interface: {}", intf);
+               log.debug("slsnet neighobur unknown interface: {}", intf);
             }
         }
         // check for removed interfaces
         Set<Interface> monitoredInterfacesToBeRemoved = new HashSet<>();
         for (Interface intf : monitoredInterfaces) {
             if (!interfaces.contains(intf)) {
-               log.info("simple fabric neighbour unregister handler: {}", intf);
+               log.info("slsnet neighbour unregister handler: {}", intf);
                neighbourService.unregisterNeighbourHandler(intf, neighbourHandler, appId);
                monitoredInterfacesToBeRemoved.add(intf);
             }
@@ -120,7 +120,7 @@ public class SimpleFabricNeighbour {
      * Unregisters neighbour handler to all available interfaces.
      */
     protected void unregister() {
-        log.info("simple fabric neighbour unregister handler");
+        log.info("slsnet neighbour unregister handler");
         neighbourService.unregisterNeighbourHandlers(appId);
     }
 
@@ -130,21 +130,21 @@ public class SimpleFabricNeighbour {
      * @param context the message context
      */
     protected void handleRequest(NeighbourMessageContext context) {
-        MacAddress mac = simpleFabric.getVMacForIp(context.target());
+        MacAddress mac = slsnet.getVMacForIp(context.target());
         if (mac != null) {
-            log.trace("simple fabric neightbour request on virtualGatewayAddress {}; response to {} {} mac={}",
+            log.trace("slsnet neightbour request on virtualGatewayAddress {}; response to {} {} mac={}",
                       context.target(), context.inPort(), context.vlan(), mac);
             context.reply(mac);
             return;
         }
         // else forward to corresponding host
 
-        L2Network l2Network = simpleFabric.findL2Network(context.inPort(), context.vlan());
+        L2Network l2Network = slsnet.findL2Network(context.inPort(), context.vlan());
         if (l2Network != null) {
             int numForwards = 0;
             if (!context.dstMac().isBroadcast() && !context.dstMac().isMulticast()) {
                 for (Host host : hostService.getHostsByMac(context.dstMac())) {
-                    log.trace("simple fabric neightbour request forward unicast to {}", host.location());
+                    log.trace("slsnet neightbour request forward unicast to {}", host.location());
                     context.forward(host.location());  // ASSUME: vlan is same
                     // TODO: may need to check host.location().time()
                     numForwards++;
@@ -154,16 +154,16 @@ public class SimpleFabricNeighbour {
                 }
             }
             // else do broadcast to all host in the same l2 network
-            log.trace("simple fabric neightbour request forward broadcast: {} {}",
+            log.trace("slsnet neightbour request forward broadcast: {} {}",
                      context.inPort(), context.vlan());
             for (Interface iface : l2Network.interfaces()) {
                 if (!context.inPort().equals(iface.connectPoint())) {
-                    log.trace("simple fabric forward neighbour request broadcast to {}", iface);
+                    log.trace("slsnet forward neighbour request broadcast to {}", iface);
                     context.forward(iface);
                 }
             }
         } else {
-            log.warn("simple fabric neightbour request drop: {} {}",
+            log.warn("slsnet neightbour request drop: {} {}",
                      context.inPort(), context.vlan());
             context.drop();
         }
@@ -178,28 +178,28 @@ public class SimpleFabricNeighbour {
     protected void handleReply(NeighbourMessageContext context,
                                HostService hostService) {
         // Find target L2 Network, then reply to the host
-        L2Network l2Network = simpleFabric.findL2Network(context.inPort(), context.vlan());
+        L2Network l2Network = slsnet.findL2Network(context.inPort(), context.vlan());
         if (l2Network != null) {
-            // TODO: need to check and update simpleFabric.L2Network
-            MacAddress mac = simpleFabric.getVMacForIp(context.target());
+            // TODO: need to check and update slsnet.L2Network
+            MacAddress mac = slsnet.getVMacForIp(context.target());
             if (mac != null) {
-                log.trace("simple fabric neightbour response message to virtual gateway; drop: {} {} target={}",
+                log.trace("slsnet neightbour response message to virtual gateway; drop: {} {} target={}",
                           context.inPort(), context.vlan(), context.target());
                 context.drop();
             } else {
                 // forward reply to the hosts of the dstMac
                 Set<Host> hosts = hostService.getHostsByMac(context.dstMac());
-                log.trace("simple fabric neightbour response message forward: {} {} target={} -> {}",
+                log.trace("slsnet neightbour response message forward: {} {} target={} -> {}",
                           context.inPort(), context.vlan(), context.target(), hosts);
                 hosts.stream()
-                        .map(host -> simpleFabric.getHostInterface(host))
+                        .map(host -> slsnet.getHostInterface(host))
                         .filter(Objects::nonNull)
                         .forEach(context::forward);
             }
         } else {
             // this might be happened when we remove an interface from L2 Network
             // just ignore this message
-            log.warn("simple fabric neightbour response message drop for unknown l2Network: {} {}",
+            log.warn("slsnet neightbour response message drop for unknown l2Network: {} {}",
                      context.inPort(), context.vlan());
             context.drop();
         }
@@ -217,17 +217,17 @@ public class SimpleFabricNeighbour {
                     handleReply(context, hostService);
                     break;
                 default:
-                    log.warn("simple fabric neightor unknown context type: {}", context.type());
+                    log.warn("slsnet neightor unknown context type: {}", context.type());
                     break;
             }
         }
     }
 
-    private class InternalSimpleFabricListener implements SimpleFabricListener {
+    private class InternalSlsNetListener implements SlsNetListener {
         @Override
-        public void event(SimpleFabricEvent event) {
+        public void event(SlsNetEvent event) {
             switch (event.type()) {
-            case SIMPLE_FABRIC_UPDATED:
+            case SLSNET_UPDATED:
                 refresh();
                 break;
             default:

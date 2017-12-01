@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-present Open Networking Foundation
+ * Copyright 2014-present Open Networking Foundation
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,4 +17,4 @@
 /**
  * Simple Leaf-Spine Network application.
  */
-package org.onosproject.simplefabric;
+package org.onosproject.slsnet;

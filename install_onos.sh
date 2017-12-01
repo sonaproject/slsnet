@@ -11,7 +11,7 @@ then
 fi
 
 TARGET=/opt/onos
-UNTARED_DIR=/opt/onos-1.11.0
+UNTARED_DIR=/opt/onos-1.13.0-SNAPSHOT
 ONOS_TAR=${1:-../onos/buck-out/gen/tools/package/onos-package/onos.tar.gz}
 
 if [ $INSTALL_ONOS = 'yes' -a ! -r $ONOS_TAR ]

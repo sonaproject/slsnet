@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-present Open Networking Foundation
+ * Copyright 2015-present Open Networking Foundation
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.onosproject.simplefabric;
+package org.onosproject.slsnet;
 
 import com.google.common.collect.ImmutableList;
 import org.apache.felix.scr.annotations.Activate;
@@ -83,10 +83,10 @@ import java.util.Set;
 
 
 /**
- * SimpleFabricReactiveRouting handles L3 Reactive Routing.
+ * SlsNetReactiveRouting handles L3 Reactive Routing.
  */
 @Component(immediate = true, enabled = false)
-public class SimpleFabricReactiveRouting {
+public class SlsNetReactiveRouting {
 
     private final Logger log = LoggerFactory.getLogger(getClass());
     private ApplicationId reactiveAppId;
@@ -116,7 +116,7 @@ public class SimpleFabricReactiveRouting {
     protected FlowRuleService flowRuleService;
 
     @Reference(cardinality = ReferenceCardinality.MANDATORY_UNARY)
-    protected SimpleFabricService simpleFabric;
+    protected SlsNetService slsnet;
 
     private ImmutableList<Constraint> reactiveConstraints
             = ImmutableList.of(new PartialFailureConstraint());
@@ -128,18 +128,18 @@ public class SimpleFabricReactiveRouting {
     private Set<Key> toBePurgedIntentKeys = new HashSet<>();
             // NOTE: manage purged intents by key for intentService.getIntent() supports key only
 
-    private final InternalSimpleFabricListener simpleFabricListener = new InternalSimpleFabricListener();
+    private final InternalSlsNetListener slsnetListener = new InternalSlsNetListener();
     private ReactiveRoutingProcessor processor = new ReactiveRoutingProcessor();
 
     @Activate
     public void activate() {
-        reactiveAppId = coreService.registerApplication(simpleFabric.REACTIVE_APP_ID);
-        log.info("simple fabric reactive routing starting with app id {}", reactiveAppId.toString());
+        reactiveAppId = coreService.registerApplication(slsnet.REACTIVE_APP_ID);
+        log.info("slsnet reactive routing starting with app id {}", reactiveAppId.toString());
 
         // NOTE: may not clear at init for MIGHT generate pending_remove garbages
-        //       use flush event from simple fabric cli command
+        //       use flush event from slsnet cli command
 
-        if (simpleFabric.REACTIVE_HASHED_PATH_SELECTION) {
+        if (slsnet.REACTIVE_HASHED_PATH_SELECTION) {
             reactiveConstraints = ImmutableList.of(new PartialFailureConstraint(),
                                                    new HashedPathSelectionConstraint());
         } else {
@@ -148,25 +148,25 @@ public class SimpleFabricReactiveRouting {
 
         processor = new ReactiveRoutingProcessor();
         packetService.addProcessor(processor, PacketProcessor.director(2));
-        simpleFabric.addListener(simpleFabricListener);
+        slsnet.addListener(slsnetListener);
 
         registerIntercepts();
         refreshIntercepts();
 
-        log.info("simple fabric reactive routing started");
+        log.info("slsnet reactive routing started");
     }
 
     @Deactivate
     public void deactivate() {
-        log.info("simple fabric reactive routing stopping");
+        log.info("slsnet reactive routing stopping");
 
         packetService.removeProcessor(processor);
-        simpleFabric.removeListener(simpleFabricListener);
+        slsnet.removeListener(slsnetListener);
 
         withdrawIntercepts();
 
         // NOTE: may not clear at init for MIGHT generate pending_remove garbages
-        //       use flush event from simple fabric cli command
+        //       use flush event from slsnet cli command
 
         toBePurgedIntentKeys.clear();
 
@@ -174,7 +174,7 @@ public class SimpleFabricReactiveRouting {
 
         processor = null;
 
-        log.info("simple fabric reactive routing stopped");
+        log.info("slsnet reactive routing stopped");
     }
 
     /**
@@ -187,13 +187,13 @@ public class SimpleFabricReactiveRouting {
             DefaultTrafficSelector.builder().matchEthType(Ethernet.TYPE_IPV4).build(),
             PacketPriority.REACTIVE, reactiveAppId);
 
-        if (simpleFabric.ALLOW_IPV6) {
+        if (slsnet.ALLOW_IPV6) {
             packetService.requestPackets(
                 DefaultTrafficSelector.builder().matchEthType(Ethernet.TYPE_IPV6).build(),
                 PacketPriority.REACTIVE, reactiveAppId);
         }
 
-        log.info("simple fabric reactive routing ip packet intercepts started");
+        log.info("slsnet reactive routing ip packet intercepts started");
     }
 
     /**
@@ -206,13 +206,13 @@ public class SimpleFabricReactiveRouting {
             DefaultTrafficSelector.builder().matchEthType(Ethernet.TYPE_IPV4).build(),
             PacketPriority.REACTIVE, reactiveAppId);
 
-        if (simpleFabric.ALLOW_IPV6) {
+        if (slsnet.ALLOW_IPV6) {
             packetService.cancelPackets(
                 DefaultTrafficSelector.builder().matchEthType(Ethernet.TYPE_IPV6).build(),
                 PacketPriority.REACTIVE, reactiveAppId);
         }
 
-        log.info("simple fabric reactive routing ip packet intercepts stopped");
+        log.info("slsnet reactive routing ip packet intercepts stopped");
     }
 
     /**
@@ -221,17 +221,17 @@ public class SimpleFabricReactiveRouting {
     private void refreshIntercepts() {
         Set<FlowRule> newInterceptFlowRules = new HashSet<>();
         for (Device device : deviceService.getAvailableDevices()) {
-            for (IpSubnet subnet : simpleFabric.getIpSubnets()) {
+            for (IpSubnet subnet : slsnet.getIpSubnets()) {
                 newInterceptFlowRules.add(generateInterceptFlowRule(true, device.id(), subnet.ipPrefix()));
                 // check if this devices has the ipSubnet, then add ip broadcast flue rule
-                L2Network l2Network = simpleFabric.findL2Network(subnet.l2NetworkName());
+                L2Network l2Network = slsnet.findL2Network(subnet.l2NetworkName());
                 if (l2Network != null && l2Network.contains(device.id())) {
                     newInterceptFlowRules.add(generateLocalSubnetIpBctFlowRule(device.id(), subnet.ipPrefix()));
                 }
                 // JUST FOR FLOW RULE TEST ONLY
                 //newInterceptFlowRules.add(generateTestFlowRule(device.id(), subnet.ipPrefix()));
             }
-            for (Route route : simpleFabric.getBorderRoutes()) {
+            for (Route route : slsnet.getBorderRoutes()) {
                 newInterceptFlowRules.add(generateInterceptFlowRule(false, device.id(), route.prefix()));
             }
         }
@@ -243,14 +243,14 @@ public class SimpleFabricReactiveRouting {
                 .filter(rule -> !newInterceptFlowRules.contains(rule))
                 .forEach(rule -> {
                     flowRuleService.removeFlowRules(rule);
-                    log.info("simple fabric reactive routing remove intercept flow rule: {}", rule);
+                    log.info("slsnet reactive routing remove intercept flow rule: {}", rule);
                 });
             */
             newInterceptFlowRules.stream()
                 .filter(rule -> !interceptFlowRules.contains(rule))
                 .forEach(rule -> {
                     flowRuleService.applyFlowRules(rule);
-                    log.info("simple fabric reactive routing apply intercept flow rule: {}", rule);
+                    log.info("slsnet reactive routing apply intercept flow rule: {}", rule);
                 });
             interceptFlowRules = newInterceptFlowRules;
         }
@@ -358,8 +358,8 @@ public class SimpleFabricReactiveRouting {
                 toBePurgedIntentKeys.add(intent.key());
                 continue;
             }
-            if (!(simpleFabric.findL2Network(intent.egressPoint(), VlanId.NONE) != null ||
-                  (simpleFabric.REACTIVE_ALLOW_LINK_CP &&
+            if (!(slsnet.findL2Network(intent.egressPoint(), VlanId.NONE) != null ||
+                  (slsnet.REACTIVE_ALLOW_LINK_CP &&
                    !linkService.getEgressLinks(intent.egressPoint()).isEmpty()))) {
                 log.info("refresh route intents; remove intent for egress point not available: key={}", intent.key());
                 intentService.withdraw(intentService.getIntent(intent.key()));
@@ -368,7 +368,7 @@ public class SimpleFabricReactiveRouting {
             }
 
             // MAY NEED TO CHECK: intent.egressPoint and intent.treatment's dstMac is valid against hosts
-            if (simpleFabric.REACTIVE_SINGLE_TO_SINGLE && !simpleFabric.REACTIVE_ALLOW_LINK_CP) {
+            if (slsnet.REACTIVE_SINGLE_TO_SINGLE && !slsnet.REACTIVE_ALLOW_LINK_CP) {
                 // single path intent only; no need to check ingress points
                 continue;
             }
@@ -377,8 +377,8 @@ public class SimpleFabricReactiveRouting {
             boolean ingressPointChanged = false;
             for (ConnectPoint cp : intent.ingressPoints()) {
                 if (deviceService.isAvailable(cp.deviceId()) &&
-                    (simpleFabric.findL2Network(cp, VlanId.NONE) != null ||
-                     (simpleFabric.REACTIVE_ALLOW_LINK_CP &&
+                    (slsnet.findL2Network(cp, VlanId.NONE) != null ||
+                     (slsnet.REACTIVE_ALLOW_LINK_CP &&
                       !linkService.getIngressLinks(cp).isEmpty()))) {
                     newIngressPoints.add(cp);
                 } else {
@@ -415,7 +415,7 @@ public class SimpleFabricReactiveRouting {
         }
     }
 
-    private void checkIntentsPurge() {
+    public void checkIntentsPurge() {
         // check intents to be purge
         if (!toBePurgedIntentKeys.isEmpty()) {
             Set<Key> removeKeys = new HashSet<>();
@@ -548,7 +548,7 @@ public class SimpleFabricReactiveRouting {
     private boolean checkVirtualGatewayIpPacket(InboundPacket pkt, IpAddress srcIp, IpAddress dstIp) {
         Ethernet ethPkt = pkt.parsed();  // assume valid
 
-        MacAddress mac = simpleFabric.getVMacForIp(dstIp);
+        MacAddress mac = slsnet.getVMacForIp(dstIp);
         if (mac == null || !ethPkt.getDestinationMAC().equals(mac)) {
             return false;
         } else if (dstIp.isIp4()) {
@@ -617,12 +617,12 @@ public class SimpleFabricReactiveRouting {
         MacAddress treatmentSrcMac = ethPkt.getDestinationMAC();
         int borderRoutePrefixLength = 0;
         boolean isLocalSubnet = true;
-        boolean updateMac = simpleFabric.isVMac(ethPkt.getDestinationMAC());
+        boolean updateMac = slsnet.isVMac(ethPkt.getDestinationMAC());
 
         // check subnet local or route
-        IpSubnet srcSubnet = simpleFabric.findIpSubnet(srcIp);
+        IpSubnet srcSubnet = slsnet.findIpSubnet(srcIp);
         if (srcSubnet == null) {
-            Route route = simpleFabric.findBorderRoute(srcIp);
+            Route route = slsnet.findBorderRoute(srcIp);
             if (route == null) {
                 log.warn("route unknown: srcIp={}", srcIp);
                 return;
@@ -632,9 +632,9 @@ public class SimpleFabricReactiveRouting {
             borderRoutePrefixLength = route.prefix().prefixLength();
             isLocalSubnet = false;
         }
-        IpSubnet dstSubnet = simpleFabric.findIpSubnet(dstIp);
+        IpSubnet dstSubnet = slsnet.findIpSubnet(dstIp);
         if (dstSubnet == null) {
-            Route route = simpleFabric.findBorderRoute(dstIp);
+            Route route = slsnet.findBorderRoute(dstIp);
             if (route == null) {
                 log.warn("route unknown: dstIp={}", dstIp);
                 return;
@@ -647,9 +647,9 @@ public class SimpleFabricReactiveRouting {
 
         if (dstSubnet != null) {
             // destination is local subnet ip
-            if (SimpleFabricService.ALLOW_ETH_ADDRESS_SELECTOR && dstSubnet.equals(srcSubnet)) {
+            if (SlsNetService.ALLOW_ETH_ADDRESS_SELECTOR && dstSubnet.equals(srcSubnet)) {
                 // NOTE: if ALLOW_ETH_ADDRESS_SELECTOR=false; l2Forward is always false
-                L2Network l2Network = simpleFabric.findL2Network(dstSubnet.l2NetworkName());
+                L2Network l2Network = slsnet.findL2Network(dstSubnet.l2NetworkName());
                 treatmentSrcMac = ethPkt.getSourceMAC();
                 if (l2Network != null && l2Network.l2Forward()) {
                     // NOTE: no reactive route action but do forward packet for L2Forward do not handle packet
@@ -704,7 +704,7 @@ public class SimpleFabricReactiveRouting {
             // NOTE: hostService.requestMac(nextHopIp); NOT IMPLEMENTED in ONOS HostManager.java; do it myself
             log.warn("forward packet nextHopIp host_mac unknown: nextHopIp={}", nextHopIp);
             hostService.startMonitoringIp(nextHopIp);
-            simpleFabric.requestMac(nextHopIp);
+            slsnet.requestMac(nextHopIp);
             // CONSIDER: make flood on all port of the dstHost's L2Network
             return;
         }
@@ -740,17 +740,17 @@ public class SimpleFabricReactiveRouting {
                                       boolean isLocalSubnet, int borderRoutePrefixLength) {
         Key key;
         String keyProtoTag = "";
-        if (simpleFabric.REACTIVE_MATCH_IP_PROTO) {
+        if (slsnet.REACTIVE_MATCH_IP_PROTO) {
             keyProtoTag = "-p" + ipProto;
         }
-        if (simpleFabric.REACTIVE_SINGLE_TO_SINGLE) {
+        if (slsnet.REACTIVE_SINGLE_TO_SINGLE) {
             key = Key.of(srcPrefix.toString() + "-to-" + dstPrefix.toString() + keyProtoTag, reactiveAppId);
         } else {
             key = Key.of(dstPrefix.toString() + keyProtoTag, reactiveAppId);
         }
 
-        if (!(simpleFabric.findL2Network(srcCp, VlanId.NONE) != null ||
-             (simpleFabric.REACTIVE_ALLOW_LINK_CP && !linkService.getIngressLinks(srcCp).isEmpty()))) {
+        if (!(slsnet.findL2Network(srcCp, VlanId.NONE) != null ||
+             (slsnet.REACTIVE_ALLOW_LINK_CP && !linkService.getIngressLinks(srcCp).isEmpty()))) {
             log.warn("NO REGI for srcCp not in L2Network; srcCp={} srcPrefix={} dstPrefix={} nextHopIp={}",
                       srcCp, srcPrefix, dstPrefix, nextHopIp);
             return false;
@@ -769,11 +769,11 @@ public class SimpleFabricReactiveRouting {
             log.info("NO REGI for unknown nextHop Cp and Mac: srcPrefix={} dstPrefix={} nextHopIp={}",
                      srcPrefix, dstPrefix, nextHopIp);
             hostService.startMonitoringIp(nextHopIp);
-            simpleFabric.requestMac(nextHopIp);
+            slsnet.requestMac(nextHopIp);
             return false;
         }
         TrafficTreatment treatment;
-        if (updateMac && simpleFabric.ALLOW_ETH_ADDRESS_SELECTOR) {
+        if (updateMac && slsnet.ALLOW_ETH_ADDRESS_SELECTOR) {
             treatment = generateSetMacTreatment(nextHopMac, treatmentSrcMac);
         } else {
             treatment = DefaultTrafficTreatment.builder().build();
@@ -782,24 +782,24 @@ public class SimpleFabricReactiveRouting {
         TrafficSelector.Builder selector = DefaultTrafficSelector.builder();
         if (dstPrefix.isIp4()) {
             selector.matchEthType(Ethernet.TYPE_IPV4);
-            if (simpleFabric.REACTIVE_SINGLE_TO_SINGLE && srcPrefix.prefixLength() > 0) {
+            if (slsnet.REACTIVE_SINGLE_TO_SINGLE && srcPrefix.prefixLength() > 0) {
                 selector.matchIPSrc(srcPrefix);
             }
             if (dstPrefix.prefixLength() > 0) {
                 selector.matchIPDst(dstPrefix);
             }
-            if (ipProto != 0 && simpleFabric.REACTIVE_MATCH_IP_PROTO) {
+            if (ipProto != 0 && slsnet.REACTIVE_MATCH_IP_PROTO) {
                 selector.matchIPProtocol(ipProto);
             }
         } else {
             selector.matchEthType(Ethernet.TYPE_IPV6);
-            if (simpleFabric.REACTIVE_SINGLE_TO_SINGLE && srcPrefix.prefixLength() > 0) {
+            if (slsnet.REACTIVE_SINGLE_TO_SINGLE && srcPrefix.prefixLength() > 0) {
                 selector.matchIPv6Src(srcPrefix);
             }
             if (dstPrefix.prefixLength() > 0) {
                 selector.matchIPv6Dst(dstPrefix);
             }
-            if (ipProto != 0 && simpleFabric.REACTIVE_MATCH_IP_PROTO) {
+            if (ipProto != 0 && slsnet.REACTIVE_MATCH_IP_PROTO) {
                 selector.matchIPProtocol(ipProto);
             }
         }
@@ -856,9 +856,9 @@ public class SimpleFabricReactiveRouting {
 
     // monitor border peers for routeService lookup to be effective
     private void monitorBorderPeers() {
-        for (Route route : simpleFabric.getBorderRoutes()) {
+        for (Route route : slsnet.getBorderRoutes()) {
             hostService.startMonitoringIp(route.nextHop());
-            simpleFabric.requestMac(route.nextHop());
+            slsnet.requestMac(route.nextHop());
         }
     }
 
@@ -866,19 +866,18 @@ public class SimpleFabricReactiveRouting {
     private int reactivePriority(boolean isForward, boolean isLocalSubnet, int borderRoutePrefixLength) {
         if (isLocalSubnet) {  // localSubnet <-> localSubnet
             if (isForward) {
-                return simpleFabric.PRI_REACTIVE_LOCAL_FORWARD;
+                return slsnet.PRI_REACTIVE_LOCAL_FORWARD;
             } else {  // isInterncept
-                return simpleFabric.PRI_REACTIVE_LOCAL_INTERCEPT;
+                return slsnet.PRI_REACTIVE_LOCAL_INTERCEPT;
             }
         } else {  // isBorder: localSubnet <-> boarderRouteGateway
             int offset;
             if (isForward) {
-                offset = simpleFabric.PRI_REACTIVE_BORDER_FORWARD;
+                offset = slsnet.PRI_REACTIVE_BORDER_FORWARD;
             } else {  // isIntercept
-                offset = simpleFabric.PRI_REACTIVE_BORDER_INTERCEPT;
+                offset = slsnet.PRI_REACTIVE_BORDER_INTERCEPT;
             }
-           return simpleFabric.PRI_REACTIVE_BORDER_BASE
-                  + borderRoutePrefixLength * simpleFabric.PRI_REACTIVE_BORDER_STEP + offset;
+           return slsnet.PRI_REACTIVE_BORDER_BASE + borderRoutePrefixLength * slsnet.PRI_REACTIVE_BORDER_STEP + offset;
         }
     }
 
@@ -945,26 +944,26 @@ public class SimpleFabricReactiveRouting {
     }
 
     // Listener
-    private class InternalSimpleFabricListener implements SimpleFabricListener {
+    private class InternalSlsNetListener implements SlsNetListener {
         @Override
-        public void event(SimpleFabricEvent event) {
+        public void event(SlsNetEvent event) {
             switch (event.type()) {
-            case SIMPLE_FABRIC_UPDATED:
+            case SLSNET_UPDATED:
                 refreshIntercepts();
                 refreshRouteIntents();
                 checkIntentsPurge();
                 break;
-            case SIMPLE_FABRIC_FLUSH:
+            case SLSNET_FLUSH:
                 withdrawAllReactiveIntents();
                 checkIntentsPurge();
                 break;
-            case SIMPLE_FABRIC_IDLE:
+            case SLSNET_IDLE:
                 refreshIntercepts();
                 refreshRouteIntents();
                 checkIntentsPurge();
                 monitorBorderPeers();
                 break;
-            case SIMPLE_FABRIC_DUMP:
+            case SLSNET_DUMP:
                 dump(event.subject(), event.out());
                 break;
             default:

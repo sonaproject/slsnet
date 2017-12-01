@@ -1,5 +1,19 @@
+diff --git a/core/net/src/main/java/org/onosproject/net/intent/impl/compiler/LinkCollectionCompiler.java b/core/net/src/main/java/org/onosproject/net/intent/impl/compiler/LinkCollectionCompiler.java
+index 75b3eba..858d0ce 100644
+--- a/core/net/src/main/java/org/onosproject/net/intent/impl/compiler/LinkCollectionCompiler.java
++++ b/core/net/src/main/java/org/onosproject/net/intent/impl/compiler/LinkCollectionCompiler.java
+@@ -707,7 +707,8 @@ public abstract class LinkCollectionCompiler<T> {
+                 .builder();
+         TrafficSelector.Builder selectorBuilder = DefaultTrafficSelector
+                 .builder(intent.selector())
+-                .matchInPort(inPort);
++                // turn off IN_PORT matching for Cisco 40G Issue, by Lee Yongjae at 2017-08-0
++                ; //.matchInPort(inPort);
+ 
+         if (!intent.applyTreatmentOnEgress()) {
+             manageMpIntent(selectorBuilder,
 diff --git a/core/net/src/main/java/org/onosproject/net/packet/impl/PacketManager.java b/core/net/src/main/java/org/onosproject/net/packet/impl/PacketManager.java
-index 490e0d5..d27a380 100644
+index 1ecf5b4..38fdffe 100644
 --- a/core/net/src/main/java/org/onosproject/net/packet/impl/PacketManager.java
 +++ b/core/net/src/main/java/org/onosproject/net/packet/impl/PacketManager.java
 @@ -334,7 +334,8 @@ public class PacketManager
