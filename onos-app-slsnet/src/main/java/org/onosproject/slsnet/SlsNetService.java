@@ -66,7 +66,8 @@ public interface SlsNetService
     static final boolean REACTIVE_ALLOW_LINK_CP = false;  // MUST BE false (yjlee, 2017-10-18)
     static final boolean REACTIVE_HASHED_PATH_SELECTION = false;
     static final boolean REACTIVE_MATCH_IP_PROTO = false;
-    static final boolean REACTIVE_USE_SOURCE_HOST_MAC = false;  // ELSE use source subnet virtual gateway mac
+    static final boolean REACTIVE_USE_SOURCE_HOST_MAC = false;  // for REACTIVE_SINGLE_TO_SINGLE=true only; 
+                                                                // ELSE use source subnet virtual gateway mac
 
     /**
      * Gets appId.
