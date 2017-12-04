@@ -54,14 +54,14 @@ public class SlsNetCli extends AbstractShellCommand {
             break;
         case "refresh":
             slsnet.triggerRefresh();
-            print("slsnet refresh triggered\n");
+            System.out.println("slsnet refresh triggered");
             break;
         case "flush":
             slsnet.triggerFlush();
-            print("slsnet flush triggered\n");
+            System.out.println("slsnet flush triggered");
             break;
         default:
-            print("unknown command: {}", command);
+            System.out.println("unknown command: " + command);
             break;
         }
     }
