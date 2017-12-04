@@ -47,8 +47,7 @@ public class SlsNetConfig extends Config<ApplicationId> {
     private static final String GATEWAYIP = "gatewayIp";
     private static final String GATEWAYMAC = "gatewayMac";
     private static final String L2NETWORKNAME = "l2NetworkName";
-    private static final String VIRTUALGATEWAYMACADDRESS =
-                               "virtualGatewayMacAddress";
+    private static final String NEXTHOP = "nextHop";
 
     /**
      * Returns all l2Networks in this configuration.
@@ -143,26 +142,13 @@ public class SlsNetConfig extends Config<ApplicationId> {
                 routes.add(new Route(
                       Route.Source.STATIC,
                       IpPrefix.valueOf(jsonNode.path(IPPREFIX).asText()),
-                      IpAddress.valueOf(jsonNode.path(GATEWAYIP).asText())));
+                      IpAddress.valueOf(jsonNode.path(NEXTHOP).asText())));
             } catch (IllegalArgumentException e) {
                 log.warn("slsnet network config parse error; skip: {}", jsonNode);
             }
         });
 
         return routes;
-    }
-
-    /**
-     *  Gets of the virtual gateway MAC address.
-     *
-     * @return virtual gateway MAC address
-     */
-    public MacAddress virtualGatewayMacAddress() {
-        JsonNode macNode = object.get(VIRTUALGATEWAYMACADDRESS);
-        if (macNode == null) {
-            return null;
-        }
-        return MacAddress.valueOf(macNode.asText());
     }
 
 }
