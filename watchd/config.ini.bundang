@@ -41,7 +41,7 @@ link_list = of:0000000000000011/53-of:0000000000000021/31, of:0000000000000012/5
 
 [ALARM]
 site_name = BundangSLSNET
-mail_alarm = yes
+mail_alarm = no
 mail_server= smtp.gmail.com
 mail_tls = yes
 mail_user = slsnetnoti

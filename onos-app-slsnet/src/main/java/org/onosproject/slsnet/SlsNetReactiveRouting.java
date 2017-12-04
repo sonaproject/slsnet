@@ -228,8 +228,6 @@ public class SlsNetReactiveRouting {
                 if (l2Network != null && l2Network.contains(device.id())) {
                     newInterceptFlowRules.add(generateLocalSubnetIpBctFlowRule(device.id(), subnet.ipPrefix()));
                 }
-                // JUST FOR FLOW RULE TEST ONLY
-                //newInterceptFlowRules.add(generateTestFlowRule(device.id(), subnet.ipPrefix()));
             }
             for (Route route : slsnet.getBorderRoutes()) {
                 newInterceptFlowRules.add(generateInterceptFlowRule(false, device.id(), route.prefix()));

@@ -55,7 +55,7 @@ echo "install network config file: $NETCFG_FILE"
 onos-netcfg localhost delete
 onos-netcfg localhost $NETCFG_FILE
 # do not install network-cfg.json on cluster case
-#sudo cp "$NETCFG_FILE" $TARGET/config/network-cfg.json
+sudo cp "$NETCFG_FILE" $TARGET/config/network-cfg.json
 
 # restart onos service
 #sudo service onos restart

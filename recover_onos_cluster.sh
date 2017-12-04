@@ -2,6 +2,10 @@
 # recover_onos_slsnet.sh - reinstall onos and slsnet cluster to recover from unresolved onos failure
 
 
+echo "This script disabled now"
+exit 1
+
+
 echo 'This script reinstalls all ONOS/SLSNET cluster instances'
 echo -n 'Go ahead? ("yes" to go, else to quit): '
 read -t 60 input
