@@ -11,7 +11,7 @@ import sys
 import getopt
 import getpass
 
-CONFIG_FILE = os.getenv('SLSNET_WATCHD_CFG', 'config.ini')
+CONFIG_FILE = os.getenv('SIMPLEFABRIC_WATCHD_CFG', 'config.ini')
 REQUIREMENT_PKG = 'pexpect'
 SSH_TIMEOUT = 3
 HOME_DIR = os.getenv('HOME')

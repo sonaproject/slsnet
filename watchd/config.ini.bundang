@@ -1,10 +1,10 @@
 [BASE]
-pidfile = /tmp/slsnetwatchd.pid
-log_file_name = slsnetwatchd.log
+pidfile = /tmp/simplefabricwatchd.pid
+log_file_name = simplefabricwatchd.log
 # M: minute, H: hour D: day, W: week
 log_rotate_time = D
 log_backup_count = 5
-db_file = /tmp/slsnetwatchd.db
+db_file = /tmp/simplefabricwatchd.db
 
 [WATCHDOG]
 # This value is second; 0 is check_off; if want to check, must set over 10 second
@@ -34,22 +34,22 @@ api_port = 8181
 api_user_passwd = onos:rocks
 api_timeout_sec = 3
 account = root:null
-app_list = slsnet,drivers,openflow-base,optical-model,hostprovider,lldpprovider
+app_list = simplefabric,drivers,openflow-base,optical-model,hostprovider,lldpprovider
 device_list = of:0000000000000011, of:0000000000000012, of:0000000000000021, of:0000000000000022
 #link_list = of:0000000000000011/53-of:0000000000000021/31, of:0000000000000011/54-of:0000000000000022/32, of:0000000000000012/53-of:0000000000000022/31, of:0000000000000012/54-of:0000000000000021/32
 link_list = of:0000000000000011/53-of:0000000000000021/31, of:0000000000000012/54-of:0000000000000021/32
 
 [ALARM]
-site_name = BundangSLSNET
+site_name = BundangSF
 mail_alarm = no
 mail_server= smtp.gmail.com
 mail_tls = yes
-mail_user = slsnetnoti
-mail_password = slsnetqwe123
+mail_user = simplefabricnoti
+mail_password = simplefabricqwe123
 mail_list = sanghoshin@sk.com,dan.pack@sk.com,jsjung@telcoware.com,setup74@telcoware.com
 slack_alarm = no
 # Slack API Created as https://api.slack.com/apps/A6RTMEZEH?created=1
 # Slack OAuth Token Created as https://api.slack.com/apps/A6RTMEZEH/oauth?success=1
 slack_token = xoxp-136649237265-217135848130-236063517875-426bd8c81eabe6ffdb8def27eeae346e
-slack_channel= #slsnet_bundang
+slack_channel= #simplefabric_bundang
 

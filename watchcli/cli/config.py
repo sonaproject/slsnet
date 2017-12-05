@@ -27,7 +27,7 @@ LOG_BACKUP_KEY_NAME = 'log_backup_count'
 CPT_LIST_KEY_NAME = 'list'
 CPT_ID_KEY_NAME = 'account'
 
-CLI_CONFIG_FILE = os.getenv('SLSNET_WATCHCLI_CFG', 'cli_config.ini')
+CLI_CONFIG_FILE = os.getenv('SIMPLEFABIC_WATCHCLI_CFG', 'cli_config.ini')
 
 SSH_TIMEOUT = 'timeout'
 

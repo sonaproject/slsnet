@@ -53,12 +53,12 @@ public class SimpleFabricCli extends AbstractShellCommand {
             simpleFabric.dumpToStream("reactive-intents", System.out);
             break;
         case "refresh":
-            slsnet.triggerRefresh();
-            System.out.println("slsnet refresh triggered");
+            simpleFabric.triggerRefresh();
+            System.out.println("simple fabric refresh triggered");
             break;
         case "flush":
-            slsnet.triggerFlush();
-            System.out.println("slsnet flush triggered");
+            simpleFabric.triggerFlush();
+            System.out.println("simple fabric flush triggered");
             break;
         default:
             System.out.println("unknown command: " + command);

@@ -40,7 +40,7 @@ class RestHandler(BaseHTTPRequestHandler):
                 global_history_log.write_history('[%s] %s %s changed from %s to %s %s',
                     body['time'], body['system'], body['item'], body['pre_grade'], body['grade'], reason_str)
 
-                if body['system'] == 'SlsNetWatchd' and body['item'] == 'Daemon':
+                if body['system'] == 'SimpleFabricWatchd' and body['item'] == 'Daemon':
                     global_conn_evt.set()
                     LOG.debug_log('[REST-SERVER] ' + reason_str);
                 else:

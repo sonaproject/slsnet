@@ -16,7 +16,7 @@ import signal
 import time
 
 
-CONFIG_FILE = os.getenv('SLSNET_CHECKNET_CFG', 'checknet_config.ini')
+CONFIG_FILE = os.getenv('SIMPLEFABRIC_CHECKNET_CFG', 'checknet_config.ini')
 conf = None
 
 

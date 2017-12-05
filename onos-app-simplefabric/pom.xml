@@ -21,12 +21,14 @@
 
     <parent>
         <groupId>org.onosproject</groupId>
-        <artifactId>onos-apps</artifactId>
-        <version>1.12.0-SNAPSHOT</version>
+        <!--artifactId>onos-apps</artifactId-->
+        <artifactId>onos</artifactId>
+        <version>1.13.0-SNAPSHOT</version>
         <relativePath>../../onos</relativePath>
     </parent>
 
     <artifactId>onos-app-simplefabric</artifactId>
+    <version>1.13.0-SNAPSHOT</version>
     <packaging>bundle</packaging>
 
     <description>Simple Fabric Application for Leaf-Spine L2/L3 Network</description>

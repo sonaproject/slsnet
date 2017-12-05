@@ -23,7 +23,7 @@ from api.watcherdb import DB
 from api.daemon import Daemon
 
 
-class SlsNetWatchD(Daemon):
+class SimpleFabricWatchD(Daemon):
     def exit(self):
         try:
             pf = file(CONF.get_pid_file(), 'r')
@@ -73,7 +73,7 @@ class SlsNetWatchD(Daemon):
 
             conn = DB.connection()
 
-            alarm_event.push_event('SlsNetWatchd', 'PROC', 'up', 'none', [], str(datetime.now()), False)
+            alarm_event.push_event('SimpleFabricWatchd', 'PROC', 'up', 'none', [], str(datetime.now()), False)
 
             exitFlag = False
             while True:
@@ -93,7 +93,7 @@ class SlsNetWatchD(Daemon):
                                 LOG.info('REST SERVER CHECK FAIL [' + str(i) + ']')
                                 if i == 3:
                                     LOG.info('fail to check rest server.')
-                                    alarm_event.push_event('SlsNetwatchd', 'PROC', 'down', 'up', [], str(datetime.now()), True)
+                                    alarm_event.push_event('SimpleFabricwatchd', 'PROC', 'down', 'up', [], str(datetime.now()), True)
                                     conn.close()
                                     exitFlag = True
                                     self.exit()
@@ -112,7 +112,7 @@ class SlsNetWatchD(Daemon):
 
                     time.sleep(CONF.watchdog()['interval'])
                 except:
-                    alarm_event.push_event('SlsNetWatchd', 'PROC', 'down', 'normal', [], str(datetime.now()), False)
+                    alarm_event.push_event('SimpleFabricWatchd', 'PROC', 'down', 'normal', [], str(datetime.now()), False)
                     conn.close()
                     LOG.exception()
 
@@ -128,7 +128,7 @@ if __name__ == "__main__":
     history_log.set_log('event_history.log', CONF.base()['log_rotate_time'], CONF.base()['log_backup_count'])
     alarm_event.set_history_log(history_log)
 
-    daemon = SlsNetWatchD(CONF.get_pid_file())
+    daemon = SimpleFabricWatchD(CONF.get_pid_file())
 
     if len(sys.argv) == 2:
 
@@ -137,12 +137,12 @@ if __name__ == "__main__":
 
         elif 'stop' == sys.argv[1]:
             print "Stopping ..."
-            alarm_event.push_event('SlsNetWatchd', 'PROC', 'down', 'up', [], str(datetime.now()), True)
+            alarm_event.push_event('SimpleFabricWatchd', 'PROC', 'down', 'up', [], str(datetime.now()), True)
             daemon.stop()
 
         elif 'restart' == sys.argv[1]:
             print "Restaring ..."
-            alarm_event.push_event('SlsNetWatchd', 'PROC', 'restart', 'up', [], str(datetime.now()), False)
+            alarm_event.push_event('SimpleFabricWatchd', 'PROC', 'restart', 'up', [], str(datetime.now()), False)
             daemon.restart()
 
         elif 'status' == sys.argv[1]:
@@ -156,9 +156,9 @@ if __name__ == "__main__":
                 pid = None
 
             if pid:
-                print 'SlsNetWatchd is running as pid %s' % pid
+                print 'SimpleFabricWatchd is running as pid %s' % pid
             else:
-                print 'SlsNetWatchd is not running.'
+                print 'SimpleFabricWatchd is not running.'
 
         else:
             print "Unknown command"
