@@ -254,7 +254,7 @@ public class SlsNetReactiveRouting {
         }
     }
 
-    private FlowRule generateInterceptFlowRule(boolean isLocalSubnet, DeviceId deviceId, IpPrefix prefix) {
+    private FlowRule generateInterceptFlowRule(boolean isDstLocalSubnet, DeviceId deviceId, IpPrefix prefix) {
         TrafficSelector.Builder selector = DefaultTrafficSelector.builder();
         if (prefix.isIp4()) {
             selector.matchEthType(Ethernet.TYPE_IPV4);
@@ -269,7 +269,7 @@ public class SlsNetReactiveRouting {
         }
         FlowRule rule = DefaultFlowRule.builder()
                 .forDevice(deviceId)
-                .withPriority(reactivePriority(false, isLocalSubnet, prefix.prefixLength()))
+                .withPriority(reactivePriority(false, isDstLocalSubnet, prefix.prefixLength()))
                 .withSelector(selector.build())
                 .withTreatment(DefaultTrafficTreatment.builder().punt().build())
                 .fromApp(reactiveAppId)
@@ -614,7 +614,6 @@ public class SlsNetReactiveRouting {
         IpAddress dstNextHop = dstIp;
         MacAddress treatmentSrcMac;
         int borderRoutePrefixLength = 0;
-        boolean isLocalSubnet = true;
         boolean updateMac = slsnet.isVMac(ethPkt.getDestinationMAC());
 
         // MAY CHECK DestinationMAC; allow anyway
@@ -638,7 +637,6 @@ public class SlsNetReactiveRouting {
             srcPrefix = route.prefix();
             srcNextHop = route.nextHop();
             borderRoutePrefixLength = route.prefix().prefixLength();
-            isLocalSubnet = false;
         }
         IpSubnet dstSubnet = slsnet.findIpSubnet(dstIp);
         if (dstSubnet == null) {
@@ -650,7 +648,6 @@ public class SlsNetReactiveRouting {
             dstPrefix = route.prefix();
             dstNextHop = route.nextHop();
             borderRoutePrefixLength = route.prefix().prefixLength();
-            isLocalSubnet = false;
         }
 
         if (slsnet.REACTIVE_USE_SOURCE_HOST_MAC && slsnet.REACTIVE_SINGLE_TO_SINGLE) {
@@ -700,7 +697,7 @@ public class SlsNetReactiveRouting {
                  srcIp, dstIp, ethPkt.getSourceMAC(), ethPkt.getDestinationMAC(),
                  ethPkt.getVlanID(), ipProto, updateMac);
         setUpConnectivity(srcCp, ipProto, srcPrefix, dstPrefix, dstNextHop, treatmentSrcMac, encap, updateMac,
-                          isLocalSubnet, borderRoutePrefixLength);
+                          dstSubnet != null, borderRoutePrefixLength);
         forwardPacketToDstIp(context, dstNextHop, treatmentSrcMac, updateMac);
     }
 
@@ -748,7 +745,7 @@ public class SlsNetReactiveRouting {
     private boolean setUpConnectivity(ConnectPoint srcCp, byte ipProto, IpPrefix srcPrefix, IpPrefix dstPrefix,
                                       IpAddress nextHopIp, MacAddress treatmentSrcMac,
                                       EncapsulationType encap, boolean updateMac,
-                                      boolean isLocalSubnet, int borderRoutePrefixLength) {
+                                      boolean isDstLocalSubnet, int borderRoutePrefixLength) {
         if (!(slsnet.findL2Network(srcCp, VlanId.NONE) != null ||
              (slsnet.REACTIVE_ALLOW_LINK_CP && !linkService.getIngressLinks(srcCp).isEmpty()))) {
             log.warn("NO REGI for srcCp not in L2Network; srcCp={} srcPrefix={} dstPrefix={} nextHopIp={}",
@@ -838,7 +835,7 @@ public class SlsNetReactiveRouting {
         }
 
         // priority for forwarding case
-        int priority = reactivePriority(true, isLocalSubnet, borderRoutePrefixLength);
+        int priority = reactivePriority(true, isDstLocalSubnet, borderRoutePrefixLength);
 
         MultiPointToSinglePointIntent newIntent = MultiPointToSinglePointIntent.builder()
             .key(key)
@@ -876,14 +873,14 @@ public class SlsNetReactiveRouting {
     }
 
     // priority calculator
-    private int reactivePriority(boolean isForward, boolean isLocalSubnet, int borderRoutePrefixLength) {
-        if (isLocalSubnet) {  // localSubnet <-> localSubnet
+    private int reactivePriority(boolean isForward, boolean isDstLocalSubnet, int borderRoutePrefixLength) {
+        if (isDstLocalSubnet) {  // -> dst:localSubnet
             if (isForward) {
                 return slsnet.PRI_REACTIVE_LOCAL_FORWARD;
             } else {  // isInterncept
                 return slsnet.PRI_REACTIVE_LOCAL_INTERCEPT;
             }
-        } else {  // isBorder: localSubnet <-> boarderRouteGateway
+        } else {  // -> dst:boarderRouteNextHop
             int offset;
             if (isForward) {
                 offset = slsnet.PRI_REACTIVE_BORDER_FORWARD;

@@ -16,7 +16,6 @@
 package org.onosproject.simplefabric;
 
 import org.onlab.packet.IpAddress;
-import org.onlab.packet.IpPrefix;
 import org.onlab.packet.MacAddress;
 import org.onlab.packet.VlanId;
 import org.onosproject.core.ApplicationId;
@@ -160,22 +159,6 @@ public interface SimpleFabricService
      * @return the interface related to the host
      */
     Interface getHostInterface(Host host);
-
-    /**
-     * Evaluates whether an IP address belongs to local SDN network.
-     *
-     * @param ipAddress the IP address to evaluate
-     * @return true if the IP address belongs to local SDN network, otherwise false
-     */
-    boolean isIpAddressLocal(IpAddress ipAddress);
-
-    /**
-     * Evaluates whether an IP prefix belongs to local SDN network.
-     *
-     * @param ipPrefix the IP prefix to evaluate
-     * @return true if the IP prefix belongs to local SDN network, otherwise false
-     */
-    boolean isIpPrefixLocal(IpPrefix ipPrefix);
 
     /**
      * Sends Neighbour Query (ARP or NDP) to Find Host Location.

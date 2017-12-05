@@ -71,7 +71,6 @@ import org.slf4j.LoggerFactory;
 import java.io.OutputStream;
 import java.io.PrintStream;
 import java.nio.ByteBuffer;
-import java.util.Iterator;
 import java.util.HashSet;
 import java.util.Collection;
 import java.util.Set;
@@ -394,29 +393,25 @@ public class SimpleFabricManager extends ListenerRegistry<SimpleFabricEvent, Sim
 
     @Override
     public IpSubnet findIpSubnet(IpAddress ip) {
-        Iterator<IpSubnet> it;
         if (ip.isIp4()) {
-            it = ip4SubnetTable.getValuesForKeysPrefixing(
-                     createBinaryString(IpPrefix.valueOf(ip, Ip4Address.BIT_LENGTH))).iterator();
+            return ip4SubnetTable.getValueForLongestKeyPrefixing(
+                     createBinaryString(IpPrefix.valueOf(ip, Ip4Address.BIT_LENGTH)));
         } else {
-            it = ip6SubnetTable.getValuesForKeysPrefixing(
-                     createBinaryString(IpPrefix.valueOf(ip, Ip6Address.BIT_LENGTH))) .iterator();
+            return ip6SubnetTable.getValueForLongestKeyPrefixing(
+                     createBinaryString(IpPrefix.valueOf(ip, Ip6Address.BIT_LENGTH)));
         }
-        return (it.hasNext()) ? it.next() : null;
     }
 
     @Override
     public Route findBorderRoute(IpAddress ip) {
         // ASSUME: ipAddress is out of ipSubnet
-        Iterator<Route> it;
         if (ip.isIp4()) {
-            it = ip4BorderRouteTable.getValuesForKeysPrefixing(
-                     createBinaryString(IpPrefix.valueOf(ip, Ip4Address.BIT_LENGTH))) .iterator();
+            return ip4BorderRouteTable.getValueForLongestKeyPrefixing(
+                     createBinaryString(IpPrefix.valueOf(ip, Ip4Address.BIT_LENGTH)));
         } else {
-            it = ip6BorderRouteTable.getValuesForKeysPrefixing(
-                     createBinaryString(IpPrefix.valueOf(ip, Ip6Address.BIT_LENGTH))) .iterator();
+            return ip6BorderRouteTable.getValueForLongestKeyPrefixing(
+                     createBinaryString(IpPrefix.valueOf(ip, Ip6Address.BIT_LENGTH)));
         }
-        return (it.hasNext()) ? it.next() : null;
     }
 
 
@@ -436,29 +431,6 @@ public class SimpleFabricManager extends ListenerRegistry<SimpleFabricEvent, Sim
                 .filter(iface -> deviceService.isAvailable(iface.connectPoint().deviceId()))
                 .findFirst()
                 .orElse(null);
-    }
-
-    @Override
-    public boolean isIpAddressLocal(IpAddress ip) {
-        boolean result;
-        if (ip.isIp4()) {
-            return ip4SubnetTable.getValuesForKeysPrefixing(
-                     createBinaryString(IpPrefix.valueOf(ip, Ip4Address.BIT_LENGTH)))
-                     .iterator().hasNext();
-        } else {
-            return ip6SubnetTable.getValuesForKeysPrefixing(
-                     createBinaryString(IpPrefix.valueOf(ip, Ip6Address.BIT_LENGTH)))
-                     .iterator().hasNext();
-        }
-    }
-
-    @Override
-    public boolean isIpPrefixLocal(IpPrefix ipPrefix) {
-        if (ipPrefix.isIp4()) {
-            return (ip4SubnetTable.getValueForExactKey(createBinaryString(ipPrefix)) != null);
-        } else {
-            return (ip6SubnetTable.getValueForExactKey(createBinaryString(ipPrefix)) != null);
-        }
     }
 
     @Override
