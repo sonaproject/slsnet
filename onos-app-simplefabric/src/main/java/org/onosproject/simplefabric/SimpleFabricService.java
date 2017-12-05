@@ -95,20 +95,20 @@ public interface SimpleFabricService
     Set<Route> getBorderRoutes();
 
     /**
-     * Gets Virtual Gateway Mac Address for Local Subnet Virtual Gateway Ip.
-     *
-     * @param ip the ip to check for Virtual Gateway Ip
-     * @return mac address of virtual gateway
-     */
-    MacAddress getVMacForIp(IpAddress ip);
-
-    /**
      * Evaluates whether a mac is of Virtual Gateway Mac Addresses.
      *
      * @param mac the MacAddress to evaluate
      * @return true if the mac is of any Vitrual Gateway Mac Address of ipSubnets
      */
     boolean isVMac(MacAddress mac);
+
+    /**
+     * Gets Virtual Gateway Mac Address for Local Subnet Virtual Gateway Ip.
+     *
+     * @param ip the ip to check for Virtual Gateway Ip
+     * @return mac address of virtual gateway
+     */
+    MacAddress findVMacForIp(IpAddress ip);
 
     /**
      * Evaluates whether an Interface belongs to l2Networks.
@@ -158,7 +158,7 @@ public interface SimpleFabricService
      * @param host the host
      * @return the interface related to the host
      */
-    Interface getHostInterface(Host host);
+    Interface findHostInterface(Host host);
 
     /**
      * Sends Neighbour Query (ARP or NDP) to Find Host Location.

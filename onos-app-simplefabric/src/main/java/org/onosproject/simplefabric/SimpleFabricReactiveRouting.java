@@ -60,6 +60,7 @@ import org.onosproject.net.intent.Intent;
 import org.onosproject.net.intent.IntentService;
 import org.onosproject.net.intent.Key;
 import org.onosproject.net.intent.MultiPointToSinglePointIntent;
+import org.onosproject.net.intf.Interface;
 import org.onosproject.net.link.LinkService;
 import org.onosproject.net.packet.DefaultOutboundPacket;
 import org.onosproject.net.packet.InboundPacket;
@@ -68,7 +69,6 @@ import org.onosproject.net.packet.PacketContext;
 import org.onosproject.net.packet.PacketPriority;
 import org.onosproject.net.packet.PacketProcessor;
 import org.onosproject.net.packet.PacketService;
-import org.onosproject.net.Port;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -226,7 +226,8 @@ public class SimpleFabricReactiveRouting {
                 // check if this devices has the ipSubnet, then add ip broadcast flue rule
                 L2Network l2Network = simpleFabric.findL2Network(subnet.l2NetworkName());
                 if (l2Network != null && l2Network.contains(device.id())) {
-                    newInterceptFlowRules.add(generateLocalSubnetIpBctFlowRule(device.id(), subnet.ipPrefix()));
+                    newInterceptFlowRules.add(generateLocalSubnetIpBctFlowRule(device.id(), subnet.ipPrefix(),
+                                                                               l2Network));
                 }
                 // JUST FOR FLOW RULE TEST ONLY
                 //newInterceptFlowRules.add(generateTestFlowRule(device.id(), subnet.ipPrefix()));
@@ -280,7 +281,7 @@ public class SimpleFabricReactiveRouting {
         return rule;
     }
 
-    private FlowRule generateLocalSubnetIpBctFlowRule(DeviceId deviceId, IpPrefix prefix) {
+    private FlowRule generateLocalSubnetIpBctFlowRule(DeviceId deviceId, IpPrefix prefix, L2Network l2Network) {
         TrafficSelector.Builder selector = DefaultTrafficSelector.builder();
         IpPrefix bctPrefix;
         if (prefix.isIp4()) {
@@ -301,8 +302,10 @@ public class SimpleFabricReactiveRouting {
         }
         TrafficTreatment.Builder treatment = DefaultTrafficTreatment.builder();
         Set<ConnectPoint> newEgressPoints = new HashSet<>();
-        for (Port port : deviceService.getPorts(deviceId)) {
-            treatment.setOutput(port.number());
+        for (Interface iface : l2Network.interfaces()) {
+            if (iface.connectPoint().deviceId().equals(deviceId)) {
+                treatment.setOutput(iface.connectPoint().port());
+            }
         }
         FlowRule rule = DefaultFlowRule.builder()
                 .forDevice(deviceId)
@@ -548,7 +551,7 @@ public class SimpleFabricReactiveRouting {
     private boolean checkVirtualGatewayIpPacket(InboundPacket pkt, IpAddress srcIp, IpAddress dstIp) {
         Ethernet ethPkt = pkt.parsed();  // assume valid
 
-        MacAddress mac = simpleFabric.getVMacForIp(dstIp);
+        MacAddress mac = simpleFabric.findVMacForIp(dstIp);
         if (mac == null || !ethPkt.getDestinationMAC().equals(mac)) {
             return false;
         } else if (dstIp.isIp4()) {
@@ -623,7 +626,8 @@ public class SimpleFabricReactiveRouting {
         if (srcSubnet == null) {
             Route route = simpleFabric.findBorderRoute(srcIp);
             if (route == null) {
-                log.warn("route unknown: srcIp={}", srcIp);
+                log.warn("unknown srcIp; drop: srcCp={} srcIp={} dstIp={} ipProto={}",
+                         srcCp, srcIp, dstIp, ipProto);
                 return;
             }
             srcPrefix = route.prefix();
@@ -634,7 +638,8 @@ public class SimpleFabricReactiveRouting {
         if (dstSubnet == null) {
             Route route = simpleFabric.findBorderRoute(dstIp);
             if (route == null) {
-                log.warn("route unknown: dstIp={}", dstIp);
+                log.warn("unknown dstIp; drop: srcCp={} srcIp={} dstIp={} ipProto={}",
+                         srcCp, srcIp, dstIp, ipProto);
                 return;
             }
             dstPrefix = route.prefix();

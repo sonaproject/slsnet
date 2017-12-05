@@ -242,7 +242,7 @@ public class SimpleFabricManager extends ListenerRegistry<SimpleFabricEvent, Sim
             for (Host host : hostService.getHosts()) {
                 // consider host with ip only
                 if (!host.ipAddresses().isEmpty()) {
-                    Interface iface = getAvailableDeviceHostInterface(host);
+                    Interface iface = findAvailableDeviceHostInterface(host);
                     if (iface != null && newL2Network.contains(iface)) {
                         newL2Network.addHost(host);
                     }
@@ -357,13 +357,13 @@ public class SimpleFabricManager extends ListenerRegistry<SimpleFabricEvent, Sim
     }
 
     @Override
-    public MacAddress getVMacForIp(IpAddress ip) {
-        return virtualGatewayIpMacMap.get(ip);
+    public boolean isVMac(MacAddress mac) {
+        return virtualGatewayIpMacMap.containsValue(mac);
     }
 
     @Override
-    public boolean isVMac(MacAddress mac) {
-        return virtualGatewayIpMacMap.containsValue(mac);
+    public MacAddress findVMacForIp(IpAddress ip) {
+        return virtualGatewayIpMacMap.get(ip);
     }
 
     @Override
@@ -416,7 +416,7 @@ public class SimpleFabricManager extends ListenerRegistry<SimpleFabricEvent, Sim
 
 
     @Override
-    public Interface getHostInterface(Host host) {
+    public Interface findHostInterface(Host host) {
         return interfaceService.getInterfaces().stream()
                 .filter(iface -> iface.connectPoint().equals(host.location()) &&
                                  iface.vlan().equals(host.vlan()))
@@ -424,7 +424,7 @@ public class SimpleFabricManager extends ListenerRegistry<SimpleFabricEvent, Sim
                 .orElse(null);
     }
 
-    private Interface getAvailableDeviceHostInterface(Host host) {
+    private Interface findAvailableDeviceHostInterface(Host host) {
         return interfaceService.getInterfaces().stream()
                 .filter(iface -> iface.connectPoint().equals(host.location()) &&
                                  iface.vlan().equals(host.vlan()))
