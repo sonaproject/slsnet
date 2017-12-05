@@ -39,8 +39,8 @@
   },
 
   "apps" : {
-    "org.onosproject.slsnet" : {
-      "slsnet" : {
+    "org.onosproject.simplefabric" : {
+      "simpleFabric" : {
         "l2Networks" : [
           { "name" : "LEAF1", "interfaces" : ["mst-001", "ant-001", "ant-002", "dgx-1", "mst-002", "ssd-1-1", "ssd-1-2"], "l2Forward" : true },
           { "name" : "LEAF2", "interfaces" : ["ant-003", "ant-004", "ant-005", "ant-006", "ant-007", "ant-008", "ssd-1-3", "ssd-1-4"], "l2Forward" : true }

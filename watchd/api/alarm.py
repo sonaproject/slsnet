@@ -56,10 +56,10 @@ def flush_pending_alarm():
             msg['To'] = mail_to
 
             LOG.info('Send Email Alarm: subject=%s to=%s body=%s', subject, mail_to, body)
-            ms = smtplib.SMTP('mail.tstream.co.kr')
+            ms = smtplib.SMTP(conf['mail_server'])
             if conf['mail_tls']:
                 ms.starttls()
-            ms.login('slsnetmailer','_slsnetmailer')
+            ms.login(conf['mail_user'], conf['mail_password'])
             try:
                 ms.sendmail(mail_from, mail_to, msg.as_string())
             except:

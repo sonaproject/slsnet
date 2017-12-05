@@ -140,7 +140,7 @@ leaf2# show openflow hardware capabilities pipeline 201
 <tr><td>
 Network Diagram
 </td><td>
-Mininet Model: <a href="mininet-slsnet.py"><code>mininet-slsnet.py</code></a>
+Mininet Model: <a href="mininet-simplefabric.py"><code>mininet-simplefabric.py</code></a>
 </td></tr>
 <tr><td>
 <pre>
@@ -183,7 +183,7 @@ Mininet Model: <a href="mininet-slsnet.py"><code>mininet-slsnet.py</code></a>
 
 <br/>
 
-## SLSNET Application
+## SimpleFabric Application
 
 
 ### ONOS Core Source Patch for Cisco Issue
@@ -191,28 +191,28 @@ Mininet Model: <a href="mininet-slsnet.py"><code>mininet-slsnet.py</code></a>
 apply [onos.patch](onos.patch) and rebuild onos
 
 
-### SLSNET App Build, Install and Activate
+### SimpleFabric App Build, Install and Activate
 
-in `onos-app-slsnet` directory
+in `onos-app-simplefabric` directory
 - BUILD:
    - `mvn clean compile install`
 - INSTALL TO ONOS AND ACTIVATE APP:
-   - `onos-app localhost install target/onos-app-slsnet-1.11.0.oar`
-   - `onos-app localhost activate org.onosproject.slsnet`
+   - `onos-app localhost install target/onos-app-simplefabric-1.13.0-SNAPSHOT.oar`
+   - `onos-app localhost activate org.onosproject.simplefabric`
 
-Or use [install_slsnet.sh](install.slsnet.sh) script in `slsnet` directory
+Or use [install_simplefabric.sh](install_simplefabric.sh) script
 - Assuming
    - onos sources are located in ../onos
    - onos is installed at /opt/onos-1.11.0 and /opt/onos is symbolic link to it
    - system is Redhat or CentOS and controllable with `service onos [start|stop]` command
-- `./install_slsnet.sh -r` to reinistall ONOS from `../onos/buck-out/gen/tools/package/onos-package/onos.tar.gz`
-- `./install_slsnet.sh [netcfg-json-file]` to 
-   - rebuild SLSNET app
-   - install and activate SLSNET on onos
-   - install the network config json file (default: SLSNET_NETCFG env or network-cfg.json) to /opt/onos/config/ 
-   - restart ONOS to apply new SLSNET app and network config
+- `./install_simplefabric.sh -r` to reinistall ONOS from `../onos/buck-out/gen/tools/package/onos-package/onos.tar.gz`
+- `./install_simplefabric.sh [netcfg-json-file]` to 
+   - rebuild SimpleFabric app
+   - install and activate SimpleFabric on onos
+   - install the network config json file (default: SimpleFabric env or network-cfg.json) to /opt/onos/config/ 
+   - restart ONOS to apply new SimpleFabric app and network config
 
-Following app are auto activated by SLSNET app's dependency
+Following app are auto activated by SimpleFabric app's dependency
 - OpenFlow Provider (for OpenFlow Controller) --> Optical inforamtion model
 - LLDP Link Provider (for auto Regi/Deregi Links)
 - Host Location Provider (for auto regi host from ARP)
@@ -230,7 +230,7 @@ If onos is updated, apply update for external app maven build, at onos/ source d
 설정 항목
 - devices : 유효한 device 목록
 - ports : 유효한 한 port 목록; interface name을 지정하여 l2Network 구성시 사용
-- app : slsnet
+- app : simplefabric
   - l2Network : ipSubnet 을 할달할 물리적 L2 Network에 속하는 Interface 정보
      - interfaces : l2Network 에 속하는 ports의 interface name 들을 지정
      - l2Forward : false 로 지정하면 L2Forwarding 관련 Intents 생성을 차단 (Cisco용)
@@ -345,7 +345,7 @@ index 75b3eba..be0e70e 100644
 
 - Switch의 BGP 설정과의 간섭 문제 (Cleared)
   - 기존 BGP 설정에서 처리하고 있던 IP 를 Openflow 로 처리하고자 설정 하면 의도치 않은 패킷 흐름이 발생
-  - 192.168.1.6 노드(BGP대역)의 포트를 Openflow port 로 변경 하고, SlsNet 에서 해당대역을 추가한뒤
+  - 192.168.1.6 노드(BGP대역)의 포트를 Openflow port 로 변경 하고, SimpleFabric 에서 해당대역을 추가한뒤
     같은 스위치 내에 있는, 192.168.101.3 노드(기존의 Non-BGP, Openflow-Only 대역)와 통신을 하게 하면
     - FlowRule 상으로 동일 스위치 내에서 전송하는 FlowRule 이 내려가고
     - Flow Stat 상에 Packet Count 에도 정상적으로 Count 되나
@@ -364,8 +364,8 @@ index 75b3eba..be0e70e 100644
   - Leaf switch 에서 spine switch 뱡향 port 2개를 모두 down 시키면, 관련 intents들이 withdrawn 으로 전환됨
      - link가 죽어도 Reactive Routing 기능의 packet forwarding 에 의해, 트래픽 전달이 수행됨 (RRT=3ms 이상)
      - link를 다시 살려놓아도 installed 상태로 돌아오지 않음 !!!
-     - slsnet 에서 routeIntents 로 관리하던 항목이 withdrawn 으로 바뀌면, routeIntents 에서 삭제하고 purge 시키는 기능 필요
-       - 해당 기능을 추가하고, SlsNetManager에서 idle event 시 refresh() 먼저 확인하고,
+     - simplefabric 에서 routeIntents 로 관리하던 항목이 withdrawn 으로 바뀌면, routeIntents 에서 삭제하고 purge 시키는 기능 필요
+       - 해당 기능을 추가하고, SimpleFabricManager에서 idle event 시 refresh() 먼저 확인하고,
        - 각 sub 모듈의 의 idle event 처리시에도 refresh를 수행하도록 변경
      - --> FAIL 된 intents는 remove 되고, 이후 Reactive Routing 처리에 따라 복구됨 (2017-08-16)
 
@@ -394,13 +394,13 @@ index 75b3eba..be0e70e 100644
   - ** --> rate-limit 을 꺼야 함 ** (2017-08-10)
 
 
-## ONOS/SLSNET Monitoring 
+## ONOS/SimpleFabric Monitoring 
 
-- watchd는 ONOS, SLSNET APP, Device, Link 에 대한 Monitoring 기능을 제공
-- watchcli 는 slsnetwatchd 에 접속하여, 상태를 조회하는 UI를 제공
+- watchd는 ONOS, SimpleFabric APP, Device, Link 에 대한 Monitoring 기능을 제공
+- watchcli 는 SimpleFabricWatchd 에 접속하여, 상태를 조회하는 UI를 제공
 - checknet 는 설정 파일에 등록한 host에 들어가 ping 을 통해 host 간 전송상태를 확인하는 기능을 제공
 
-* 기존의 SonaWatcher를 복제하여, 필요한 수정을 적용하고 slsnet/ repository 내에 [watchd/](watchd/) [watchcli/](watchcli/) 로 추가
+* 기존의 SonaWatcher를 복제하여, 필요한 수정을 적용하고 repository 내에 [watchd/](watchd/) [watchcli/](watchcli/) 로 추가
 ```
 BRANCHED FROM: https://github.com/snsol2/sonaWatchd.git
                commit 9edfdfa7c3b3de3e370d3061159c062f9f737f6c
@@ -422,9 +422,9 @@ Python 환경 설정
 기본적으로, watchd와 watchcli 는 모두 ONOS를 동작중인 노드에서 수행하는 형태로 설정되어 있다.
 - Remote 서버 연동형태로 구성하려면 각각의 설정파일을 변경한다.
 - 환경 변수를 사용하여 설정 파일을 지정할 수 있다:
-  - watchd 설정 파일: `SLSNET_WATCHD_CFG` (기본값: config.ini)
-  - watchcli 설정 파일: `SLSNET_WATCHCLI_CFG` (기본값: cli_config.ini)
-  - checknet 설정 파일: `SLSNET_CHECKNET_CFG` (기본값: checknet_config.ini)
+  - watchd 설정 파일: `SIMPLEFABRIC_WATCHD_CFG` (기본값: config.ini)
+  - watchcli 설정 파일: `SIMPLEFABRIC_WATCHCLI_CFG` (기본값: cli_config.ini)
+  - checknet 설정 파일: `SIMPLEFABRIC_CHECKNET_CFG` (기본값: checknet_config.ini)
 
 모니터링 대상 Device, Link 를 지정하기 위해 반드시 watchd 설정 파일의 `ONOS` 섹션에 있는 `device_list` 와 `link_list` 를 설정하여야 한다.
 
@@ -432,16 +432,16 @@ Python 환경 설정
 ### Server
 
 in watchd/
-- 실행: `./SlsNetWatcher.py start`
-- 종료: `./SlsNetWatcher.py stop`
-- 재시작: `./SlsNetWatcher.py restart`
+- 실행: `./SimpleFabricWatcher.py start`
+- 종료: `./SimpleFabricWatcher.py stop`
+- 재시작: `./SimpleFabricWatcher.py restart`
 
 ### Client
 in watchcli/    
-- 실행: `./SlsNetWatchcli.py`
+- 실행: `./SimpleFabricWatchcli.py`
 - 종료: cli main 화면에서 Esc 키 입력 또는 Exit 메뉴 선택
 
 ### Check Network by Hosts-Hosts Ping
 in checknet/
-- 실행: `./SlsNetCheckNet` (수행후 종료)
+- 실행: `./SimpleFabricCheckNet` (수행후 종료)
 

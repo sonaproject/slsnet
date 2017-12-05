@@ -1,12 +1,12 @@
 #!/bin/bash
-# recover_onos_slsnet.sh - reinstall onos and slsnet cluster to recover from unresolved onos failure
+# recover_onos_cluster.sh - reinstall onos and SimpleFabric cluster to recover from unresolved onos failure
 
 
 echo "This script disabled now"
 exit 1
 
 
-echo 'This script reinstalls all ONOS/SLSNET cluster instances'
+echo 'This script reinstalls all ONOS/SimpleFabric cluster instances'
 echo -n 'Go ahead? ("yes" to go, else to quit): '
 read -t 60 input
 RET=$?
@@ -35,19 +35,19 @@ onos-form-cluster 192.168.101.5 192.168.100.3 192.168.101.2
 echo "(waiting 30 seconds for onos instances restart...)"
 sleep 30
 
-echo "Install and Activate SLSNET Application..."
-./install_slsnet.sh --no-build
-echo "(waiting 15 seconds for slsnet application starts...)"
+echo "Install and Activate SimpleFabric Application..."
+./install_simplefabric.sh --no-build
+echo "(waiting 15 seconds for simplefabric application starts...)"
 sleep 15
 
-echo "Reinstall ONOS Authentication Keys for SLSNET Watchd..."
+echo "Reinstall ONOS Authentication Keys for SimpleFabric Watchd..."
 watchd/ssh_key_setup.py
 
-echo "ONOS/SLSNET Cluster Recovered"
+echo "ONOS/SimpleFabric Cluster Recovered"
 
 
 echo
-echo -n 'Run checknet/SlsNetCheckNet.py? ("yes" to run, else to quit): '
+echo -n 'Run checknet/SimpleFabricCheckNet.py? ("yes" to run, else to quit): '
 read -t 60 input
 RET=$?
 if [ "$input" != yes ]
@@ -62,6 +62,6 @@ then
     exit 0
 fi
 
-exec checknet/SlsNetCheckNet.py -l 3
+exec checknet/SimpleFabricCheckNet.py -l 3
 
 
