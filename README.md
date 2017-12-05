@@ -1,6 +1,6 @@
 # Simple Leaf-Spine Network Application
 Lee Yongjae, 2017-06-15,08-10.
-
+NOTE: Renamed from SlsNet to SimpleFabric at 2017-12-05.
 
 
 ## SONA Fabric 설계
