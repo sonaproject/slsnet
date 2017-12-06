@@ -552,7 +552,8 @@ public class SimpleFabricReactiveRouting {
         Ethernet ethPkt = pkt.parsed();  // assume valid
 
         MacAddress mac = simpleFabric.findVMacForIp(dstIp);
-        if (mac == null || !ethPkt.getDestinationMAC().equals(mac)) {
+        if (mac == null || !simpleFabric.isVMac(ethPkt.getDestinationMAC())) {
+            /* Destination MAC should be any of virtual gateway macs */
             return false;
         } else if (dstIp.isIp4()) {
             IPv4 ipv4Packet = (IPv4) ethPkt.getPayload();
