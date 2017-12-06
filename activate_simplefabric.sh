@@ -1,5 +1,4 @@
 #!/bin/sh
-# activate_simplefabric.sh - to activate simplefabric app in onos
 # USAGE: activate_simplefabric.sh [network-cfg.json]
 
 TARGET=/opt/onos
