@@ -484,6 +484,8 @@ public class SimpleFabricManager extends ListenerRegistry<SimpleFabricEvent, Sim
     protected void dump(String subject, PrintStream out) {
         if (subject == "show") {
             out.println("Static Configuration Flag:");
+            out.println("    ALLOW_IPV6="
+                        + SimpleFabricService.ALLOW_IPV6);
             out.println("    ALLOW_ETH_ADDRESS_SELECTOR="
                         + SimpleFabricService.ALLOW_ETH_ADDRESS_SELECTOR);
             out.println("    REACTIVE_SINGLE_TO_SINGLE="

@@ -30,7 +30,7 @@ ONOS_WEB_PASS=${ONOS_WEB_PASS:-rocks} # ONOS WEB Password defaults to 'rocks'
 . ${ONOS_HOME}/bin/_find-node
 
 node=$(find_node ${1:-localhost})
-cmd=${2:-status}
+cmd=${2:-show}
 
 export URL=http://$node:8181/onos/v1/simplefabric/$cmd
 #export HDR="-HContent-Type:application/octet-stream"
