@@ -103,7 +103,7 @@ public interface SimpleFabricService
     boolean isVMac(MacAddress mac);
 
     /**
-     * Gets Virtual Gateway Mac Address for Local Subnet Virtual Gateway Ip.
+     * Finds Virtual Gateway Mac Address for Local Subnet Virtual Gateway Ip.
      *
      * @param ip the ip to check for Virtual Gateway Ip
      * @return mac address of virtual gateway
