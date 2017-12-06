@@ -22,6 +22,7 @@ onos-app localhost activate org.onosproject.hostprovider
 onos-app localhost activate org.onosproject.simplefabric
 
 # reinstall network config
+# if argument exists, use it as config file
 # else if env SIMPLEFABRIC_NETCFG is defined use it
 # else use network-cfg.json file
 echo "reinstall network config file: $NETCFG_FILE" 
