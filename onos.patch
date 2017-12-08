@@ -7,7 +7,7 @@ index 75b3eba..858d0ce 100644
          TrafficSelector.Builder selectorBuilder = DefaultTrafficSelector
                  .builder(intent.selector())
 -                .matchInPort(inPort);
-+                // turn off IN_PORT matching for Cisco 40G Issue, by Lee Yongjae at 2017-08-0
++                // turn off IN_PORT matching for Cisco 40G Issue, by Lee Yongjae at 2017-12-04
 +                ; //.matchInPort(inPort);
  
          if (!intent.applyTreatmentOnEgress()) {
