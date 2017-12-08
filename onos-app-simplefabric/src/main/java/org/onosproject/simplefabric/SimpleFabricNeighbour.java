@@ -192,7 +192,8 @@ public class SimpleFabricNeighbour {
                 log.trace("simple fabric neightbour response message forward: {} {} target={} -> {}",
                           context.inPort(), context.vlan(), context.target(), hosts);
                 hosts.stream()
-                        .map(host -> simpleFabric.findHostInterface(host)) .filter(Objects::nonNull)
+                        .map(host -> simpleFabric.findHostInterface(host))
+                        .filter(Objects::nonNull)
                         .forEach(context::forward);
             }
         } else {

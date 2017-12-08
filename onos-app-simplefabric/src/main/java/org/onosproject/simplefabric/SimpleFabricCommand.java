@@ -23,13 +23,13 @@ import org.onosproject.cli.AbstractShellCommand;
  * CLI to interact with the SIMPLE_FABRIC application.
  */
 @Command(scope = "onos", name = "simpleFabric",
-         description = "Manages the SIMPLE_FABRIC application")
-public class SimpleFabricCli extends AbstractShellCommand {
+         description = "Manages the SimpleFabric application")
+public class SimpleFabricCommand extends AbstractShellCommand {
 
     protected static SimpleFabricService simpleFabric;
 
     @Argument(index = 0, name = "command",
-              description = "Command name: show, intents, reactive-intents, refresh, flush",
+              description = "Command: show|intents|reactive-intents|refresh|flush",
               required = true, multiValued = false)
     String command = null;
 

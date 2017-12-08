@@ -1,5 +1,5 @@
 <!--
-  ~ Copyright 2017-present Open Networking Laboratory
+  ~ Copyright 2017-present Open Networking Foundation
   ~
   ~ Licensed under the Apache License, Version 2.0 (the "License");
   ~ you may not use this file except in compliance with the License.
@@ -17,8 +17,12 @@
 
     <command-bundle xmlns="http://karaf.apache.org/xmlns/shell/v1.1.0">
         <command>
-            <action class="org.onosproject.simplefabric.SimpleFabricCli"/>
+            <action class="org.onosproject.simplefabric.SimpleFabricCommand"/>
+            <completers>
+                <ref component-id="SimpleFabricCommandCompleter"/>
+            </completers>
         </command>
     </command-bundle>
-
+ 
+    <bean id="SimpleFabricCommandCompleter" class="org.onosproject.simplefabric.SimpleFabricCommandCompleter"/>
 </blueprint>

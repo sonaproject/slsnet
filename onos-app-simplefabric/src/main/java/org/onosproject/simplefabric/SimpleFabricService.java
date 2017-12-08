@@ -103,20 +103,20 @@ public interface SimpleFabricService
     boolean isVMac(MacAddress mac);
 
     /**
-     * Finds Virtual Gateway Mac Address for Local Subnet Virtual Gateway Ip.
-     *
-     * @param ip the ip to check for Virtual Gateway Ip
-     * @return mac address of virtual gateway
-     */
-    MacAddress findVMacForIp(IpAddress ip);
-
-    /**
      * Evaluates whether an Interface belongs to l2Networks.
      *
      * @param intf the interface to evaluate
      * @return true if the inteface belongs to l2Networks configed, otherwise false
      */
     boolean isL2NetworkInterface(Interface intf);
+
+    /**
+     * Find Virtual Gateway Mac Address for Local Subnet Virtual Gateway Ip.
+     *
+     * @param ip the ip to check for Virtual Gateway Ip
+     * @return mac address of virtual gateway
+     */
+    MacAddress findVMacForIp(IpAddress ip);
 
     /**
      * Finds the L2 Network with given port and vlanId.

@@ -362,13 +362,13 @@ public class SimpleFabricManager extends ListenerRegistry<SimpleFabricEvent, Sim
     }
 
     @Override
-    public MacAddress findVMacForIp(IpAddress ip) {
-        return virtualGatewayIpMacMap.get(ip);
+    public boolean isL2NetworkInterface(Interface intf) {
+        return l2NetworkInterfaces.contains(intf);
     }
 
     @Override
-    public boolean isL2NetworkInterface(Interface intf) {
-        return l2NetworkInterfaces.contains(intf);
+    public MacAddress findVMacForIp(IpAddress ip) {
+        return virtualGatewayIpMacMap.get(ip);
     }
 
     @Override
