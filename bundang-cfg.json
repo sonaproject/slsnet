@@ -36,6 +36,15 @@
     "of:0000000000000012/15" : { "interfaces" : [ { "name" : "ant-011" } ] },
     "of:0000000000000012/16" : { "interfaces" : [ { "name" : "ant-012" } ] },
     "of:0000000000000012/17" : { "interfaces" : [ { "name" : "ant-013" } ] },
+
+    "of:0000000000000012/18" : { "interfaces" : [ { "name" : "s2p18" } ] },
+    "of:0000000000000012/19" : { "interfaces" : [ { "name" : "s2p19" } ] },
+    "of:0000000000000012/20" : { "interfaces" : [ { "name" : "s2p20" } ] },
+    "of:0000000000000012/21" : { "interfaces" : [ { "name" : "s2p21" } ] },
+    "of:0000000000000012/22" : { "interfaces" : [ { "name" : "s2p22" } ] },
+    "of:0000000000000012/23" : { "interfaces" : [ { "name" : "s2p23" } ] },
+    "of:0000000000000012/24" : { "interfaces" : [ { "name" : "s2p24" } ] },
+
     "of:0000000000000012/51" : { "interfaces" : [ { "name" : "ssd-1-3" } ] },
     "of:0000000000000012/52" : { "interfaces" : [ { "name" : "ssd-1-4" } ] },
 
@@ -48,7 +57,7 @@
       "simpleFabric" : {
         "l2Networks" : [
           { "name" : "LEAF1", "interfaces" : ["mst-001", "ant-001", "ant-002", "dgx-1", "mst-002", "ssd-1-1", "ssd-1-2"], "l2Forward" : true, "l2Broadcast" : false },
-          { "name" : "LEAF2", "interfaces" : ["ant-003", "ant-004", "ant-005", "ant-006", "ant-007", "ant-008", "ant-009", "ant-010", "ant-011", "ant-012", "ant-013", "ssd-1-3", "ssd-1-4"], "l2Forward" : true, "l2Broadcast" : false }
+          { "name" : "LEAF2", "interfaces" : ["ant-003", "ant-004", "ant-005", "ant-006", "ant-007", "ant-008", "ant-009", "ant-010", "ant-011", "ant-012", "ant-013", "s2p18", "s2p19", "s2p20", "s2p21", "s2p22", "s2p23", "s2p24", "ssd-1-3", "ssd-1-4"], "l2Forward" : true, "l2Broadcast" : false }
         ],
         "ipSubnets" : [
            { "ipPrefix" : "192.168.110.0/24", "gatewayIp" : "192.168.110.1", "gatewayMac" : "00:00:c0:a8:6e:01", "l2NetworkName" : "LEAF1" },
